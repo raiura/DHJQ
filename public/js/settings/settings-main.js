@@ -112,31 +112,47 @@ function createNewSaveFromSettings() {
 
 // ==================== 初始化 ====================
 document.addEventListener('DOMContentLoaded', () => {
-    gameId = new URLSearchParams(window.location.search).get('id');
-    isEditMode = !!gameId;
-    
-    initParticles();
-    checkAuth();
-    setupNavigation();
-    setupTabs();
-    switchToPageFromURL();
-    
-    if (isEditMode) {
-        loadGameData().then(() => restoreViewMode());
-    } else {
-        document.getElementById('pageTitle').textContent = '创建新世界';
-        document.getElementById('gameStatus').style.display = 'none';
-        document.getElementById('publishBtn').style.display = 'none';
-        document.getElementById('unpublishBtn').style.display = 'none';
-        document.getElementById('previewBtn').style.display = 'none';
-        document.getElementById('deleteBtn').style.display = 'none';
+    try {
+        console.log('[Settings] Initializing...');
+        gameId = new URLSearchParams(window.location.search).get('id');
+        isEditMode = !!gameId;
         
-        characters = [
-            { name: '向导', color: '#FF69B4', prompt: '陪伴玩家冒险的伙伴' },
-            { name: '伙伴', color: '#87CEFA', prompt: '陪伴玩家冒险的伙伴' }
-        ];
-        renderCharacterList();
-        restoreViewMode();
+        initParticles();
+        checkAuth();
+        setupNavigation();
+        setupTabs();
+        switchToPageFromURL();
+        
+        if (isEditMode) {
+            loadGameData().then(() => restoreViewMode()).catch(err => {
+                console.error('[Settings] Failed to load game data:', err);
+            });
+        } else {
+            // 创建新模式
+            const pageTitle = document.getElementById('pageTitle');
+            const gameStatus = document.getElementById('gameStatus');
+            const publishBtn = document.getElementById('publishBtn');
+            const unpublishBtn = document.getElementById('unpublishBtn');
+            const previewBtn = document.getElementById('previewBtn');
+            const deleteBtn = document.getElementById('deleteBtn');
+            
+            if (pageTitle) pageTitle.textContent = '创建新世界';
+            if (gameStatus) gameStatus.style.display = 'none';
+            if (publishBtn) publishBtn.style.display = 'none';
+            if (unpublishBtn) unpublishBtn.style.display = 'none';
+            if (previewBtn) previewBtn.style.display = 'none';
+            if (deleteBtn) deleteBtn.style.display = 'none';
+            
+            characters = [
+                { name: '向导', color: '#FF69B4', prompt: '陪伴玩家冒险的伙伴' },
+                { name: '伙伴', color: '#87CEFA', prompt: '陪伴玩家冒险的伙伴' }
+            ];
+            renderCharacterList();
+            restoreViewMode();
+        }
+        console.log('[Settings] Initialized successfully');
+    } catch (error) {
+        console.error('[Settings] Initialization error:', error);
     }
 });
 
@@ -273,17 +289,33 @@ function toggleViewMode() {
 }
 
 function restoreViewMode() {
+    console.log('[Settings] Restoring view mode...');
     const savedMode = localStorage.getItem('settings_view_mode');
     const btn = document.getElementById('viewToggleBtn');
     const text = document.getElementById('viewModeText');
     
+    console.log('[Settings] View toggle button:', btn ? 'found' : 'not found');
+    console.log('[Settings] Has full edit permission:', hasFullEditPermission());
+    
     if (!hasFullEditPermission()) {
+        // 普通用户：强制用户视图
         isUserView = true;
         document.body.classList.add('user-view');
-        if (btn) { btn.style.opacity = '0.5'; btn.style.cursor = 'not-allowed'; btn.title = '作者才能切换视图'; btn.disabled = true; }
+        if (btn) { 
+            btn.style.opacity = '0.5'; 
+            btn.style.cursor = 'not-allowed'; 
+            btn.title = '作者才能切换视图'; 
+            btn.disabled = true; 
+        }
         loadUserPersonalSettings();
     } else {
-        if (btn) { btn.style.opacity = '1'; btn.style.cursor = 'pointer'; btn.title = '点击切换视图'; btn.disabled = false; }
+        // 作者/管理员：可以切换视图
+        if (btn) { 
+            btn.style.opacity = '1'; 
+            btn.style.cursor = 'pointer'; 
+            btn.title = '点击切换视图'; 
+            btn.disabled = false; 
+        }
         if (savedMode === 'user') {
             isUserView = true;
             document.body.classList.add('user-view');
@@ -296,6 +328,7 @@ function restoreViewMode() {
         loadUserPersonalSettings();
     }
     initSaveSelector();
+    console.log('[Settings] View mode restored:', isUserView ? 'user' : 'admin');
 }
 
 function loadUserPersonalSettings() {
@@ -331,8 +364,14 @@ function setupNavigation() {
 
 function switchToPage(pageId) {
     document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
-    const targetSection = document.getElementById(pageId + '-section');
-    if (targetSection) targetSection.classList.add('active');
+    // HTML 中的 section ID 格式是 'page-xxx'
+    const targetSection = document.getElementById('page-' + pageId);
+    if (targetSection) {
+        targetSection.classList.add('active');
+        console.log('[Settings] Switched to page:', pageId);
+    } else {
+        console.error('[Settings] Page section not found:', 'page-' + pageId);
+    }
     window.history.replaceState(null, null, `?page=${pageId}${gameId ? '&id=' + gameId : ''}`);
 }
 
@@ -359,15 +398,15 @@ function renderCharacterList() {
     container.innerHTML = characters.map((char, index) => `
         <div class="character-card" style="border-left-color: ${char.color || '#FF69B4'}">
             <div class="character-avatar">
-                <div class="avatar-fallback">${(char.name || '?').charAt(0)}</div>
+                ${char.avatar ? `<img src="${char.avatar}" alt="${char.name}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">` : `<div class="avatar-fallback">${(char.name || '?').charAt(0)}</div>`}
             </div>
             <div class="character-info">
                 <div class="character-name">${char.name || '未命名'}</div>
-                <div class="character-prompt">${char.prompt || ''}</div>
+                <div class="character-prompt">${char.personality || char.prompt || ''}</div>
             </div>
             <div class="character-actions">
-                <button class="btn btn-secondary" onclick="editCharacter('${char._id || index}')">编辑</button>
-                <button class="btn btn-danger" onclick="deleteCharacter('${char._id || index}')">删除</button>
+                <button class="btn btn-secondary" onclick="editCharacter('${char._id || char.id || index}')">编辑</button>
+                <button class="btn btn-danger" onclick="deleteCharacter('${char._id || char.id || index}')">删除</button>
             </div>
         </div>
     `).join('');
@@ -375,16 +414,26 @@ function renderCharacterList() {
 
 function openCharacterModal() {
     editingCharacterId = null;
-    document.getElementById('charName').value = '';
-    document.getElementById('charPrompt').value = '';
-    document.getElementById('charColor').value = '#FF69B4';
-    document.getElementById('charImage').value = '';
-    document.getElementById('modalTitle').textContent = '新建角色';
-    document.getElementById('characterModal').classList.add('show');
+    const nameEl = document.getElementById('charName');
+    const avatarEl = document.getElementById('charAvatar');
+    const personalityEl = document.getElementById('charPersonality');
+    const backgroundEl = document.getElementById('charBackground');
+    const modalTitle = document.getElementById('modalTitle');
+    const modal = document.getElementById('characterModal');
+    
+    if (nameEl) nameEl.value = '';
+    if (avatarEl) avatarEl.value = '';
+    if (personalityEl) personalityEl.value = '';
+    if (backgroundEl) backgroundEl.value = '';
+    if (modalTitle) modalTitle.textContent = '新建角色';
+    if (modal) {
+        modal.style.display = 'block';
+        document.getElementById('modalOverlay').style.display = 'block';
+    }
 }
 
 function closeCharacterModal() {
-    document.getElementById('characterModal').classList.remove('show');
+    closeModal('characterModal');
 }
 
 function editCharacter(id) {
@@ -400,16 +449,28 @@ function deleteCharacter(id) {
 }
 
 function saveCharacter() {
-    const name = document.getElementById('charName').value.trim();
-    const prompt = document.getElementById('charPrompt').value.trim();
-    const color = document.getElementById('charColor').value;
+    const nameEl = document.getElementById('charName');
+    const avatarEl = document.getElementById('charAvatar');
+    const personalityEl = document.getElementById('charPersonality');
+    const backgroundEl = document.getElementById('charBackground');
+    
+    const name = nameEl ? nameEl.value.trim() : '';
+    const avatar = avatarEl ? avatarEl.value.trim() : '';
+    const personality = personalityEl ? personalityEl.value.trim() : '';
+    const background = backgroundEl ? backgroundEl.value.trim() : '';
     
     if (!name) { showToast('请输入角色名称', 'error'); return; }
     
-    const char = { name, prompt, color, _id: editingCharacterId || 'local_' + Date.now() };
+    const char = { 
+        name, 
+        avatar, 
+        personality, 
+        background,
+        _id: editingCharacterId || 'local_' + Date.now() 
+    };
     
     if (editingCharacterId) {
-        const idx = characters.findIndex(c => c._id === editingCharacterId);
+        const idx = characters.findIndex(c => c._id === editingCharacterId || c.id === editingCharacterId);
         if (idx >= 0) characters[idx] = char;
     } else {
         characters.push(char);
@@ -439,11 +500,15 @@ function renderWorldbookList() {
 }
 
 function openWorldbookModal() {
-    document.getElementById('worldbookModal').classList.add('show');
+    const modal = document.getElementById('worldbookModal');
+    if (modal) {
+        modal.style.display = 'block';
+        document.getElementById('modalOverlay').style.display = 'block';
+    }
 }
 
 function closeWorldbookModal() {
-    document.getElementById('worldbookModal').classList.remove('show');
+    closeModal('worldbookModal');
 }
 
 // ==================== 图库管理 ====================
@@ -836,6 +901,35 @@ async function solidifyTimeline() {
     
     showToast('正在固化时间线...');
     
+    // 本地实现：将长期记忆移动到核心记忆
+    const save = getCurrentSaveData();
+    if (save && save.memories) {
+        const longMemories = save.memories.long || [];
+        if (longMemories.length === 0) {
+            showToast('没有需要固化的长期记忆', 'info');
+            return;
+        }
+        
+        // 将长期记忆添加到核心记忆
+        save.memories.core = save.memories.core || [];
+        longMemories.forEach(mem => {
+            save.memories.core.push({
+                ...mem,
+                solidifiedAt: new Date().toISOString()
+            });
+        });
+        
+        // 清空长期记忆
+        save.memories.long = [];
+        
+        // 保存
+        updateSaveData({ memories: save.memories });
+        renderMemoriesList(save.memories);
+        showToast(`已固化 ${longMemories.length} 条记忆到核心`, 'success');
+        return;
+    }
+    
+    // 如果没有本地存档，尝试调用 API
     try {
         const response = await fetch(`${API_BASE}/memories/solidify`, {
             method: 'POST',
@@ -903,6 +997,17 @@ function importMemories() {
 async function clearMemories() {
     if (!confirm('确定要清空所有记忆吗？此操作不可恢复！')) return;
     
+    // 优先清空本地存档的记忆
+    const save = getCurrentSaveData();
+    if (save) {
+        save.memories = { short: [], long: [], core: [] };
+        updateSaveData({ memories: save.memories });
+        renderMemoriesList(save.memories);
+        showToast('记忆已清空', 'success');
+        return;
+    }
+    
+    // 如果没有选中存档，尝试调用 API
     try {
         const response = await fetch(`${API_BASE}/memories`, {
             method: 'DELETE',
@@ -1064,15 +1169,18 @@ function editCharacter(id) {
     }
     
     editingCharacterId = id;
-    document.getElementById('charName').value = char.name || '';
-    document.getElementById('charAvatar') && (document.getElementById('charAvatar').value = char.avatar || char.image || '');
-    document.getElementById('charPersonality') && (document.getElementById('charPersonality').value = char.personality || char.prompt || '');
-    document.getElementById('charBackground') && (document.getElementById('charBackground').value = char.background || '');
-    
+    const nameEl = document.getElementById('charName');
+    const avatarEl = document.getElementById('charAvatar');
+    const personalityEl = document.getElementById('charPersonality');
+    const backgroundEl = document.getElementById('charBackground');
     const modalTitle = document.getElementById('modalTitle');
-    if (modalTitle) modalTitle.textContent = '编辑角色';
-    
     const modal = document.getElementById('characterModal');
+    
+    if (nameEl) nameEl.value = char.name || '';
+    if (avatarEl) avatarEl.value = char.avatar || char.image || '';
+    if (personalityEl) personalityEl.value = char.personality || char.prompt || '';
+    if (backgroundEl) backgroundEl.value = char.background || '';
+    if (modalTitle) modalTitle.textContent = '编辑角色';
     if (modal) {
         modal.style.display = 'block';
         document.getElementById('modalOverlay').style.display = 'block';
