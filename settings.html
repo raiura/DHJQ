@@ -563,20 +563,109 @@
     <!-- 模态框容器 -->
     <div class="modal-overlay" id="modalOverlay" onclick="closeAllModals()" style="display: none;"></div>
     
-    <!-- 世界书条目模态框 -->
+    <!-- 世界书条目模态框（新版）-->
     <div class="modal" id="worldbookModal" style="display: none;">
         <div class="modal-header">
-            <h3 class="modal-title">编辑世界书条目</h3>
+            <h3 class="modal-title" id="wbModalTitle">编辑世界书条目</h3>
             <button class="modal-close" onclick="closeModal('worldbookModal')">&times;</button>
         </div>
-        <div class="modal-body">
+        <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
+            <!-- 基本信息 -->
             <div class="form-group">
-                <label class="form-label">关键词 *</label>
-                <input type="text" class="form-input" id="wbKeyword" placeholder="用逗号分隔多个关键词">
+                <label class="form-label">条目名称 *</label>
+                <input type="text" class="form-input" id="wbEntryName" placeholder="给这个知识起个名字">
             </div>
+            
+            <div class="form-group">
+                <label class="form-label">关键词 * <span style="color: var(--text-secondary); font-size: 12px;">(用逗号分隔)</span></label>
+                <input type="text" class="form-input" id="wbKeyword" placeholder="例如：落星峰, 主峰, 最高峰">
+            </div>
+            
+            <!-- 匹配设置 -->
+            <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                <div class="form-group">
+                    <label class="form-label">匹配模式</label>
+                    <select class="form-select" id="wbMatchType">
+                        <option value="contains">包含 (contains)</option>
+                        <option value="exact">精确匹配 (exact)</option>
+                        <option value="prefix">前缀匹配 (prefix)</option>
+                        <option value="suffix">后缀匹配 (suffix)</option>
+                        <option value="regex">正则表达式 (regex)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">优先级</label>
+                    <input type="number" class="form-input" id="wbPriority" value="100" min="0" max="1000">
+                    <span style="font-size: 12px; color: var(--text-secondary);">数值越大越优先 (0-1000)</span>
+                </div>
+            </div>
+            
+            <!-- 插入设置 -->
+            <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                <div class="form-group">
+                    <label class="form-label">插入位置</label>
+                    <select class="form-select" id="wbInsertPosition">
+                        <option value="system">系统级 (system)</option>
+                        <option value="character" selected>角色级 (character)</option>
+                        <option value="user">用户级 (user)</option>
+                        <option value="example">示例级 (example)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">分组</label>
+                    <select class="form-select" id="wbEntryGroup">
+                        <option value="默认">默认</option>
+                        <option value="地理">地理</option>
+                        <option value="人物">人物</option>
+                        <option value="组织">组织</option>
+                        <option value="历史">历史</option>
+                        <option value="物品">物品</option>
+                        <option value="事件">事件</option>
+                    </select>
+                </div>
+            </div>
+            
+            <!-- 排除关键词 -->
+            <div class="form-group">
+                <label class="form-label">排除关键词 <span style="color: var(--text-secondary); font-size: 12px;">(包含这些词时不触发)</span></label>
+                <input type="text" class="form-input" id="wbExcludeKeys" placeholder="例如：不是, 假的">
+            </div>
+            
+            <!-- 内容 -->
             <div class="form-group">
                 <label class="form-label">内容 *</label>
-                <textarea class="form-textarea" id="wbContent" rows="6" placeholder="输入匹配此关键词时的回复内容..."></textarea>
+                <textarea class="form-textarea" id="wbContent" rows="6" placeholder="输入匹配此关键词时注入的提示词内容...
+支持变量：{{user}} 玩家名, {{char}} 角色名, {{world}} 世界名, {{time}} 当前时间"></textarea>
+            </div>
+            
+            <!-- 选项开关 -->
+            <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px;">
+                <label class="form-check" style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                    <input type="checkbox" id="wbConstant" style="width: 18px; height: 18px;">
+                    <span>恒常触发（不依赖关键词）</span>
+                </label>
+                <label class="form-check" style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                    <input type="checkbox" id="wbCaseSensitive" style="width: 18px; height: 18px;">
+                    <span>区分大小写</span>
+                </label>
+            </div>
+            
+            <!-- 作者选项 -->
+            <div class="admin-only form-group" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border);">
+                <label class="form-check" style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                    <input type="checkbox" id="wbAddToGlobal" style="width: 18px; height: 18px;">
+                    <span style="color: var(--primary-light);">添加到全局世界书（仅作者可见）</span>
+                </label>
+            </div>
+            
+            <!-- 测试区域 -->
+            <div class="form-group" style="margin-top: 20px; padding-top: 20px; border-top: 2px dashed var(--border);">
+                <label class="form-label">🧪 测试匹配</label>
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" class="form-input" id="wbTestInput" placeholder="输入测试文本...">
+                    <button class="btn btn-secondary" onclick="testWorldbookMatch()" style="white-space: nowrap;">测试</button>
+                </div>
+                <div id="wbTestResults" style="margin-top: 10px;"></div>
             </div>
         </div>
         <div class="modal-footer">
@@ -638,6 +727,10 @@
     <!-- Toast 容器 -->
     <div class="toast-container" id="toastContainer"></div>
 
+    <!-- 世界书引擎（新版 2.0）-->
+    <script src="public/js/core/worldbookEngine.js"></script>
+    <script src="public/js/services/worldbookManager.js"></script>
+    
     <!-- 外部脚本 -->
     <script src="public/js/loader.js"></script>
     <script src="public/js/settings/settings-main.js"></script>

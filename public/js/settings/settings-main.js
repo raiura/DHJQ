@@ -6,9 +6,11 @@ let gameId = null;
 let isEditMode = false;
 let characters = [];
 let editingCharacterId = null;
-let worldbookEntries = [];
-let editingWorldbookId = null;
 let gallery = [];
+
+// 世界书管理器（新版）
+let worldbookManager = null;
+let editingWorldbookId = null;
 
 // 用户个人设置（仅存储在localStorage中）
 let userPersonalSettings = {
@@ -111,7 +113,7 @@ function createNewSaveFromSettings() {
 }
 
 // ==================== 初始化 ====================
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     try {
         console.log('[Settings] Initializing...');
         gameId = new URLSearchParams(window.location.search).get('id');
@@ -122,6 +124,9 @@ document.addEventListener('DOMContentLoaded', () => {
         setupNavigation();
         setupTabs();
         switchToPageFromURL();
+        
+        // 初始化世界书管理器
+        await initWorldbookManager();
         
         if (isEditMode) {
             loadGameData().then(() => restoreViewMode()).catch(err => {
@@ -481,25 +486,224 @@ function saveCharacter() {
     showToast('角色已保存');
 }
 
-// ==================== 世界书管理 ====================
-async function loadWorldbookEntries() {
-    // Simplified - would load from API
-    worldbookEntries = [];
+// ==================== 世界书管理（新版 2.0）====================
+
+/**
+ * 初始化世界书管理器
+ */
+async function initWorldbookManager() {
+    console.log('[Worldbook] Initializing manager...');
+    
+    // 创建管理器实例
+    worldbookManager = new WorldbookManager({ gameId });
+    
+    // 设置当前存档
+    if (currentSaveId) {
+        worldbookManager.setCurrentSave(currentSaveId);
+    }
+    
+    // 加载全局世界书
+    await worldbookManager.loadGlobalWorldbook();
+    
+    // 渲染列表
     renderWorldbookList();
+    renderWorldbookGroups();
+    
+    console.log('[Worldbook] Manager initialized');
 }
 
+/**
+ * 渲染世界书列表（支持分组显示）
+ */
 function renderWorldbookList() {
     const container = document.getElementById('worldbookList');
+    const statsEl = document.getElementById('originalWbTotalEntries');
     if (!container) return;
     
-    if (!worldbookEntries || worldbookEntries.length === 0) {
-        container.innerHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 40px;">暂无世界书条目，点击"新建条目"添加</p>';
+    if (!worldbookManager) {
+        container.innerHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 40px;">正在加载...</p>';
         return;
     }
-    container.innerHTML = worldbookEntries.map(e => `<div>${e.name}</div>`).join('');
+    
+    const entries = worldbookManager.getAllEntriesForDisplay();
+    
+    if (statsEl) statsEl.textContent = entries.length;
+    
+    if (entries.length === 0) {
+        container.innerHTML = `
+            <div style="text-align: center; padding: 60px 40px; color: var(--text-secondary);">
+                <div style="font-size: 48px; margin-bottom: 15px;">📚</div>
+                <div style="font-size: 18px; margin-bottom: 8px;">暂无世界书条目</div>
+                <div style="font-size: 14px; opacity: 0.8;">点击"新建条目"添加你的第一条世界书知识</div>
+            </div>
+        `;
+        return;
+    }
+    
+    // 按分组组织条目
+    const groups = {};
+    entries.forEach(entry => {
+        const group = entry.group || '未分组';
+        if (!groups[group]) groups[group] = [];
+        groups[group].push(entry);
+    });
+    
+    // 渲染分组
+    container.innerHTML = Object.entries(groups).map(([groupName, groupEntries]) => `
+        <div class="worldbook-group" style="margin-bottom: 24px;">
+            <div class="worldbook-group-header" style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid rgba(138, 109, 59, 0.2);">
+                <span style="width: 12px; height: 12px; border-radius: 50%; background: ${groupEntries[0].groupColor || '#888'};"></span>
+                <span style="font-weight: 600; color: var(--primary-light);">${groupName}</span>
+                <span style="color: var(--text-secondary); font-size: 13px;">(${groupEntries.length})</span>
+            </div>
+            <div class="worldbook-entries">
+                ${groupEntries.map(entry => `
+                    <div class="worldbook-entry ${entry.isUserEntry ? 'user-entry' : ''}" 
+                         style="background: rgba(0,0,0,0.2); border-radius: 12px; padding: 16px; margin-bottom: 12px; border-left: 3px solid ${entry.groupColor || '#888'}; ${entry.enabled === false ? 'opacity: 0.5;' : ''}">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
+                            <div style="flex: 1;">
+                                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                                    <span style="font-weight: 600; font-size: 15px; color: var(--text-primary);">${entry.name}</span>
+                                    ${entry.isUserEntry ? '<span style="font-size: 11px; background: rgba(33, 150, 243, 0.2); color: #2196F3; padding: 2px 6px; border-radius: 4px;">用户</span>' : ''}
+                                    ${entry.constant ? '<span style="font-size: 11px; background: rgba(255, 152, 0, 0.2); color: #FF9800; padding: 2px 6px; border-radius: 4px;">恒常</span>' : ''}
+                                </div>
+                                <div style="font-size: 12px; color: var(--text-secondary); display: flex; gap: 15px; flex-wrap: wrap;">
+                                    <span>🔑 ${entry.keys.join(', ')}</span>
+                                    <span>📊 优先级: ${entry.priority}</span>
+                                    <span>📍 ${getInsertPositionLabel(entry.insertPosition)}</span>
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 8px;">
+                                <button class="btn btn-sm btn-secondary" onclick="editWorldbookEntry('${entry.id}', ${entry.isUserEntry})" style="padding: 6px 12px; font-size: 12px;">编辑</button>
+                                <button class="btn btn-sm btn-danger" onclick="deleteWorldbookEntry('${entry.id}', ${entry.isUserEntry})" style="padding: 6px 12px; font-size: 12px;">删除</button>
+                            </div>
+                        </div>
+                        <div style="color: var(--text-secondary); font-size: 13px; line-height: 1.6; border-top: 1px solid rgba(138, 109, 59, 0.1); padding-top: 10px;">
+                            ${entry.content.substring(0, 150)}${entry.content.length > 150 ? '...' : ''}
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `).join('');
 }
 
+function getInsertPositionLabel(position) {
+    const labels = {
+        'system': '系统级',
+        'character': '角色级',
+        'user': '用户级',
+        'example': '示例级'
+    };
+    return labels[position] || '角色级';
+}
+
+/**
+ * 渲染分组选择器
+ */
+function renderWorldbookGroups() {
+    const select = document.getElementById('wbEntryGroup');
+    if (!select || !worldbookManager) return;
+    
+    const stats = worldbookManager.getGroupStats();
+    const groups = Object.entries(stats);
+    
+    select.innerHTML = groups.map(([name, info]) => `
+        <option value="${name}" data-color="${info.color}">${name} (${info.count})</option>
+    `).join('') + '<option value="__new__">+ 新建分组</option>';
+}
+
+/**
+ * 打开世界书模态框（新建）
+ */
 function openWorldbookModal() {
+    editingWorldbookId = null;
+    
+    // 重置表单
+    const fields = ['wbEntryName', 'wbKeyword', 'wbContent', 'wbExcludeKeys'];
+    fields.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+    });
+    
+    // 设置默认值
+    const priorityEl = document.getElementById('wbPriority');
+    if (priorityEl) priorityEl.value = '100';
+    
+    const matchTypeEl = document.getElementById('wbMatchType');
+    if (matchTypeEl) matchTypeEl.value = 'contains';
+    
+    const positionEl = document.getElementById('wbInsertPosition');
+    if (positionEl) positionEl.value = 'character';
+    
+    const modalTitle = document.getElementById('wbModalTitle');
+    if (modalTitle) modalTitle.textContent = '新建世界书条目';
+    
+    // 显示模态框
+    const modal = document.getElementById('worldbookModal');
+    if (modal) {
+        modal.style.display = 'block';
+        document.getElementById('modalOverlay').style.display = 'block';
+    }
+    
+    // 更新分组选择器
+    renderWorldbookGroups();
+}
+
+/**
+ * 编辑世界书条目
+ */
+function editWorldbookEntry(entryId, isUserEntry) {
+    if (!worldbookManager) return;
+    
+    const entries = isUserEntry 
+        ? worldbookManager.getCurrentSaveWorldbook()?.entries
+        : worldbookManager.globalWorldbook.entries;
+    
+    const entry = entries?.find(e => e.id === entryId);
+    if (!entry) {
+        showToast('条目不存在', 'error');
+        return;
+    }
+    
+    editingWorldbookId = entryId;
+    editingWorldbookIsUser = isUserEntry;
+    
+    // 填充表单
+    const nameEl = document.getElementById('wbEntryName');
+    if (nameEl) nameEl.value = entry.name || '';
+    
+    const keywordEl = document.getElementById('wbKeyword');
+    if (keywordEl) keywordEl.value = entry.keys ? entry.keys.join(', ') : '';
+    
+    const contentEl = document.getElementById('wbContent');
+    if (contentEl) contentEl.value = entry.content || '';
+    
+    const excludeEl = document.getElementById('wbExcludeKeys');
+    if (excludeEl) excludeEl.value = entry.excludeKeys ? entry.excludeKeys.join(', ') : '';
+    
+    const priorityEl = document.getElementById('wbPriority');
+    if (priorityEl) priorityEl.value = entry.priority || '100';
+    
+    const matchTypeEl = document.getElementById('wbMatchType');
+    if (matchTypeEl) matchTypeEl.value = entry.matchType || 'contains';
+    
+    const positionEl = document.getElementById('wbInsertPosition');
+    if (positionEl) positionEl.value = entry.insertPosition || 'character';
+    
+    const groupEl = document.getElementById('wbEntryGroup');
+    if (groupEl) groupEl.value = entry.group || '默认';
+    
+    const constantEl = document.getElementById('wbConstant');
+    if (constantEl) constantEl.checked = entry.constant || false;
+    
+    const caseSensitiveEl = document.getElementById('wbCaseSensitive');
+    if (caseSensitiveEl) caseSensitiveEl.checked = entry.caseSensitive || false;
+    
+    const modalTitle = document.getElementById('wbModalTitle');
+    if (modalTitle) modalTitle.textContent = '编辑世界书条目';
+    
+    // 显示模态框
     const modal = document.getElementById('worldbookModal');
     if (modal) {
         modal.style.display = 'block';
@@ -507,9 +711,182 @@ function openWorldbookModal() {
     }
 }
 
+/**
+ * 关闭世界书模态框
+ */
 function closeWorldbookModal() {
     closeModal('worldbookModal');
+    editingWorldbookId = null;
 }
+
+/**
+ * 保存世界书条目
+ */
+async function saveWorldbookEntry() {
+    if (!worldbookManager) {
+        showToast('世界书管理器未初始化', 'error');
+        return;
+    }
+    
+    // 收集表单数据
+    const name = document.getElementById('wbEntryName')?.value.trim();
+    const keysText = document.getElementById('wbKeyword')?.value;
+    const content = document.getElementById('wbContent')?.value.trim();
+    const excludeText = document.getElementById('wbExcludeKeys')?.value;
+    
+    if (!name) {
+        showToast('请输入条目名称', 'error');
+        return;
+    }
+    
+    if (!keysText || !keysText.trim()) {
+        showToast('请输入至少一个关键词', 'error');
+        return;
+    }
+    
+    if (!content) {
+        showToast('请输入内容', 'error');
+        return;
+    }
+    
+    // 解析关键词
+    const keys = keysText.split(/[,，]/).map(k => k.trim()).filter(Boolean);
+    const excludeKeys = excludeText 
+        ? excludeText.split(/[,，]/).map(k => k.trim()).filter(Boolean)
+        : [];
+    
+    const entryData = {
+        name,
+        keys,
+        content,
+        excludeKeys,
+        priority: parseInt(document.getElementById('wbPriority')?.value || '100'),
+        matchType: document.getElementById('wbMatchType')?.value || 'contains',
+        insertPosition: document.getElementById('wbInsertPosition')?.value || 'character',
+        group: document.getElementById('wbEntryGroup')?.value || '默认',
+        constant: document.getElementById('wbConstant')?.checked || false,
+        caseSensitive: document.getElementById('wbCaseSensitive')?.checked || false
+    };
+    
+    // 验证
+    const validation = WorldbookEngine.validateEntry(entryData);
+    if (!validation.valid) {
+        showToast(validation.errors.join('; '), 'error');
+        return;
+    }
+    
+    try {
+        // 判断是新建还是编辑
+        const isUserEntry = editingWorldbookId && editingWorldbookIsUser;
+        const isGlobalEntry = editingWorldbookId && !editingWorldbookIsUser;
+        
+        // 检查权限：只有作者/管理员可以编辑全局条目
+        if (isGlobalEntry && !hasFullEditPermission()) {
+            showToast('只有作者可以编辑全局世界书', 'error');
+            return;
+        }
+        
+        if (editingWorldbookId) {
+            // 更新
+            if (isUserEntry) {
+                worldbookManager.updateUserEntry(editingWorldbookId, entryData);
+            } else {
+                worldbookManager.updateGlobalEntry(editingWorldbookId, entryData);
+            }
+            showToast('条目已更新', 'success');
+        } else {
+            // 新建 - 默认添加到用户世界书
+            // 如果是作者且选择了"添加到全局"，则添加到全局
+            const addToGlobal = hasFullEditPermission() && document.getElementById('wbAddToGlobal')?.checked;
+            
+            if (addToGlobal) {
+                worldbookManager.addGlobalEntry(entryData);
+                showToast('条目已添加到全局世界书', 'success');
+            } else {
+                worldbookManager.addUserEntry(entryData);
+                showToast('条目已添加到我的世界书', 'success');
+            }
+        }
+        
+        // 刷新列表
+        renderWorldbookList();
+        renderWorldbookGroups();
+        closeWorldbookModal();
+        
+    } catch (error) {
+        console.error('保存世界书条目失败:', error);
+        showToast('保存失败: ' + error.message, 'error');
+    }
+}
+
+/**
+ * 删除世界书条目
+ */
+async function deleteWorldbookEntry(entryId, isUserEntry) {
+    if (!worldbookManager) return;
+    
+    if (!confirm('确定要删除这个条目吗？')) return;
+    
+    try {
+        if (isUserEntry) {
+            worldbookManager.deleteUserEntry(entryId);
+        } else {
+            // 检查权限
+            if (!hasFullEditPermission()) {
+                showToast('只有作者可以删除全局条目', 'error');
+                return;
+            }
+            worldbookManager.deleteGlobalEntry(entryId);
+        }
+        
+        renderWorldbookList();
+        renderWorldbookGroups();
+        showToast('条目已删除');
+        
+    } catch (error) {
+        console.error('删除世界书条目失败:', error);
+        showToast('删除失败: ' + error.message, 'error');
+    }
+}
+
+/**
+ * 测试世界书匹配
+ */
+function testWorldbookMatch() {
+    const testText = document.getElementById('wbTestInput')?.value;
+    if (!testText) {
+        showToast('请输入测试文本', 'error');
+        return;
+    }
+    
+    if (!worldbookManager) {
+        showToast('世界书管理器未初始化', 'error');
+        return;
+    }
+    
+    const triggered = worldbookManager.detectTriggers(testText);
+    const resultsContainer = document.getElementById('wbTestResults');
+    
+    if (!resultsContainer) return;
+    
+    if (triggered.length === 0) {
+        resultsContainer.innerHTML = '<div style="color: var(--text-secondary); padding: 20px;">没有触发的条目</div>';
+        return;
+    }
+    
+    resultsContainer.innerHTML = `
+        <div style="margin-bottom: 10px; color: var(--primary-light);">触发了 ${triggered.length} 个条目：</div>
+        ${triggered.map(entry => `
+            <div style="background: rgba(138, 109, 59, 0.1); border-radius: 8px; padding: 12px; margin-bottom: 8px;">
+                <div style="font-weight: 600;">${entry.name}</div>
+                <div style="font-size: 12px; color: var(--text-secondary);">优先级: ${entry.priority} | 分组: ${entry.group}</div>
+            </div>
+        `).join('')}
+    `;
+}
+
+// 用于记录当前编辑的是否为用户条目
+let editingWorldbookIsUser = false;
 
 // ==================== 图库管理 ====================
 async function loadGallery() {
@@ -1282,6 +1659,11 @@ window.saveAISettings = saveAISettings;
 window.exportWorldbookOnly = exportWorldbookOnly;
 window.importWorldbookEntries = importWorldbookEntries;
 window.saveWorldbookEntry = saveWorldbookEntry;
+window.openWorldbookModal = openWorldbookModal;
+window.closeWorldbookModal = closeWorldbookModal;
+window.editWorldbookEntry = editWorldbookEntry;
+window.deleteWorldbookEntry = deleteWorldbookEntry;
+window.testWorldbookMatch = testWorldbookMatch;
 window.resetPrompts = resetPrompts;
 window.savePrompts = savePrompts;
 window.loadMemories = loadMemories;
