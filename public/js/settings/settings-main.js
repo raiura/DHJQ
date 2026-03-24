@@ -8,9 +8,9 @@ let characters = [];
 let editingCharacterId = null;
 let gallery = [];
 
-// 世界书管理器（新版）
-let worldbookManager = null;
+// 世界书相关变量
 let editingWorldbookId = null;
+let editingWorldbookIsUser = false;
 
 // 用户个人设置（仅存储在localStorage中）
 let userPersonalSettings = {
@@ -884,9 +884,6 @@ function testWorldbookMatch() {
         `).join('')}
     `;
 }
-
-// 用于记录当前编辑的是否为用户条目
-let editingWorldbookIsUser = false;
 
 // ==================== 图库管理 ====================
 async function loadGallery() {
