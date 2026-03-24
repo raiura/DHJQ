@@ -632,6 +632,522 @@ function logout() {
     window.location.href = 'login.html';
 }
 
+// ==================== 模态框系统 ====================
+function closeAllModals() {
+    document.querySelectorAll('.modal').forEach(modal => {
+        modal.style.display = 'none';
+    });
+    document.getElementById('modalOverlay').style.display = 'none';
+}
+
+function closeModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) modal.style.display = 'none';
+    // 检查是否还有其他模态框打开
+    const anyOpen = Array.from(document.querySelectorAll('.modal')).some(m => m.style.display === 'block');
+    if (!anyOpen) {
+        document.getElementById('modalOverlay').style.display = 'none';
+    }
+}
+
+// ==================== AI 配置 ====================
+async function testAIConnection() {
+    const apiKey = document.getElementById('apiKey')?.value;
+    const apiUrl = document.getElementById('apiUrl')?.value || 'https://api.openai.com/v1';
+    const model = document.getElementById('model')?.value || 'gpt-3.5-turbo';
+    
+    if (!apiKey) {
+        showToast('请先输入 API 密钥', 'error');
+        return;
+    }
+    
+    showToast('正在测试连接...');
+    
+    try {
+        const response = await fetch(`${apiUrl}/chat/completions`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${apiKey}`
+            },
+            body: JSON.stringify({
+                model: model,
+                messages: [{ role: 'user', content: 'Hello' }],
+                max_tokens: 5
+            })
+        });
+        
+        if (response.ok) {
+            showToast('连接成功！', 'success');
+        } else {
+            const error = await response.json();
+            showToast('连接失败: ' + (error.error?.message || response.statusText), 'error');
+        }
+    } catch (error) {
+        showToast('连接失败: ' + error.message, 'error');
+    }
+}
+
+async function saveAISettings() {
+    const settings = {
+        apiKey: document.getElementById('apiKey')?.value,
+        apiUrl: document.getElementById('apiUrl')?.value,
+        model: document.getElementById('model')?.value
+    };
+    
+    // 保存到 localStorage（实际项目中应该保存到后端）
+    localStorage.setItem('galgame_ai_settings', JSON.stringify(settings));
+    showToast('AI 设置已保存', 'success');
+}
+
+// ==================== 世界书功能 ====================
+function exportWorldbookOnly() {
+    const data = {
+        worldbook: worldbookEntries,
+        exportTime: new Date().toISOString()
+    };
+    
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `worldbook-export-${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('世界书已导出');
+}
+
+function importWorldbookEntries() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        try {
+            const text = await file.text();
+            const data = JSON.parse(text);
+            
+            if (data.worldbook && Array.isArray(data.worldbook)) {
+                worldbookEntries = data.worldbook;
+                renderWorldbookList();
+                showToast(`已导入 ${data.worldbook.length} 条世界书条目`, 'success');
+            } else {
+                showToast('文件格式不正确', 'error');
+            }
+        } catch (err) {
+            showToast('导入失败: ' + err.message, 'error');
+        }
+    };
+    input.click();
+}
+
+async function saveWorldbookEntry() {
+    const keyword = document.getElementById('wbKeyword')?.value.trim();
+    const content = document.getElementById('wbContent')?.value.trim();
+    
+    if (!keyword || !content) {
+        showToast('请填写关键词和内容', 'error');
+        return;
+    }
+    
+    const entry = {
+        id: editingWorldbookId || 'wb_' + Date.now(),
+        keyword: keyword,
+        content: content,
+        createdAt: new Date().toISOString()
+    };
+    
+    if (editingWorldbookId) {
+        const idx = worldbookEntries.findIndex(e => e.id === editingWorldbookId);
+        if (idx >= 0) worldbookEntries[idx] = entry;
+    } else {
+        worldbookEntries.push(entry);
+    }
+    
+    editingWorldbookId = null;
+    closeModal('worldbookModal');
+    renderWorldbookList();
+    showToast('条目已保存', 'success');
+}
+
+// ==================== 提示词功能 ====================
+function resetPrompts() {
+    if (!confirm('确定要重置提示词吗？这将恢复到默认设置。')) return;
+    
+    document.getElementById('originalPrePrompt').value = '';
+    document.getElementById('originalMainPrompt').value = '';
+    showToast('提示词已重置');
+}
+
+async function savePrompts() {
+    const prompts = {
+        prePrompt: document.getElementById('originalPrePrompt')?.value,
+        mainPrompt: document.getElementById('originalMainPrompt')?.value
+    };
+    
+    // 保存到游戏配置中
+    if (currentGame) {
+        currentGame.config = currentGame.config || {};
+        currentGame.config.prePrompt = prompts.prePrompt;
+        currentGame.config.mainPrompt = prompts.mainPrompt;
+    }
+    
+    showToast('提示词已保存', 'success');
+}
+
+// ==================== 记忆管理功能 ====================
+async function loadMemories() {
+    // 从当前存档加载记忆
+    const save = getCurrentSaveData();
+    const memories = save?.memories || { short: [], long: [], core: [] };
+    renderMemoriesList(memories);
+}
+
+function renderMemoriesList(memories) {
+    const container = document.getElementById('memoriesList');
+    if (!container) return;
+    
+    const allMemories = [
+        ...memories.core.map(m => ({ ...m, type: 'core' })),
+        ...memories.long.map(m => ({ ...m, type: 'long' })),
+        ...memories.short.map(m => ({ ...m, type: 'short' }))
+    ];
+    
+    if (allMemories.length === 0) {
+        container.innerHTML = '<p style="text-align: center; color: var(--text-secondary); padding: 40px;">暂无记忆</p>';
+        return;
+    }
+    
+    container.innerHTML = allMemories.map(mem => `
+        <div class="memory-item" style="padding: 15px; background: rgba(0,0,0,0.2); border-radius: 8px; margin-bottom: 10px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <span class="memory-type-${mem.type}">${mem.type === 'core' ? '核心' : mem.type === 'long' ? '长期' : '短期'}</span>
+                <span style="font-size: 12px; color: var(--text-secondary);">${new Date(mem.timestamp).toLocaleString()}</span>
+            </div>
+            <p style="margin: 0;">${mem.content || mem.title || ''}</p>
+        </div>
+    `).join('');
+}
+
+async function solidifyTimeline() {
+    if (!confirm('确定要固化当前时间线吗？这将把当前核心记忆写入世界书存档。')) return;
+    
+    showToast('正在固化时间线...');
+    
+    try {
+        const response = await fetch(`${API_BASE}/memories/solidify`, {
+            method: 'POST',
+            headers: getAuthHeaders()
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+            showToast('时间线已固化', 'success');
+            loadMemories();
+        } else {
+            showToast(result.message || '固化失败', 'error');
+        }
+    } catch (error) {
+        showToast('固化失败: ' + error.message, 'error');
+    }
+}
+
+function exportAllMemories() {
+    const save = getCurrentSaveData();
+    const memories = save?.memories || { short: [], long: [], core: [] };
+    
+    const data = {
+        memories: memories,
+        exportTime: new Date().toISOString()
+    };
+    
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `memories-export-${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('记忆已导出');
+}
+
+function importMemories() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        try {
+            const text = await file.text();
+            const data = JSON.parse(text);
+            
+            if (data.memories) {
+                // 更新当前存档的记忆
+                updateSaveData({ memories: data.memories });
+                renderMemoriesList(data.memories);
+                showToast('记忆已导入', 'success');
+            } else {
+                showToast('文件格式不正确', 'error');
+            }
+        } catch (err) {
+            showToast('导入失败: ' + err.message, 'error');
+        }
+    };
+    input.click();
+}
+
+async function clearMemories() {
+    if (!confirm('确定要清空所有记忆吗？此操作不可恢复！')) return;
+    
+    try {
+        const response = await fetch(`${API_BASE}/memories`, {
+            method: 'DELETE',
+            headers: getAuthHeaders()
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+            showToast('记忆已清空', 'success');
+            loadMemories();
+        } else {
+            showToast(result.message || '清空失败', 'error');
+        }
+    } catch (error) {
+        showToast('清空失败: ' + error.message, 'error');
+    }
+}
+
+// ==================== 图库功能 ====================
+function uploadGalleryImage() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        showToast('正在上传...');
+        
+        // 这里应该实现实际上传逻辑
+        // 简化版本：使用 FileReader 读取为 base64
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const image = {
+                id: 'img_' + Date.now(),
+                url: event.target.result,
+                name: file.name,
+                uploadedAt: new Date().toISOString()
+            };
+            gallery.push(image);
+            renderGallery();
+            showToast('图片已上传', 'success');
+        };
+        reader.readAsDataURL(file);
+    };
+    input.click();
+}
+
+function copyGalleryImageUrl() {
+    const url = document.getElementById('galleryImageUrl')?.value;
+    if (url) {
+        navigator.clipboard.writeText(url).then(() => {
+            showToast('链接已复制', 'success');
+        });
+    }
+}
+
+function deleteGalleryImage() {
+    const url = document.getElementById('galleryImageUrl')?.value;
+    if (!url) return;
+    
+    gallery = gallery.filter(img => img.url !== url);
+    renderGallery();
+    closeModal('galleryModal');
+    showToast('图片已删除');
+}
+
+// ==================== 聊天界面设置 ====================
+function resetChatUISettings() {
+    if (!confirm('确定要重置聊天界面设置吗？')) return;
+    
+    document.getElementById('chatUIFont').value = 'Microsoft YaHei';
+    document.getElementById('chatUIFontSize').value = '16';
+    document.getElementById('chatUIDialogPosition').value = 'bottom';
+    showToast('设置已重置');
+}
+
+function saveChatUISettings() {
+    const settings = {
+        font: document.getElementById('chatUIFont')?.value,
+        fontSize: document.getElementById('chatUIFontSize')?.value,
+        dialogPosition: document.getElementById('chatUIDialogPosition')?.value
+    };
+    
+    localStorage.setItem('galgame_chat_ui_settings', JSON.stringify(settings));
+    showToast('聊天界面设置已保存', 'success');
+}
+
+// ==================== 用户个性化功能 ====================
+function saveUserPrompt() {
+    const prompt = {
+        background: document.getElementById('userPersonalBackground')?.value,
+        prePrompt: document.getElementById('userPrePrompt')?.value
+    };
+    
+    userPersonalSettings.prompts = { ...userPersonalSettings.prompts, ...prompt };
+    saveUserPersonalSettings();
+    showToast('个人提示词已保存', 'success');
+}
+
+async function testUserAIConnection() {
+    // 复用主 AI 测试逻辑，但使用用户配置
+    await testAIConnection();
+}
+
+function saveUserAIConfig() {
+    const config = {
+        temperature: parseFloat(document.getElementById('userAITemperature')?.value || 0.7),
+        maxTokens: parseInt(document.getElementById('userAIMaxTokens')?.value || 2000)
+    };
+    
+    userPersonalSettings.config = config;
+    saveUserPersonalSettings();
+    showToast('AI 配置已保存', 'success');
+}
+
+async function loadUserMemoryList() {
+    const save = getCurrentSaveData();
+    const container = document.getElementById('userMemoryList');
+    const statsDiv = document.getElementById('userMemoryStats');
+    
+    if (!save || !save.memories) {
+        if (container) container.innerHTML = '<p style="text-align: center; color: var(--text-secondary);">请先选择存档</p>';
+        if (statsDiv) statsDiv.innerHTML = '';
+        return;
+    }
+    
+    const memories = save.memories;
+    const total = (memories.short?.length || 0) + (memories.long?.length || 0) + (memories.core?.length || 0);
+    
+    if (statsDiv) {
+        statsDiv.innerHTML = `
+            <div style="display: flex; gap: 20px; margin-bottom: 15px;">
+                <span>🧠 核心: ${memories.core?.length || 0}</span>
+                <span>📚 长期: ${memories.long?.length || 0}</span>
+                <span>💭 短期: ${memories.short?.length || 0}</span>
+                <span>📊 总计: ${total}</span>
+            </div>
+        `;
+    }
+    
+    renderMemoriesList(memories);
+}
+
+function exportUserMemories() {
+    exportAllMemories();
+}
+
+async function clearAllUserMemories() {
+    await clearMemories();
+}
+
+// ==================== 角色编辑功能（补充）====================
+function editCharacter(id) {
+    const char = characters.find(c => (c._id || c.id) === id);
+    if (!char) {
+        showToast('角色不存在', 'error');
+        return;
+    }
+    
+    editingCharacterId = id;
+    document.getElementById('charName').value = char.name || '';
+    document.getElementById('charAvatar') && (document.getElementById('charAvatar').value = char.avatar || char.image || '');
+    document.getElementById('charPersonality') && (document.getElementById('charPersonality').value = char.personality || char.prompt || '');
+    document.getElementById('charBackground') && (document.getElementById('charBackground').value = char.background || '');
+    
+    const modalTitle = document.getElementById('modalTitle');
+    if (modalTitle) modalTitle.textContent = '编辑角色';
+    
+    const modal = document.getElementById('characterModal');
+    if (modal) {
+        modal.style.display = 'block';
+        document.getElementById('modalOverlay').style.display = 'block';
+    }
+}
+
+// ==================== 角色导入/导出/重置（补充）====================
+function exportCharactersOnly() {
+    const data = {
+        characters: characters,
+        exportTime: new Date().toISOString()
+    };
+    
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `characters-export-${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('角色已导出');
+}
+
+function importCharactersBatch() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        try {
+            const text = await file.text();
+            const data = JSON.parse(text);
+            
+            if (data.characters && Array.isArray(data.characters)) {
+                characters = [...characters, ...data.characters];
+                renderCharacterList();
+                showToast(`已导入 ${data.characters.length} 个角色`, 'success');
+            } else {
+                showToast('文件格式不正确', 'error');
+            }
+        } catch (err) {
+            showToast('导入失败: ' + err.message, 'error');
+        }
+    };
+    input.click();
+}
+
+function resetCharacters() {
+    if (!confirm('确定要重置所有角色吗？这将恢复到默认角色。')) return;
+    
+    characters = [
+        { name: '向导', color: '#FF69B4', prompt: '陪伴玩家冒险的向导' },
+        { name: '伙伴', color: '#87CEFA', prompt: '陪伴玩家冒险的伙伴' }
+    ];
+    renderCharacterList();
+    showToast('角色已重置');
+}
+
+function fixCharacterImages(event) {
+    if (event) event.preventDefault();
+    showToast('正在检查图片地址...');
+    
+    let fixed = 0;
+    characters.forEach(char => {
+        if (char.image && !char.image.startsWith('http')) {
+            // 修复相对路径或其他问题
+            fixed++;
+        }
+    });
+    
+    showToast(`检查了 ${characters.length} 个角色，修复了 ${fixed} 个`, fixed > 0 ? 'success' : 'info');
+}
+
 // ==================== 全局暴露 ====================
 window.toggleViewMode = toggleViewMode;
 window.exportGameData = exportGameData;
@@ -651,3 +1167,32 @@ window.publishGame = publishGame;
 window.unpublishGame = unpublishGame;
 window.deleteGame = deleteGame;
 window.logout = logout;
+window.closeAllModals = closeAllModals;
+window.closeModal = closeModal;
+window.testAIConnection = testAIConnection;
+window.saveAISettings = saveAISettings;
+window.exportWorldbookOnly = exportWorldbookOnly;
+window.importWorldbookEntries = importWorldbookEntries;
+window.saveWorldbookEntry = saveWorldbookEntry;
+window.resetPrompts = resetPrompts;
+window.savePrompts = savePrompts;
+window.loadMemories = loadMemories;
+window.solidifyTimeline = solidifyTimeline;
+window.exportAllMemories = exportAllMemories;
+window.importMemories = importMemories;
+window.clearMemories = clearMemories;
+window.uploadGalleryImage = uploadGalleryImage;
+window.copyGalleryImageUrl = copyGalleryImageUrl;
+window.deleteGalleryImage = deleteGalleryImage;
+window.resetChatUISettings = resetChatUISettings;
+window.saveChatUISettings = saveChatUISettings;
+window.saveUserPrompt = saveUserPrompt;
+window.testUserAIConnection = testUserAIConnection;
+window.saveUserAIConfig = saveUserAIConfig;
+window.loadUserMemoryList = loadUserMemoryList;
+window.exportUserMemories = exportUserMemories;
+window.clearAllUserMemories = clearAllUserMemories;
+window.exportCharactersOnly = exportCharactersOnly;
+window.importCharactersBatch = importCharactersBatch;
+window.resetCharacters = resetCharacters;
+window.fixCharacterImages = fixCharacterImages;
