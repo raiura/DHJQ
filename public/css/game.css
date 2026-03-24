@@ -1,0 +1,1417 @@
+/**
+ * 游戏页面样式表
+ * @description GalGame游戏主页面样式
+ */
+
+/* ==================== 游戏容器 ==================== */
+#game-container {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* ==================== 背景层 ==================== */
+#background-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+}
+
+#background-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: opacity 1s ease;
+}
+
+/* ==================== 角色层 ==================== */
+#character-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 2;
+    align-items: flex-end;
+    padding-bottom: 10%;
+}
+
+.character {
+    position: absolute;
+    bottom: 10%;
+    height: 80%;
+    transition: all 0.5s ease;
+    opacity: 0;
+}
+
+.character.show {
+    opacity: 1;
+}
+
+.character.left {
+    left: 10%;
+    z-index: 1;
+}
+
+.character.center {
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 2;
+}
+
+.character.right {
+    left: 70%;
+    z-index: 3;
+}
+
+.character-image {
+    height: 100%;
+    filter: drop-shadow(0 0 10px rgba(0,0,0,0.5));
+    transition: all 0.5s ease;
+}
+
+/* ==================== 情感视觉效果 ==================== */
+.emotion-calm .character-image {
+    filter: brightness(1) drop-shadow(0 0 10px rgba(0,0,0,0.5));
+    transform: scale(1);
+}
+
+.emotion-happy .character-image {
+    filter: brightness(1.1) saturate(1.2) drop-shadow(0 0 15px rgba(255,193,7,0.3));
+    transform: scale(1.02);
+    animation: happy-bounce 2s ease-in-out infinite;
+}
+
+.emotion-angry .character-image {
+    filter: contrast(1.2) brightness(0.9) sepia(0.2) drop-shadow(0 0 20px rgba(244,67,54,0.4));
+    transform: scale(1.05);
+    animation: angry-shake 0.5s ease-in-out;
+}
+
+.emotion-sad .character-image {
+    filter: brightness(0.85) saturate(0.8) hue-rotate(200deg) drop-shadow(0 0 15px rgba(33,150,243,0.3));
+    transform: scale(0.98) translateY(10px);
+}
+
+.emotion-shy .character-image {
+    filter: brightness(1.05) sepia(0.1) hue-rotate(320deg) drop-shadow(0 0 15px rgba(233,30,99,0.3));
+    transform: scale(0.95);
+    animation: shy-blush 3s ease-in-out infinite;
+}
+
+.emotion-surprise .character-image {
+    filter: brightness(1.15) contrast(1.1) drop-shadow(0 0 20px rgba(156,39,176,0.4));
+    transform: scale(1.03);
+    animation: surprise-pop 0.6s ease-out;
+}
+
+.emotion-serious .character-image {
+    filter: contrast(1.15) brightness(0.95) grayscale(0.2) drop-shadow(0 0 10px rgba(0,0,0,0.6));
+    transform: scale(1);
+}
+
+.emotion-hurt .character-image {
+    filter: brightness(0.8) saturate(0.6) hue-rotate(180deg) drop-shadow(0 0 15px rgba(158,158,158,0.4));
+    transform: scale(0.97);
+    animation: hurt-pulse 2s ease-in-out infinite;
+}
+
+/* 情感动画 */
+@keyframes happy-bounce {
+    0%, 100% { transform: scale(1.02) translateY(0); }
+    50% { transform: scale(1.02) translateY(-5px); }
+}
+
+@keyframes angry-shake {
+    0%, 100% { transform: scale(1.05) translateX(0); }
+    25% { transform: scale(1.05) translateX(-3px); }
+    75% { transform: scale(1.05) translateX(3px); }
+}
+
+@keyframes shy-blush {
+    0%, 100% { filter: brightness(1.05) sepia(0.1) hue-rotate(320deg) drop-shadow(0 0 15px rgba(233,30,99,0.2)); }
+    50% { filter: brightness(1.1) sepia(0.15) hue-rotate(330deg) drop-shadow(0 0 20px rgba(233,30,99,0.4)); }
+}
+
+@keyframes surprise-pop {
+    0% { transform: scale(0.9); }
+    50% { transform: scale(1.08); }
+    100% { transform: scale(1.03); }
+}
+
+@keyframes hurt-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.85; }
+}
+
+/* 强度等级样式 */
+[data-intensity="high"] .character-image {
+    animation-duration: 0.8s !important;
+}
+
+[data-intensity="medium"] .character-image {
+    animation-duration: 1.5s !important;
+}
+
+[data-intensity="low"] .character-image {
+    animation-duration: 3s !important;
+}
+
+/* ==================== 对话层 ==================== */
+#dialogue-layer {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    z-index: 3;
+    transition: all 0.3s ease;
+}
+
+#dialogue-box {
+    background: rgba(0,0,0,0.8);
+    color: #fff;
+    padding: 20px;
+    border-top: 2px solid #333;
+    margin: 0 20px 20px;
+    border-radius: 10px;
+    box-shadow: 0 -5px 20px rgba(0,0,0,0.5);
+}
+
+#character-name {
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 10px;
+    color: #ffb347;
+}
+
+#dialogue-text {
+    font-size: 16px;
+    line-height: 1.5;
+    min-height: 80px;
+}
+
+/* ==================== 聊天输入区域 ==================== */
+#chat-input-area {
+    display: flex;
+    margin: 0 20px 20px;
+    gap: 10px;
+}
+
+#user-input {
+    flex: 1;
+    padding: 10px 15px;
+    border: 1px solid #333;
+    border-radius: 20px;
+    background: rgba(255,255,255,0.1);
+    color: #fff;
+    font-size: 14px;
+}
+
+#user-input::placeholder {
+    color: #999;
+}
+
+#send-btn {
+    padding: 0 20px;
+    border: none;
+    border-radius: 20px;
+    background: rgba(255,179,71,0.8);
+    color: #fff;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+#send-btn:hover {
+    background: rgba(255,179,71,1);
+    transform: scale(1.05);
+}
+
+/* ==================== 角色设置面板 ==================== */
+#character-settings {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0,0,0,0.9);
+    color: #fff;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 0 30px rgba(0,0,0,0.5);
+    z-index: 15;
+    min-width: 400px;
+    max-width: 600px;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+#character-settings h3 {
+    margin-top: 0;
+    color: #ffb347;
+    text-align: center;
+}
+
+.setting-item {
+    margin-bottom: 15px;
+}
+
+.setting-item label {
+    display: block;
+    margin-bottom: 5px;
+    color: #ccc;
+}
+
+.setting-item textarea {
+    width: 100%;
+    min-height: 80px;
+    padding: 10px;
+    border: 1px solid #333;
+    border-radius: 5px;
+    background: rgba(255,255,255,0.1);
+    color: #fff;
+    resize: vertical;
+}
+
+.setting-item input[type="number"] {
+    width: 100px;
+    padding: 5px 10px;
+    border: 1px solid #333;
+    border-radius: 5px;
+    background: rgba(255,255,255,0.1);
+    color: #fff;
+}
+
+#save-settings, #close-settings {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-right: 10px;
+    transition: all 0.2s ease;
+}
+
+#save-settings {
+    background: rgba(76, 175, 80, 0.8);
+    color: #fff;
+}
+
+#save-settings:hover {
+    background: rgba(76, 175, 80, 1);
+}
+
+#close-settings {
+    background: rgba(255, 99, 132, 0.8);
+    color: #fff;
+}
+
+#close-settings:hover {
+    background: rgba(255, 99, 132, 1);
+}
+
+/* ==================== 对话日志面板 ==================== */
+#dialogue-log {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0,0,0,0.9);
+    color: #fff;
+    border-radius: 10px;
+    box-shadow: 0 0 30px rgba(0,0,0,0.5);
+    z-index: 15;
+    min-width: 600px;
+    max-width: 800px;
+    max-height: 80vh;
+    overflow: hidden;
+}
+
+#log-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    border-bottom: 1px solid #333;
+    background: rgba(0,0,0,0.8);
+}
+
+#log-header h3 {
+    margin: 0;
+    color: #ffb347;
+}
+
+#close-log {
+    background: rgba(255, 99, 132, 0.8);
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    padding: 5px 15px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+#close-log:hover {
+    background: rgba(255, 99, 132, 1);
+}
+
+#log-content {
+    padding: 20px;
+    max-height: calc(80vh - 70px);
+    overflow-y: auto;
+}
+
+.log-entry {
+    margin-bottom: 15px;
+    padding: 10px;
+    border-radius: 5px;
+    background: rgba(255,255,255,0.05);
+}
+
+.log-speaker {
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.log-content {
+    line-height: 1.5;
+}
+
+/* ==================== AI日志面板 ==================== */
+#ai-log {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0,0,0,0.9);
+    color: #fff;
+    border-radius: 10px;
+    box-shadow: 0 0 30px rgba(0,0,0,0.5);
+    z-index: 15;
+    min-width: 600px;
+    max-width: 900px;
+    max-height: 80vh;
+    overflow: hidden;
+}
+
+#ai-log-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    border-bottom: 1px solid #333;
+    background: rgba(0,0,0,0.8);
+}
+
+#ai-log-header h3 {
+    margin: 0;
+    color: #4CAF50;
+}
+
+#close-ai-log {
+    background: rgba(255, 99, 132, 0.8);
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    padding: 5px 15px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+#close-ai-log:hover {
+    background: rgba(255, 99, 132, 1);
+}
+
+#ai-log-content {
+    padding: 20px;
+    max-height: calc(80vh - 70px);
+    overflow-y: auto;
+}
+
+.ai-log-entry {
+    margin-bottom: 20px;
+    padding: 15px;
+    border-radius: 5px;
+    background: rgba(76, 175, 80, 0.1);
+    border-left: 4px solid #4CAF50;
+}
+
+.ai-log-timestamp {
+    font-size: 12px;
+    color: #999;
+    margin-bottom: 10px;
+}
+
+.ai-log-content {
+    line-height: 1.5;
+    white-space: pre-wrap;
+}
+
+/* ==================== 角色状态面板 ==================== */
+#characters-panel {
+    overflow: hidden;
+    border: 1px solid rgba(138, 109, 59, 0.3);
+}
+
+#status-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 18px 24px;
+    border-bottom: 1px solid rgba(138, 109, 59, 0.3);
+    background: linear-gradient(135deg, rgba(138, 109, 59, 0.2), rgba(20, 20, 30, 0.9));
+}
+
+#status-header h3 {
+    margin: 0;
+    color: #d4a574;
+    font-size: 18px;
+}
+
+#close-status {
+    background: rgba(255, 107, 107, 0.8);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 6px 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 13px;
+}
+
+#close-status:hover {
+    background: rgba(255, 107, 107, 1);
+}
+
+#status-content {
+    padding: 20px;
+    max-height: calc(80vh - 70px);
+    overflow-y: auto;
+}
+
+.status-section {
+    margin-bottom: 24px;
+    padding: 16px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 12px;
+    border: 1px solid rgba(138, 109, 59, 0.15);
+}
+
+.status-section:last-child {
+    margin-bottom: 0;
+}
+
+.status-section-title {
+    margin: 0 0 12px 0;
+    color: #d4a574;
+    font-size: 15px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.status-empty {
+    color: rgba(255, 255, 255, 0.4);
+    font-style: italic;
+    text-align: center;
+    padding: 12px;
+    font-size: 13px;
+}
+
+/* ==================== 玩家状态样式 ==================== */
+.player-status-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.player-status-item:last-child {
+    border-bottom: none;
+}
+
+.player-status-label {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 14px;
+}
+
+.player-status-value {
+    color: #d4a574;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+/* ==================== 角色好感度样式 ==================== */
+.character-status-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 10px;
+    margin-bottom: 10px;
+}
+
+.character-status-item:last-child {
+    margin-bottom: 0;
+}
+
+.character-status-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #8a6d3b, #d4a574);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+}
+
+.character-status-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.character-status-name {
+    font-weight: 600;
+    color: #fff;
+    margin-bottom: 4px;
+    font-size: 14px;
+}
+
+.character-status-role {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.character-status-favor {
+    text-align: right;
+}
+
+.favor-value {
+    font-size: 18px;
+    font-weight: 700;
+    color: #ff6b9d;
+}
+
+.favor-label {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.5);
+}
+
+/* ==================== 游戏控制层 ==================== */
+#game-controls {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    z-index: 5;
+    display: flex;
+    gap: 10px;
+}
+
+.control-btn {
+    background: rgba(0,0,0,0.7);
+    color: #fff;
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.control-btn:hover {
+    background: rgba(255,179,71,0.3);
+    transform: scale(1.1);
+}
+
+/* ==================== 用户设置面板 ==================== */
+#user-settings-panel {
+    position: absolute;
+    top: 80px;
+    right: 20px;
+    width: 450px;
+    max-height: calc(100vh - 100px);
+    background: rgba(20, 20, 35, 0.95);
+    border: 1px solid rgba(138, 109, 59, 0.4);
+    border-radius: 16px;
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+    backdrop-filter: blur(10px);
+}
+
+#user-settings-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    border-bottom: 1px solid rgba(138, 109, 59, 0.3);
+}
+
+#user-settings-header h3 {
+    margin: 0;
+    color: #ffb347;
+    font-size: 18px;
+}
+
+#close-user-settings {
+    background: none;
+    border: none;
+    color: #999;
+    font-size: 24px;
+    cursor: pointer;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    transition: all 0.2s;
+}
+
+#close-user-settings:hover {
+    background: rgba(255,255,255,0.1);
+    color: #fff;
+}
+
+#user-settings-tabs {
+    display: flex;
+    padding: 10px 15px 0;
+    gap: 8px;
+    border-bottom: 1px solid rgba(138, 109, 59, 0.2);
+}
+
+.uset-tab {
+    padding: 10px 15px;
+    font-size: 13px;
+    color: rgba(255,255,255,0.6);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+}
+
+.uset-tab:hover {
+    color: #fff;
+}
+
+.uset-tab.active {
+    color: #ffb347;
+    border-bottom-color: #ffb347;
+}
+
+#user-settings-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+}
+
+.uset-panel {
+    display: none;
+}
+
+.uset-panel.active {
+    display: block;
+}
+
+.uset-intro {
+    font-size: 12px;
+    color: rgba(255,255,255,0.5);
+    margin-bottom: 15px;
+    padding: 10px;
+    background: rgba(138, 109, 59, 0.1);
+    border-radius: 8px;
+    border-left: 3px solid #ffb347;
+}
+
+.uset-hint {
+    font-size: 11px;
+    color: rgba(255,255,255,0.4);
+    margin-top: 5px;
+}
+
+.uset-notice {
+    font-size: 12px;
+    color: #ff6b6b;
+    padding: 10px;
+    background: rgba(255, 107, 107, 0.1);
+    border-radius: 8px;
+    margin-top: 15px;
+}
+
+#user-settings-footer {
+    padding: 15px 20px;
+    border-top: 1px solid rgba(138, 109, 59, 0.2);
+}
+
+#save-user-settings {
+    width: 100%;
+    padding: 12px;
+    background: linear-gradient(135deg, rgba(76, 175, 80, 0.8), rgba(69, 160, 73, 0.8));
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s;
+}
+
+#save-user-settings:hover {
+    background: linear-gradient(135deg, rgba(76, 175, 80, 1), rgba(69, 160, 73, 1));
+}
+
+.btn-add-entry {
+    width: 100%;
+    padding: 10px;
+    background: rgba(138, 109, 59, 0.2);
+    color: #ffb347;
+    border: 1px dashed rgba(138, 109, 59, 0.4);
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    margin-top: 10px;
+    transition: all 0.2s;
+}
+
+.btn-add-entry:hover {
+    background: rgba(138, 109, 59, 0.3);
+}
+
+.user-entry-item {
+    background: rgba(0,0,0,0.3);
+    border: 1px solid rgba(138, 109, 59, 0.2);
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 10px;
+}
+
+.user-entry-header {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.user-entry-header input {
+    flex: 1;
+    padding: 6px 10px;
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(138, 109, 59, 0.3);
+    border-radius: 5px;
+    color: #fff;
+    font-size: 12px;
+}
+
+.user-entry-content textarea {
+    width: 100%;
+    padding: 8px 10px;
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(138, 109, 59, 0.3);
+    border-radius: 5px;
+    color: #fff;
+    font-size: 12px;
+    min-height: 60px;
+    resize: vertical;
+}
+
+.btn-remove-entry {
+    background: rgba(255, 99, 132, 0.3);
+    color: #ff6b6b;
+    border: none;
+    border-radius: 5px;
+    padding: 6px 10px;
+    cursor: pointer;
+    font-size: 11px;
+}
+
+/* ==================== AI配置预设样式 ==================== */
+.preset-selector {
+    display: flex;
+    gap: 8px;
+}
+
+.preset-selector select {
+    flex: 1;
+}
+
+.setting-divider {
+    height: 1px;
+    background: rgba(138, 109, 59, 0.3);
+    margin: 15px 0;
+}
+
+.setting-group-title {
+    font-size: 13px;
+    color: #ffb347;
+    font-weight: 600;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.setting-row {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.setting-row .setting-item {
+    flex: 1;
+    margin-bottom: 0;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    color: rgba(255,255,255,0.8);
+}
+
+.checkbox-label input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: #ffb347;
+}
+
+input[type="range"] {
+    width: 100%;
+    margin: 8px 0;
+}
+
+input[type="number"] {
+    padding: 8px 12px;
+    background: rgba(0,0,0,0.3);
+    border: 1px solid rgba(138, 109, 59, 0.3);
+    border-radius: 6px;
+    color: #fff;
+    width: 100%;
+}
+
+/* ==================== 记忆面板 ==================== */
+#memory-panel {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 700px;
+    max-height: 80vh;
+    background: rgba(20, 20, 35, 0.98);
+    border: 1px solid rgba(138, 109, 59, 0.4);
+    border-radius: 16px;
+    z-index: 25;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.8);
+}
+
+#memory-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 25px;
+    border-bottom: 1px solid rgba(138, 109, 59, 0.3);
+}
+
+#memory-header h3 {
+    margin: 0;
+    color: #ffb347;
+    font-size: 20px;
+}
+
+#close-memory {
+    background: none;
+    border: none;
+    color: #999;
+    font-size: 28px;
+    cursor: pointer;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    transition: all 0.2s;
+}
+
+#close-memory:hover {
+    background: rgba(255,255,255,0.1);
+    color: #fff;
+}
+
+#memory-stats {
+    display: flex;
+    justify-content: space-around;
+    padding: 20px;
+    background: rgba(138, 109, 59, 0.1);
+    border-bottom: 1px solid rgba(138, 109, 59, 0.2);
+}
+
+.memory-stat-item {
+    text-align: center;
+}
+
+.memory-stat-number {
+    font-size: 32px;
+    font-weight: bold;
+    color: #ffb347;
+}
+
+.memory-stat-label {
+    font-size: 13px;
+    color: rgba(255,255,255,0.6);
+    margin-top: 5px;
+}
+
+#memory-tabs {
+    display: flex;
+    padding: 15px 20px 0;
+    gap: 10px;
+    border-bottom: 1px solid rgba(138, 109, 59, 0.2);
+}
+
+.mem-tab {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px;
+    font-size: 14px;
+    color: rgba(255,255,255,0.6);
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    transition: all 0.2s;
+    border-radius: 8px 8px 0 0;
+}
+
+.mem-tab:hover {
+    background: rgba(138, 109, 59, 0.1);
+    color: #fff;
+}
+
+.mem-tab.active {
+    color: #ffb347;
+    border-bottom-color: #ffb347;
+    background: rgba(138, 109, 59, 0.15);
+}
+
+.mem-tab-icon { font-size: 16px; }
+
+.mem-tab-count {
+    background: rgba(138, 109, 59, 0.4);
+    color: #fff;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+}
+
+#memory-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+}
+
+.mem-panel { display: none; }
+.mem-panel.active { display: block; }
+
+.mem-intro {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 15px;
+    background: rgba(138, 109, 59, 0.1);
+    border-radius: 10px;
+    margin-bottom: 20px;
+    border-left: 4px solid #ffb347;
+}
+
+.mem-intro-icon { font-size: 24px; }
+.mem-intro-text { font-size: 13px; color: rgba(255,255,255,0.7); }
+.mem-intro-text strong { color: #ffb347; }
+
+.memory-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.memory-item {
+    background: rgba(0,0,0,0.3);
+    border: 1px solid rgba(138, 109, 59, 0.2);
+    border-radius: 10px;
+    padding: 15px;
+    position: relative;
+}
+
+.memory-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.memory-item-type {
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-weight: 600;
+}
+
+.mem-type-short { background: rgba(255, 193, 7, 0.2); color: #ffc107; }
+.mem-type-long { background: rgba(76, 175, 80, 0.2); color: #4CAF50; }
+.mem-type-core { background: rgba(138, 43, 226, 0.2); color: #9c27b0; }
+
+.memory-item-time {
+    font-size: 12px;
+    color: rgba(255,255,255,0.4);
+}
+
+.memory-item-content {
+    font-size: 14px;
+    line-height: 1.6;
+    color: rgba(255,255,255,0.9);
+    margin-bottom: 10px;
+}
+
+.memory-item-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.memory-item-btn {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.memory-item-btn.edit {
+    background: rgba(138, 109, 59, 0.3);
+    color: #ffb347;
+}
+
+.memory-item-btn.delete {
+    background: rgba(255, 99, 132, 0.2);
+    color: #ff6b6b;
+}
+
+.memory-item-btn.import {
+    background: rgba(76, 175, 80, 0.2);
+    color: #4CAF50;
+}
+
+/* ==================== 记忆合并/导入弹窗 ==================== */
+#memory-merge-modal, #memory-import-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.8);
+    z-index: 30;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.memory-merge-content, .memory-import-content {
+    background: rgba(20, 20, 35, 0.98);
+    border: 1px solid rgba(138, 109, 59, 0.4);
+    border-radius: 16px;
+    padding: 30px;
+    max-width: 500px;
+    width: 90%;
+}
+
+.memory-merge-content h4, .memory-import-content h4 {
+    color: #ffb347;
+    margin-bottom: 15px;
+}
+
+.memory-merge-preview {
+    background: rgba(0,0,0,0.3);
+    padding: 15px;
+    border-radius: 8px;
+    margin: 15px 0;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.memory-merge-actions, .memory-import-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.memory-import-options {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 20px 0;
+}
+
+/* ==================== 菜单徽章 ==================== */
+.menu-badge {
+    background: #ff6b6b;
+    color: #fff;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 12px;
+    margin-left: 8px;
+}
+
+/* ==================== 游戏菜单 ==================== */
+#game-menu {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.9);
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    opacity: 0;
+    pointer-events: none;
+}
+
+#game-menu.show {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.menu-btn {
+    background: rgba(255,255,255,0.1);
+    color: #fff;
+    border: 1px solid #555;
+    padding: 20px 40px;
+    margin: 10px 0;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-width: 200px;
+    text-align: center;
+    font-size: 16px;
+}
+
+.menu-btn:hover {
+    background: rgba(255,179,71,0.3);
+    border-color: #ffb347;
+    transform: translateY(-2px);
+}
+
+/* ==================== 加载屏幕 ==================== */
+#loading-screen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #000;
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.5s ease;
+}
+
+#loading-text {
+    color: #fff;
+    font-size: 18px;
+    margin-top: 20px;
+}
+
+#loading-bar {
+    width: 300px;
+    height: 20px;
+    background: #333;
+    border-radius: 10px;
+    overflow: hidden;
+    margin-top: 20px;
+}
+
+#loading-progress {
+    width: 0%;
+    height: 100%;
+    background: linear-gradient(90deg, #ffb347, #ff6b6b);
+    transition: width 0.3s ease;
+}
+
+/* ==================== 游戏列表面板 ==================== */
+#game-list-container {
+    max-height: 300px;
+    overflow-y: auto;
+    margin-top: 15px;
+}
+
+.game-list-item {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 15px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s;
+    margin-bottom: 10px;
+}
+
+.game-list-item:hover {
+    background: rgba(138, 109, 59, 0.2);
+}
+
+.game-list-item.current {
+    background: rgba(138, 109, 59, 0.3);
+    border-color: #8a6d3b;
+}
+
+.game-list-item img {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 8px;
+}
+
+.game-list-item-info {
+    flex: 1;
+}
+
+.game-list-item-title {
+    color: #fff;
+    font-size: 16px;
+    font-weight: bold;
+    margin-bottom: 4px;
+}
+
+.game-list-item-desc {
+    color: #888;
+    font-size: 13px;
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.game-list-item-badge {
+    color: #8a6d3b;
+    font-size: 12px;
+    padding: 4px 8px;
+    background: rgba(138, 109, 59, 0.2);
+    border-radius: 4px;
+}
+
+/* ==================== 回溯模式UI ==================== */
+.backtrack-indicator {
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(138, 109, 59, 0.8);
+    color: #fff;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 14px;
+    z-index: 4;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 0.8; }
+    50% { opacity: 1; }
+}
+
+/* ==================== 响应式设计 ==================== */
+@media (max-width: 768px) {
+    #dialogue-box {
+        margin: 0 10px 10px;
+        padding: 15px;
+    }
+    
+    #character-name {
+        font-size: 16px;
+    }
+    
+    #dialogue-text {
+        font-size: 14px;
+        min-height: 60px;
+    }
+    
+    #chat-input-area {
+        margin: 0 10px 10px;
+    }
+    
+    #user-settings-panel {
+        width: calc(100% - 40px);
+        right: 20px;
+        left: 20px;
+    }
+    
+    #memory-panel,
+    #dialogue-log,
+    #ai-log {
+        width: calc(100% - 40px);
+        min-width: auto;
+    }
+    
+    .character.left { left: 5%; }
+    .character.right { left: 65%; }
+    
+    #game-controls {
+        top: 10px;
+        right: 10px;
+        gap: 5px;
+    }
+    
+    .control-btn {
+        width: 36px;
+        height: 36px;
+    }
+}
+
+@media (max-width: 480px) {
+    .character {
+        height: 70%;
+        bottom: 15%;
+    }
+    
+    .character-image {
+        height: 100%;
+    }
+    
+    #character-settings {
+        min-width: auto;
+        width: calc(100% - 40px);
+    }
+}
+
+/* ==================== 打印样式 ==================== */
+@media print {
+    #game-controls,
+    #chat-input-area,
+    #loading-screen {
+        display: none !important;
+    }
+    
+    #dialogue-layer {
+        position: relative;
+    }
+}

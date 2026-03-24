@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>星遇小镇 - GalGame框架</title>
+    <style>
+        /* 全局样式重置 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Microsoft YaHei", "PingFang SC", "Hiragino Sans GB", "思源黑体", sans-serif;
+        }
+
+        body {
+            /* GalGame经典深色背景，添加渐变效果 */
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            color: #f5f5f5;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* 星星特效 */
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                radial-gradient(2px 2px at 20px 30px, #ffffff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 40px 70px, #ffffff, rgba(0,0,0,0)),
+                radial-gradient(1px 1px at 90px 40px, #ffffff, rgba(0,0,0,0)),
+                radial-gradient(1px 1px at 130px 80px, #ffffff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 160px 120px, #ffffff, rgba(0,0,0,0));
+            background-repeat: repeat;
+            background-size: 200px 200px;
+            animation: twinkle 4s linear infinite;
+            opacity: 0.3;
+            z-index: 0;
+        }
+
+        @keyframes twinkle {
+            0% {
+                background-position: 0 0;
+            }
+            100% {
+                background-position: 200px 200px;
+            }
+        }
+
+        /* 顶部游戏标题栏 */
+        .game-header {
+            width: 100%;
+            padding: 15px 30px;
+            background: rgba(26, 26, 46, 0.95);
+            border-bottom: 2px solid #ff7676;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 10;
+            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .game-title {
+            color: #ff7676;
+            font-size: 24px;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+
+        .game-subtitle {
+            color: #a8d8ea;
+            font-size: 14px;
+        }
+
+        /* 核心游戏区（立绘区，占满中间高度） */
+        .game-main {
+            flex: 1;
+            position: relative;
+            padding: 20px;
+            overflow: hidden;
+            z-index: 1;
+        }
+
+        /* 立绘区（GalGame核心，立绘在背景之上） */
+        .character-area {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            position: relative;
+            z-index: 2;
+        }
+
+        /* 立绘容器（支持单角色/多角色） */
+        .char-container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: flex-end;
+            gap: 30px;
+            justify-content: center;
+        }
+
+        /* 单角色立绘样式（适配二次元立绘比例） */
+        .character-sprite {
+            height: 100%;
+            max-height: 600px;
+            width: auto;
+            object-fit: contain;
+            position: relative;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.5s ease-out;
+            z-index: 3;
+        }
+
+        /* 立绘显示状态（淡入动画） */
+        .character-sprite.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* 底部对话框（GalGame经典位置） */
+        .dialogue-area {
+            width: 100%;
+            padding: 30px;
+            background: rgba(26, 26, 46, 0.95);
+            border-top: 2px solid #ff7676;
+            z-index: 10;
+            box-shadow: 0 -2px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        /* 对话框内容 */
+        .dialogue-content {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        /* 角色名 */
+        .char-name {
+            color: #ff7676;
+            font-weight: bold;
+            font-size: 18px;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        /* 对话文本 */
+        .dialogue-text {
+            color: #f0e68c;
+            font-size: 16px;
+            line-height: 1.6;
+            margin-bottom: 20px;
+            min-height: 80px;
+        }
+
+        /* 选项区域 */
+        .options-area {
+            margin-top: 20px;
+        }
+
+        /* 选项按钮（GalGame经典样式） */
+        .option-btn {
+            display: block;
+            width: 100%;
+            max-width: 400px;
+            padding: 12px 20px;
+            margin: 0 0 10px 0;
+            background: rgba(74, 78, 105, 0.7);
+            border: 2px solid #ff7676;
+            border-radius: 8px;
+            color: #f5f5f5;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: left;
+        }
+
+        .option-btn:hover {
+            background: #ff7676;
+            color: #1a1a2e;
+            transform: translateY(-3px);
+            box-shadow: 0 4px 10px rgba(255, 118, 118, 0.4);
+        }
+
+        .option-btn:active {
+            transform: translateY(0);
+        }
+
+        /* 隐藏类 */
+        .hidden {
+            display: none !important;
+        }
+
+        /* 响应式适配 */
+        @media (max-width: 768px) {
+            .game-header {
+                padding: 10px 20px;
+            }
+            .game-title {
+                font-size: 20px;
+            }
+            .game-main {
+                padding: 10px;
+            }
+            .character-sprite {
+                max-height: 400px;
+            }
+            .dialogue-area {
+                padding: 20px;
+            }
+            .dialogue-text {
+                font-size: 15px;
+            }
+            .option-btn {
+                max-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 顶部游戏标题栏 -->
+    <div class="game-header">
+        <div>
+            <div class="game-title">星遇小镇 ✨</div>
+            <div class="game-subtitle">星空下的邂逅 | GalGame框架</div>
+        </div>
+    </div>
+
+    <!-- 核心游戏区（立绘区） -->
+    <div class="game-main">
+        <div class="character-area">
+            <div class="char-container">
+                <!-- 主角小星 - 多状态立绘 -->
+                <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=anime%20girl%20with%20double%20ponytails%20blue%20eyes%20white%20dress%20normal%20expression%20anime%20style&image_size=portrait_4_3" alt="小星-正常" class="character-sprite active" id="char-xiaoxing-normal">
+                <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=anime%20girl%20with%20double%20ponytails%20blue%20eyes%20white%20dress%20happy%20smiling%20anime%20style&image_size=portrait_4_3" alt="小星-开心" class="character-sprite hidden" id="char-xiaoxing-happy">
+                <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=anime%20girl%20with%20double%20ponytails%20blue%20eyes%20white%20dress%20shy%20blushing%20anime%20style&image_size=portrait_4_3" alt="小星-害羞" class="character-sprite hidden" id="char-xiaoxing-shy">
+            </div>
+        </div>
+    </div>
+
+    <!-- 底部对话框 -->
+    <div class="dialogue-area">
+        <div class="dialogue-content">
+            <div class="char-name" id="charName">【小星】</div>
+            <div class="dialogue-text" id="dialogueText">你好呀～欢迎来到星遇小镇，我是这里的向导小星✨，看你一个人走着，是第一次来我们小镇吗？</div>
+            <div class="options-area" id="optionsArea">
+                <button class="option-btn" onclick="selectOption(1)">是啊，第一次来，特意来看小镇的星空</button>
+                <button class="option-btn" onclick="selectOption(2)">第一次来，走累了，想找个地方歇歇脚</button>
+                <button class="option-btn" onclick="selectOption(3)">第一次来不认识路，想跟着你随便逛逛</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ===================== 全局配置 =====================
+        const CONFIG = {
+            typeSpeed: 30,        // 打字机速度（毫秒/字）
+            defaultChar: 'xiaoxing'// 默认角色立绘前缀
+        };
+
+        // ===================== 全局变量 =====================
+        let currentDialogue = 0;
+        let isTyping = false;
+
+        // ===================== 剧情数据 =====================
+        // 这里可以填入AI生成的内容
+        const DIALOGUES = [
+            {
+                charName: "【小星】",
+                text: "你好呀～欢迎来到星遇小镇，我是这里的向导小星✨，看你一个人走着，是第一次来我们小镇吗？",
+                charState: "normal",
+                options: [
+                    "是啊，第一次来，特意来看小镇的星空",
+                    "第一次来，走累了，想找个地方歇歇脚",
+                    "第一次来不认识路，想跟着你随便逛逛"
+                ]
+            },
+            {
+                charName: "【小星】",
+                text: "哇，你也喜欢星空吗？太巧啦！我可是小镇的观星小达人～山顶的观星台是最佳位置，晚上能清楚看到银河呢，超浪漫的！",
+                charState: "happy",
+                options: [
+                    "那现在就去山顶观星台吧，迫不及待了",
+                    "先找家店买瓶饮料，爬山会渴",
+                    "能先跟我讲讲小镇的星空传说吗？"
+                ]
+            },
+            {
+                charName: "【小星】",
+                text: "星遇小镇的星空传说啊...据说在很久很久以前，这里有一对相爱的恋人，他们因为误会而分开。女孩每天晚上都会在山顶哭泣，她的眼泪变成了星星，男孩看到后后悔不已，最终他们在星空下重逢了。所以现在的星空特别美丽，是他们爱情的见证哦～",
+                charState: "shy",
+                options: [
+                    "这个传说真感人",
+                    "希望我也能遇到这样的爱情",
+                    "我们赶紧去山顶吧"
+                ]
+            }
+        ];
+
+        // ===================== 核心功能 =====================
+        /**
+         * 打字机效果
+         * @param {string} text - 要显示的文本
+         * @param {HTMLElement} target - 目标元素
+         * @param {number} speed - 打字速度
+         */
+        function typeWriter(text, target, speed) {
+            return new Promise((resolve) => {
+                let i = 0;
+                target.innerHTML = '';
+                isTyping = true;
+
+                function type() {
+                    if (i < text.length) {
+                        target.innerHTML += text.charAt(i);
+                        i++;
+                        setTimeout(type, speed);
+                    } else {
+                        isTyping = false;
+                        resolve();
+                    }
+                }
+                type();
+            });
+        }
+
+        /**
+         * 切换角色立绘状态
+         * @param {string} char - 角色前缀
+         * @param {string} state - 立绘状态
+         */
+        function switchCharSprite(char, state) {
+            document.querySelectorAll(`[id^="char-${char}-"]`).forEach(sprite => {
+                sprite.classList.remove('active');
+                sprite.classList.add('hidden');
+            });
+            const targetSprite = document.getElementById(`char-${char}-${state}`);
+            if (targetSprite) {
+                targetSprite.classList.remove('hidden');
+                targetSprite.classList.add('active');
+            }
+        }
+
+        /**
+         * 选择选项
+         * @param {number} optionIndex - 选项索引
+         */
+        async function selectOption(optionIndex) {
+            if (isTyping) return;
+
+            // 显示玩家选择的内容
+            const playerDialogue = {
+                charName: "【你】",
+                text: DIALOGUES[currentDialogue].options[optionIndex - 1],
+                charState: "normal",
+                options: []
+            };
+
+            // 更新对话框
+            document.getElementById('charName').textContent = playerDialogue.charName;
+            await typeWriter(playerDialogue.text, document.getElementById('dialogueText'), CONFIG.typeSpeed);
+
+            // 清空选项
+            document.getElementById('optionsArea').innerHTML = '';
+
+            // 延迟后显示下一段对话
+            setTimeout(async () => {
+                currentDialogue++;
+                if (currentDialogue < DIALOGUES.length) {
+                    const nextDialogue = DIALOGUES[currentDialogue];
+                    document.getElementById('charName').textContent = nextDialogue.charName;
+                    switchCharSprite(CONFIG.defaultChar, nextDialogue.charState);
+                    await typeWriter(nextDialogue.text, document.getElementById('dialogueText'), CONFIG.typeSpeed);
+                    
+                    // 显示选项
+                    const optionsArea = document.getElementById('optionsArea');
+                    optionsArea.innerHTML = '';
+                    nextDialogue.options.forEach((option, index) => {
+                        const btn = document.createElement('button');
+                        btn.className = 'option-btn';
+                        btn.textContent = option;
+                        btn.onclick = () => selectOption(index + 1);
+                        optionsArea.appendChild(btn);
+                    });
+                }
+            }, 1000);
+        }
+
+        /**
+         * 填入AI生成的内容
+         * @param {Object} dialogue - 对话对象
+         */
+        function addAIDialogue(dialogue) {
+            DIALOGUES.push(dialogue);
+        }
+
+        // ===================== 页面初始化 =====================
+        window.onload = async () => {
+            // 初始化显示第一段对话
+            const firstDialogue = DIALOGUES[0];
+            document.getElementById('charName').textContent = firstDialogue.charName;
+            switchCharSprite(CONFIG.defaultChar, firstDialogue.charState);
+            await typeWriter(firstDialogue.text, document.getElementById('dialogueText'), CONFIG.typeSpeed);
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,1606 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用户设置 - 大荒书店</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #8a6d3b;
+            --primary-dark: #6d5630;
+            --primary-light: #b89b6c;
+            --bg-dark: #1a1a2e;
+            --bg-card: rgba(30, 30, 46, 0.95);
+            --text-primary: #f5f2eb;
+            --text-secondary: rgba(245, 242, 235, 0.7);
+            --border: rgba(138, 109, 59, 0.3);
+            --success: #28a745;
+            --warning: #ffc107;
+            --danger: #dc3545;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, var(--bg-dark) 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            color: var(--text-primary);
+        }
+
+        /* 导航栏 */
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 70px;
+            background: rgba(26, 26, 46, 0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 40px;
+            z-index: 100;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            background: linear-gradient(135deg, var(--primary-light), var(--primary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            cursor: pointer;
+        }
+
+        .nav-menu {
+            display: flex;
+            gap: 30px;
+            align-items: center;
+        }
+
+        .nav-item {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 14px;
+            transition: color 0.3s;
+            cursor: pointer;
+        }
+
+        .nav-item:hover {
+            color: var(--text-primary);
+        }
+
+        .nav-item.active {
+            color: var(--primary);
+            font-weight: 500;
+        }
+
+        /* 主容器 */
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 100px 20px 40px;
+        }
+
+        /* 页面标题 */
+        .page-header {
+            margin-bottom: 40px;
+        }
+
+        .page-title {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .page-subtitle {
+            color: var(--text-secondary);
+        }
+
+        /* 设置标签页 */
+        .settings-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 30px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 10px;
+        }
+
+        .tab-btn {
+            padding: 12px 24px;
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 14px;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+
+        .tab-btn:hover {
+            color: var(--text-primary);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .tab-btn.active {
+            color: var(--primary);
+            background: rgba(138, 109, 59, 0.2);
+        }
+
+        .tab-panel {
+            display: none;
+        }
+
+        .tab-panel.active {
+            display: block;
+        }
+
+        /* 卡片 */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 24px;
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .card-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .card-icon.blue { background: rgba(102, 126, 234, 0.2); }
+        .card-icon.green { background: rgba(40, 167, 69, 0.2); }
+        .card-icon.purple { background: rgba(147, 51, 234, 0.2); }
+        .card-icon.orange { background: rgba(234, 147, 51, 0.2); }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        /* 表单 */
+        .form-group {
+            margin-bottom: 24px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .form-label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .form-input, .form-textarea, .form-select {
+            width: 100%;
+            padding: 12px 16px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 14px;
+            font-family: inherit;
+            transition: border-color 0.3s;
+        }
+
+        .form-input:focus, .form-textarea:focus, .form-select:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .form-textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .form-hint {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 6px;
+        }
+
+        /* 头像上传 */
+        .avatar-section {
+            display: flex;
+            align-items: center;
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+
+        .avatar-preview {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.3);
+            border: 2px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            overflow: hidden;
+        }
+
+        .avatar-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .avatar-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        /* 按钮 */
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-light);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+        }
+
+        .btn-sm {
+            padding: 8px 16px;
+            font-size: 13px;
+        }
+
+        /* 开关 */
+        .switch-group {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .switch-group:last-child {
+            border-bottom: none;
+        }
+
+        .switch-info h4 {
+            font-size: 15px;
+            margin-bottom: 4px;
+        }
+
+        .switch-info p {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .switch {
+            position: relative;
+            width: 48px;
+            height: 26px;
+            cursor: pointer;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 26px;
+            transition: 0.3s;
+        }
+
+        .slider:before {
+            content: "";
+            position: absolute;
+            height: 20px;
+            width: 20px;
+            left: 3px;
+            bottom: 3px;
+            background: white;
+            border-radius: 50%;
+            transition: 0.3s;
+        }
+
+        input:checked + .slider {
+            background: var(--primary);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(22px);
+        }
+
+        /* 危险区域 */
+        .danger-zone {
+            border: 1px solid var(--danger);
+            background: rgba(220, 53, 69, 0.05);
+        }
+
+        .danger-zone .card-header {
+            border-color: rgba(220, 53, 69, 0.3);
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: var(--bg-card);
+            color: var(--text-primary);
+            padding: 16px 32px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            opacity: 0;
+            transition: all 0.3s;
+            z-index: 2000;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        .toast.success { border-color: var(--success); }
+        .toast.error { border-color: var(--danger); }
+
+        /* 页面底部操作栏 */
+        .actions-footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--bg-card);
+            border-top: 1px solid var(--border);
+            padding: 20px 40px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            z-index: 100;
+        }
+
+        .container {
+            padding-bottom: 100px;
+        }
+
+        /* AI配置样式 */
+        .range-slider {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .form-range {
+            flex: 1;
+            -webkit-appearance: none;
+            appearance: none;
+            height: 6px;
+            background: rgba(138, 109, 59, 0.3);
+            border-radius: 3px;
+            outline: none;
+        }
+
+        .form-range::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            background: var(--primary);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .form-range::-webkit-slider-thumb:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 10px var(--primary);
+        }
+
+        .range-value {
+            min-width: 50px;
+            text-align: center;
+            font-weight: bold;
+            color: var(--primary-light);
+            font-size: 16px;
+        }
+
+        .form-hint {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 6px;
+            opacity: 0.8;
+        }
+
+        /* 记忆管理样式 */
+        .memory-stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+
+        .stat-number {
+            font-size: 32px;
+            font-weight: bold;
+            color: var(--primary-light);
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .memory-controls {
+            margin-bottom: 20px;
+        }
+
+        .search-box {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .search-box .form-input {
+            flex: 1;
+        }
+
+        .filter-tabs {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 8px 16px;
+            border: 1px solid var(--border);
+            background: rgba(0, 0, 0, 0.2);
+            color: var(--text-secondary);
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+
+        .filter-btn:hover {
+            border-color: var(--primary);
+            color: var(--text-primary);
+        }
+
+        .filter-btn.active {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: #fff;
+        }
+
+        .memory-list {
+            min-height: 200px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .memory-item {
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            margin-bottom: 10px;
+            border: 1px solid var(--border);
+            transition: all 0.2s;
+        }
+
+        .memory-item:hover {
+            border-color: var(--primary);
+            background: rgba(138, 109, 59, 0.1);
+        }
+
+        .memory-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .memory-type {
+            font-size: 11px;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-weight: 600;
+        }
+
+        .memory-type.short { background: rgba(255, 193, 7, 0.2); color: #ffc107; }
+        .memory-type.long { background: rgba(76, 175, 80, 0.2); color: #4CAF50; }
+        .memory-type.core { background: rgba(138, 43, 226, 0.2); color: #9c27b0; }
+
+        .memory-time {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .memory-content {
+            font-size: 14px;
+            line-height: 1.6;
+            color: var(--text-primary);
+            margin-bottom: 10px;
+        }
+
+        .memory-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .memory-btn {
+            padding: 5px 12px;
+            border: none;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .memory-btn.edit {
+            background: rgba(138, 109, 59, 0.3);
+            color: var(--primary-light);
+        }
+
+        .memory-btn.delete {
+            background: rgba(255, 99, 132, 0.2);
+            color: #ff6b6b;
+        }
+
+        .memory-btn:hover {
+            opacity: 0.8;
+        }
+
+        .memory-empty {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-secondary);
+        }
+
+        .memory-empty p {
+            font-size: 16px;
+        }
+
+        .memory-pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border);
+        }
+
+        .page-info {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .danger-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .danger-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background: rgba(255, 99, 132, 0.05);
+            border-radius: 10px;
+            border: 1px solid rgba(255, 99, 132, 0.2);
+        }
+
+        .danger-info h4 {
+            color: #ff6b6b;
+            margin-bottom: 5px;
+        }
+
+        .danger-info p {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .btn-danger {
+            background: rgba(255, 99, 132, 0.2);
+            color: #ff6b6b;
+            border: 1px solid rgba(255, 99, 132, 0.4);
+        }
+
+        .btn-danger:hover {
+            background: rgba(255, 99, 132, 0.3);
+        }
+
+        @media (max-width: 768px) {
+            .memory-stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .danger-item {
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar">
+        <div class="logo" onclick="window.location.href='index.html'">📚 大荒书店</div>
+        <div class="nav-menu">
+            <a href="index.html" class="nav-item">书店</a>
+            <a href="user-character.html" class="nav-item">我的角色</a>
+            <a href="world-guide.html" class="nav-item">世界</a>
+            <span class="nav-item active">设置</span>
+        </div>
+    </nav>
+
+    <!-- 主内容 -->
+    <div class="container">
+        <div class="page-header">
+            <h1 class="page-title">⚙️ 用户设置</h1>
+            <p class="page-subtitle">管理你的账号和偏好设置</p>
+        </div>
+
+        <!-- 标签页 -->
+        <div class="settings-tabs">
+            <button class="tab-btn active" data-tab="profile">👤 个人资料</button>
+            <button class="tab-btn" data-tab="password">🔒 账号安全</button>
+            <button class="tab-btn" data-tab="preferences">🎮 偏好设置</button>
+            <button class="tab-btn" data-tab="ai-config">🤖 AI配置</button>
+            <button class="tab-btn" data-tab="memory">💾 记忆管理</button>
+        </div>
+
+        <!-- 个人资料 -->
+        <div class="tab-panel active" id="tab-profile">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon blue">📝</div>
+                    <div class="card-title">基本信息</div>
+                </div>
+
+                <div class="avatar-section">
+                    <div class="avatar-preview" id="avatarPreview">
+                        <span id="avatarEmoji">👤</span>
+                    </div>
+                    <div class="avatar-actions">
+                        <input type="file" id="avatarInput" accept="image/*" style="display: none;">
+                        <button class="btn btn-secondary btn-sm" onclick="document.getElementById('avatarInput').click()">
+                            更换头像
+                        </button>
+                        <button class="btn btn-secondary btn-sm" onclick="useEmojiAvatar()">
+                            使用 Emoji
+                        </button>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">用户名</label>
+                        <input type="text" class="form-input" id="username" readonly>
+                        <div class="form-hint">用户名不可修改</div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">昵称</label>
+                        <input type="text" class="form-input" id="nickname" placeholder="显示的名称">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">个人简介</label>
+                    <textarea class="form-textarea" id="bio" rows="4" placeholder="介绍一下你自己..."></textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- 账号安全 -->
+        <div class="tab-panel" id="tab-password">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon purple">🔐</div>
+                    <div class="card-title">修改密码</div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">当前密码</label>
+                    <input type="password" class="form-input" id="currentPassword" placeholder="输入当前密码">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">新密码</label>
+                    <input type="password" class="form-input" id="newPassword" placeholder="至少6个字符">
+                    <div class="form-hint">建议使用字母、数字和符号的组合</div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">确认新密码</label>
+                    <input type="password" class="form-input" id="confirmPassword" placeholder="再次输入新密码">
+                </div>
+
+                <button class="btn btn-primary" onclick="changePassword()">
+                    修改密码
+                </button>
+            </div>
+
+            <div class="card danger-zone">
+                <div class="card-header">
+                    <div class="card-icon" style="background: rgba(220, 53, 69, 0.2);">⚠️</div>
+                    <div class="card-title">危险区域</div>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <h4 style="margin-bottom: 8px;">退出登录</h4>
+                        <p style="color: var(--text-secondary); font-size: 14px;">从当前设备退出登录</p>
+                    </div>
+                    <button class="btn btn-danger btn-sm" onclick="logout()">
+                        退出登录
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 偏好设置 -->
+        <div class="tab-panel" id="tab-preferences">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon green">🎮</div>
+                    <div class="card-title">游戏偏好</div>
+                </div>
+
+                <div class="switch-group">
+                    <div class="switch-info">
+                        <h4>自动保存对话</h4>
+                        <p>自动保存游戏对话历史</p>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="autoSave" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <div class="switch-group">
+                    <div class="switch-info">
+                        <h4>显示角色立绘</h4>
+                        <p>在对话时显示角色头像</p>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="showAvatar" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <div class="switch-group">
+                    <div class="switch-info">
+                        <h4>打字机效果</h4>
+                        <p>文字逐字显示效果</p>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="typewriterEffect" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <div class="form-group" style="margin-top: 24px;">
+                    <label class="form-label">文字显示速度</label>
+                    <select class="form-select" id="textSpeed">
+                        <option value="fast">快速</option>
+                        <option value="normal" selected>正常</option>
+                        <option value="slow">慢速</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon orange">🤖</div>
+                    <div class="card-title">AI 偏好</div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">AI 回复长度</label>
+                    <select class="form-select" id="responseLength">
+                        <option value="short">简短（100-200字）</option>
+                        <option value="medium" selected>适中（200-400字）</option>
+                        <option value="long">详细（400-800字）</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">创意程度</label>
+                    <select class="form-select" id="creativity">
+                        <option value="conservative">保守 - 严格遵循设定</option>
+                        <option value="balanced" selected>平衡 - 适当发挥</option>
+                        <option value="creative">创意 - 自由发挥</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon" style="background: rgba(102, 126, 234, 0.2);">🎨</div>
+                    <div class="card-title">界面设置</div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">主题</label>
+                    <select class="form-select" id="theme">
+                        <option value="dark" selected>深色（默认）</option>
+                        <option value="light">浅色</option>
+                        <option value="auto">跟随系统</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">对话框样式</label>
+                    <select class="form-select" id="dialogStyle">
+                        <option value="classic" selected>经典</option>
+                        <option value="modern">现代</option>
+                        <option value="minimal">极简</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI配置 -->
+        <div class="tab-panel" id="tab-ai-config">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon" style="background: rgba(138, 43, 226, 0.2);">🔐</div>
+                    <div class="card-title">AI API 配置</div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">API 密钥</label>
+                    <input type="password" class="form-input" id="aiApiKey" placeholder="输入你的 OpenAI/Claude API 密钥">
+                    <p class="form-hint">你的API密钥将安全地存储在本地，不会上传到服务器</p>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">API 地址</label>
+                    <input type="text" class="form-input" id="aiApiUrl" placeholder="https://api.openai.com/v1/chat/completions">
+                    <p class="form-hint">可选，使用自定义API代理时填写</p>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">模型选择</label>
+                    <select class="form-select" id="aiModel">
+                        <option value="gpt-4o">GPT-4o (推荐)</option>
+                        <option value="gpt-4o-mini">GPT-4o Mini (经济)</option>
+                        <option value="gpt-4-turbo">GPT-4 Turbo</option>
+                        <option value="claude-3-opus">Claude 3 Opus</option>
+                        <option value="claude-3-sonnet">Claude 3 Sonnet</option>
+                        <option value="custom">自定义模型</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">自定义模型名称</label>
+                    <input type="text" class="form-input" id="customModelName" placeholder="例如：gpt-3.5-turbo">
+                    <p class="form-hint">当选择"自定义模型"时填写</p>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon" style="background: rgba(255, 107, 107, 0.2);">📊</div>
+                    <div class="card-title">对话记忆控制</div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">记忆深度（对话轮数回溯）</label>
+                    <div class="range-slider">
+                        <input type="range" class="form-range" id="memoryDepth" min="0" max="50" value="10" oninput="document.getElementById('memoryDepthValue').textContent = this.value">
+                        <span class="range-value" id="memoryDepthValue">10</span>
+                    </div>
+                    <p class="form-hint">AI会记住最近的N轮对话，数值越高AI越"记得"之前的事，但会消耗更多API费用</p>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">核心记忆保留</label>
+                    <div class="range-slider">
+                        <input type="range" class="form-range" id="coreMemoryDepth" min="1" max="20" value="5" oninput="document.getElementById('coreMemoryValue').textContent = this.value">
+                        <span class="range-value" id="coreMemoryValue">5</span>
+                    </div>
+                    <p class="form-hint">最重要的对话内容会被永久保留在核心记忆中</p>
+                </div>
+
+                <div class="switch-group" style="margin-top: 24px;">
+                    <div class="switch-info">
+                        <h4>智能总结记忆</h4>
+                        <p>当对话轮数超过限制时，自动生成摘要保存到长期记忆</p>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="autoSummarize" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon" style="background: rgba(76, 175, 80, 0.2);">⚙️</div>
+                    <div class="card-title">高级参数</div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Temperature (创造性)</label>
+                    <div class="range-slider">
+                        <input type="range" class="form-range" id="temperature" min="0" max="20" value="7" oninput="document.getElementById('tempValue').textContent = (this.value/10).toFixed(1)">
+                        <span class="range-value" id="tempValue">0.7</span>
+                    </div>
+                    <p class="form-hint">低值（0.1-0.5）更稳定一致，高值（0.8-2.0）更有创意</p>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Max Tokens (最大生成字符)</label>
+                    <div class="range-slider">
+                        <input type="range" class="form-range" id="maxTokens" min="500" max="8000" step="100" value="2000" oninput="document.getElementById('tokensValue').textContent = this.value">
+                        <span class="range-value" id="tokensValue">2000</span>
+                    </div>
+                    <p class="form-hint">限制AI每次回复的最大长度</p>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">重试次数</label>
+                    <select class="form-select" id="retryCount">
+                        <option value="1">1次</option>
+                        <option value="2" selected>2次</option>
+                        <option value="3">3次</option>
+                        <option value="5">5次</option>
+                    </select>
+                    <p class="form-hint">API请求失败时自动重试的次数</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 记忆管理 -->
+        <div class="tab-panel" id="tab-memory">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon" style="background: rgba(255, 193, 7, 0.2);">📖</div>
+                    <div class="card-title">记忆库概览</div>
+                </div>
+
+                <div class="memory-stats" id="memoryStats">
+                    <div class="stat-item">
+                        <div class="stat-number" id="shortMemCount">-</div>
+                        <div class="stat-label">短期记忆</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number" id="longMemCount">-</div>
+                        <div class="stat-label">长期记忆</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number" id="coreMemCount">-</div>
+                        <div class="stat-label">核心记忆</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number" id="totalMemSize">-</div>
+                        <div class="stat-label">总记忆量</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon" style="background: rgba(33, 150, 243, 0.2);">🔍</div>
+                    <div class="card-title">记忆搜索与管理</div>
+                </div>
+
+                <div class="memory-controls">
+                    <div class="search-box">
+                        <input type="text" class="form-input" id="memorySearch" placeholder="搜索记忆内容...">
+                        <button class="btn btn-secondary" onclick="searchMemory()">🔍 搜索</button>
+                    </div>
+
+                    <div class="filter-tabs">
+                        <button class="filter-btn active" data-type="all">全部</button>
+                        <button class="filter-btn" data-type="short">短期</button>
+                        <button class="filter-btn" data-type="long">长期</button>
+                        <button class="filter-btn" data-type="core">核心</button>
+                    </div>
+                </div>
+
+                <div class="memory-list" id="memoryList">
+                    <div class="memory-empty">
+                        <p>📚 加载中...</p>
+                    </div>
+                </div>
+
+                <div class="memory-pagination" id="memoryPagination" style="display: none;">
+                    <button class="btn btn-secondary" onclick="prevMemoryPage()">上一页</button>
+                    <span class="page-info" id="pageInfo">第 1 页</span>
+                    <button class="btn btn-secondary" onclick="nextMemoryPage()">下一页</button>
+                </div>
+            </div>
+
+            <div class="card" style="background: rgba(255, 99, 132, 0.1); border-color: rgba(255, 99, 132, 0.3);">
+                <div class="card-header">
+                    <div class="card-icon" style="background: rgba(255, 99, 132, 0.2);">⚠️</div>
+                    <div class="card-title">危险操作</div>
+                </div>
+
+                <div class="danger-actions">
+                    <div class="danger-item">
+                        <div class="danger-info">
+                            <h4>清理短期记忆</h4>
+                            <p>删除所有短期记忆，保留长期和核心记忆</p>
+                        </div>
+                        <button class="btn btn-danger" onclick="clearShortMemory()">清理</button>
+                    </div>
+
+                    <div class="danger-item">
+                        <div class="danger-info">
+                            <h4>导出全部记忆</h4>
+                            <p>将所有记忆导出为JSON文件保存</p>
+                        </div>
+                        <button class="btn btn-secondary" onclick="exportAllMemory()">导出</button>
+                    </div>
+
+                    <div class="danger-item">
+                        <div class="danger-info">
+                            <h4>清空所有记忆</h4>
+                            <p><strong>警告：</strong>此操作不可逆！角色将完全忘记你。</p>
+                        </div>
+                        <button class="btn btn-danger" onclick="clearAllMemory()">清空全部</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 底部操作栏 -->
+    <div class="actions-footer">
+        <button class="btn btn-secondary" onclick="resetSettings()">恢复默认</button>
+        <button class="btn btn-primary" onclick="saveSettings()">保存设置</button>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+        const API_BASE = 'http://localhost:3000/api';
+        let currentUser = null;
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            checkAuth();
+            setupTabs();
+            setupMemoryFilters();
+            loadUserSettings();
+        });
+
+        // 检查登录
+        function checkAuth() {
+            const token = localStorage.getItem('galgame_token');
+            const userStr = localStorage.getItem('galgame_user');
+            
+            if (!token || !userStr) {
+                window.location.href = 'login.html';
+                return;
+            }
+            
+            currentUser = JSON.parse(userStr);
+            document.getElementById('username').value = currentUser.username;
+            document.getElementById('nickname').value = currentUser.nickname || '';
+        }
+
+        // 设置标签页
+        function setupTabs() {
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const tab = btn.dataset.tab;
+                    
+                    // 切换按钮状态
+                    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    
+                    // 切换面板
+                    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+                    document.getElementById(`tab-${tab}`).classList.add('active');
+                    
+                    // 如果切换到记忆标签页，加载记忆数据
+                    if (tab === 'memory') {
+                        loadMemoryStats();
+                        loadMemoryList();
+                    }
+                });
+            });
+        }
+
+        // 加载用户设置
+        function loadUserSettings() {
+            // 从 localStorage 加载偏好设置
+            const prefs = JSON.parse(localStorage.getItem('user_preferences') || '{}');
+            
+            document.getElementById('autoSave').checked = prefs.autoSave !== false;
+            document.getElementById('showAvatar').checked = prefs.showAvatar !== false;
+            document.getElementById('typewriterEffect').checked = prefs.typewriterEffect !== false;
+            document.getElementById('textSpeed').value = prefs.textSpeed || 'normal';
+            document.getElementById('responseLength').value = prefs.responseLength || 'medium';
+            document.getElementById('creativity').value = prefs.creativity || 'balanced';
+            document.getElementById('theme').value = prefs.theme || 'dark';
+            document.getElementById('dialogStyle').value = prefs.dialogStyle || 'classic';
+            
+            // 加载个人简介
+            const bio = localStorage.getItem('user_bio') || '';
+            document.getElementById('bio').value = bio;
+            
+            // 加载AI配置
+            const aiConfig = JSON.parse(localStorage.getItem('user_ai_config') || '{}');
+            document.getElementById('aiApiKey').value = aiConfig.apiKey || '';
+            document.getElementById('aiApiUrl').value = aiConfig.apiUrl || '';
+            document.getElementById('aiModel').value = aiConfig.model || 'gpt-4o';
+            document.getElementById('customModelName').value = aiConfig.customModel || '';
+            document.getElementById('memoryDepth').value = aiConfig.memoryDepth || 10;
+            document.getElementById('memoryDepthValue').textContent = aiConfig.memoryDepth || 10;
+            document.getElementById('coreMemoryDepth').value = aiConfig.coreMemoryDepth || 5;
+            document.getElementById('coreMemoryValue').textContent = aiConfig.coreMemoryDepth || 5;
+            document.getElementById('temperature').value = Math.round((aiConfig.temperature || 0.7) * 10);
+            document.getElementById('tempValue').textContent = aiConfig.temperature || 0.7;
+            document.getElementById('maxTokens').value = aiConfig.maxTokens || 2000;
+            document.getElementById('tokensValue').textContent = aiConfig.maxTokens || 2000;
+            document.getElementById('retryCount').value = aiConfig.retryCount || 2;
+            document.getElementById('autoSummarize').checked = aiConfig.autoSummarize !== false;
+            
+            // 注意：记忆管理数据在切换到记忆标签页时才加载，避免初始化错误
+        }
+
+        // 保存设置
+        async function saveSettings() {
+            // 保存个人资料
+            const nickname = document.getElementById('nickname').value.trim();
+            const bio = document.getElementById('bio').value.trim();
+            
+            localStorage.setItem('user_bio', bio);
+            
+            // 更新当前用户信息
+            if (currentUser) {
+                currentUser.nickname = nickname;
+                localStorage.setItem('galgame_user', JSON.stringify(currentUser));
+            }
+            
+            // 保存偏好设置
+            const prefs = {
+                autoSave: document.getElementById('autoSave').checked,
+                showAvatar: document.getElementById('showAvatar').checked,
+                typewriterEffect: document.getElementById('typewriterEffect').checked,
+                textSpeed: document.getElementById('textSpeed').value,
+                responseLength: document.getElementById('responseLength').value,
+                creativity: document.getElementById('creativity').value,
+                theme: document.getElementById('theme').value,
+                dialogStyle: document.getElementById('dialogStyle').value
+            };
+            
+            localStorage.setItem('user_preferences', JSON.stringify(prefs));
+            
+            // 保存AI配置
+            saveAIConfig();
+            
+            showToast('设置已保存', 'success');
+        }
+
+        // 修改密码
+        async function changePassword() {
+            const current = document.getElementById('currentPassword').value;
+            const newPass = document.getElementById('newPassword').value;
+            const confirm = document.getElementById('confirmPassword').value;
+            
+            if (!current || !newPass || !confirm) {
+                showToast('请填写所有密码字段', 'error');
+                return;
+            }
+            
+            if (newPass !== confirm) {
+                showToast('两次输入的新密码不一致', 'error');
+                return;
+            }
+            
+            if (newPass.length < 6) {
+                showToast('新密码至少6个字符', 'error');
+                return;
+            }
+            
+            showToast('密码修改功能开发中...', 'success');
+        }
+
+        // AI配置管理
+        function getAIConfig() {
+            return JSON.parse(localStorage.getItem('user_ai_config') || '{}');
+        }
+
+        function saveAIConfig() {
+            const apiKey = document.getElementById('aiApiKey').value.trim();
+            const apiUrl = document.getElementById('aiApiUrl').value.trim();
+            const model = document.getElementById('aiModel').value;
+            const customModel = document.getElementById('customModelName').value.trim();
+            const memoryDepth = parseInt(document.getElementById('memoryDepth').value);
+            const coreMemoryDepth = parseInt(document.getElementById('coreMemoryDepth').value);
+            const temperature = parseInt(document.getElementById('temperature').value) / 10;
+            const maxTokens = parseInt(document.getElementById('maxTokens').value);
+            const retryCount = parseInt(document.getElementById('retryCount').value);
+            const autoSummarize = document.getElementById('autoSummarize').checked;
+            
+            const config = {
+                apiKey,
+                apiUrl,
+                model,
+                customModel,
+                memoryDepth,
+                coreMemoryDepth,
+                temperature,
+                maxTokens,
+                retryCount,
+                autoSummarize,
+                updatedAt: new Date().toISOString()
+            };
+            
+            localStorage.setItem('user_ai_config', JSON.stringify(config));
+            return config;
+        }
+
+        // 记忆管理
+        let currentMemoryPage = 1;
+        let currentMemoryFilter = 'all';
+        let memorySearchQuery = '';
+        const memoriesPerPage = 10;
+
+        async function loadMemoryStats() {
+            try {
+                // 从localStorage获取记忆数据
+                const memories = JSON.parse(localStorage.getItem('game_memories') || '[]');
+                
+                const shortCount = memories.filter(m => m.type === 'short').length;
+                const longCount = memories.filter(m => m.type === 'long').length;
+                const coreCount = memories.filter(m => m.type === 'core').length;
+                const totalSize = JSON.stringify(memories).length;
+                
+                document.getElementById('shortMemCount').textContent = shortCount;
+                document.getElementById('longMemCount').textContent = longCount;
+                document.getElementById('coreMemCount').textContent = coreCount;
+                document.getElementById('totalMemSize').textContent = formatBytes(totalSize);
+            } catch (error) {
+                console.error('加载记忆统计失败:', error);
+            }
+        }
+
+        function formatBytes(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+        }
+
+        async function loadMemoryList() {
+            const container = document.getElementById('memoryList');
+            const pagination = document.getElementById('memoryPagination');
+            
+            try {
+                // 从localStorage获取记忆
+                let memories = JSON.parse(localStorage.getItem('game_memories') || '[]');
+                
+                // 应用筛选
+                if (currentMemoryFilter !== 'all') {
+                    memories = memories.filter(m => m.type === currentMemoryFilter);
+                }
+                
+                // 应用搜索
+                if (memorySearchQuery) {
+                    const query = memorySearchQuery.toLowerCase();
+                    memories = memories.filter(m => 
+                        (m.content && m.content.toLowerCase().includes(query)) ||
+                        (m.title && m.title.toLowerCase().includes(query))
+                    );
+                }
+                
+                // 排序（按时间倒序）
+                memories.sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
+                
+                // 分页
+                const totalPages = Math.ceil(memories.length / memoriesPerPage);
+                const start = (currentMemoryPage - 1) * memoriesPerPage;
+                const pageMemories = memories.slice(start, start + memoriesPerPage);
+                
+                // 显示记忆列表
+                if (pageMemories.length === 0) {
+                    container.innerHTML = `
+                        <div class="memory-empty">
+                            <p>📚 暂无记忆数据</p>
+                            <p style="font-size: 13px; margin-top: 10px;">与角色对话后，记忆会自动生成</p>
+                        </div>
+                    `;
+                    pagination.style.display = 'none';
+                    return;
+                }
+                
+                container.innerHTML = pageMemories.map(mem => `
+                    <div class="memory-item" data-id="${mem.id}">
+                        <div class="memory-header">
+                            <span class="memory-type ${mem.type}">${getMemoryTypeLabel(mem.type)}</span>
+                            <span class="memory-time">${formatTime(mem.timestamp)}</span>
+                        </div>
+                        <div class="memory-content">${escapeHtml(mem.content || mem.title || '无内容')}</div>
+                        <div class="memory-actions">
+                            <button class="memory-btn edit" onclick="editMemory('${mem.id}')">编辑</button>
+                            <button class="memory-btn delete" onclick="deleteMemory('${mem.id}')">删除</button>
+                        </div>
+                    </div>
+                `).join('');
+                
+                // 更新分页
+                if (totalPages > 1) {
+                    pagination.style.display = 'flex';
+                    document.getElementById('pageInfo').textContent = `第 ${currentMemoryPage} / ${totalPages} 页`;
+                } else {
+                    pagination.style.display = 'none';
+                }
+                
+            } catch (error) {
+                console.error('加载记忆失败:', error);
+                container.innerHTML = `
+                    <div class="memory-empty">
+                        <p>⚠️ 加载失败</p>
+                    </div>
+                `;
+            }
+        }
+
+        function getMemoryTypeLabel(type) {
+            const labels = { short: '短期', long: '长期', core: '核心' };
+            return labels[type] || type;
+        }
+
+        function formatTime(timestamp) {
+            if (!timestamp) return '未知时间';
+            const date = new Date(timestamp);
+            return date.toLocaleString('zh-CN', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function searchMemory() {
+            memorySearchQuery = document.getElementById('memorySearch').value.trim();
+            currentMemoryPage = 1;
+            loadMemoryList();
+        }
+
+        function prevMemoryPage() {
+            if (currentMemoryPage > 1) {
+                currentMemoryPage--;
+                loadMemoryList();
+            }
+        }
+
+        function nextMemoryPage() {
+            currentMemoryPage++;
+            loadMemoryList();
+        }
+
+        function editMemory(id) {
+            const memories = JSON.parse(localStorage.getItem('game_memories') || '[]');
+            const mem = memories.find(m => m.id === id);
+            if (!mem) return;
+            
+            const newContent = prompt('编辑记忆内容:', mem.content || mem.title);
+            if (newContent === null) return; // 用户取消
+            
+            if (mem.content !== undefined) {
+                mem.content = newContent;
+            } else {
+                mem.title = newContent;
+            }
+            mem.updatedAt = new Date().toISOString();
+            
+            localStorage.setItem('game_memories', JSON.stringify(memories));
+            loadMemoryList();
+            showToast('记忆已更新', 'success');
+        }
+
+        function deleteMemory(id) {
+            if (!confirm('确定要删除这条记忆吗？')) return;
+            
+            let memories = JSON.parse(localStorage.getItem('game_memories') || '[]');
+            memories = memories.filter(m => m.id !== id);
+            localStorage.setItem('game_memories', JSON.stringify(memories));
+            
+            loadMemoryList();
+            loadMemoryStats();
+            showToast('记忆已删除', 'success');
+        }
+
+        function clearShortMemory() {
+            if (!confirm('确定要清理所有短期记忆吗？')) return;
+            
+            let memories = JSON.parse(localStorage.getItem('game_memories') || '[]');
+            const beforeCount = memories.length;
+            memories = memories.filter(m => m.type !== 'short');
+            localStorage.setItem('game_memories', JSON.stringify(memories));
+            
+            loadMemoryList();
+            loadMemoryStats();
+            showToast(`已清理 ${beforeCount - memories.length} 条短期记忆`, 'success');
+        }
+
+        function exportAllMemory() {
+            const memories = JSON.parse(localStorage.getItem('game_memories') || '[]');
+            const data = {
+                exportTime: new Date().toISOString(),
+                memoryCount: memories.length,
+                memories: memories
+            };
+            
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `memory-backup-${new Date().toISOString().slice(0, 10)}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            
+            showToast('记忆导出成功', 'success');
+        }
+
+        function clearAllMemory() {
+            if (!confirm('⚠️ 警告：此操作不可逆！\n\n确定要清空所有记忆吗？角色将完全忘记你。')) return;
+            if (!confirm('再次确认：清空所有记忆？')) return;
+            
+            localStorage.removeItem('game_memories');
+            loadMemoryList();
+            loadMemoryStats();
+            showToast('所有记忆已清空', 'success');
+        }
+
+        // 设置记忆筛选按钮事件
+        function setupMemoryFilters() {
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    currentMemoryFilter = btn.dataset.type;
+                    currentMemoryPage = 1;
+                    loadMemoryList();
+                });
+            });
+        }
+
+        // 退出登录
+        function logout() {
+            if (!confirm('确定要退出登录吗？')) return;
+            
+            localStorage.removeItem('galgame_token');
+            localStorage.removeItem('galgame_user');
+            window.location.href = 'login.html';
+        }
+
+        // 恢复默认设置
+        function resetSettings() {
+            if (!confirm('确定要恢复默认设置吗？')) return;
+            
+            const defaults = {
+                autoSave: true,
+                showAvatar: true,
+                typewriterEffect: true,
+                textSpeed: 'normal',
+                responseLength: 'medium',
+                creativity: 'balanced',
+                theme: 'dark',
+                dialogStyle: 'classic'
+            };
+            
+            localStorage.setItem('user_preferences', JSON.stringify(defaults));
+            loadUserSettings();
+            showToast('已恢复默认设置', 'success');
+        }
+
+        // 使用 Emoji 头像
+        function useEmojiAvatar() {
+            const emojis = ['👤', '👦', '👧', '👨', '👩', '🧑', '👴', '👵', '🧓', '👶', '🧒', '🧔', '🧕', '🧙', '🧝', '🧛', '🧜', '🧚'];
+            const random = emojis[Math.floor(Math.random() * emojis.length)];
+            document.getElementById('avatarEmoji').textContent = random;
+            showToast('头像已更换', 'success');
+        }
+
+        // 显示 Toast
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = `toast ${type} show`;
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

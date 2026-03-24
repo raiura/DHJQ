@@ -1,0 +1,18 @@
+[WARN] 2026-02-10T15:34:13.412Z - MongoDB 未连接，使用内存存储模式（数据将在重启后丢失）
+[WARN] 2026-02-10T15:34:13.416Z - 认证模块使用内存存储模式
+[WARN] 2026-02-10T15:34:13.417Z - 角色模块使用内存存储模式
+[WARN] 2026-02-10T15:34:13.428Z - 设置模块使用内存存储模式
+[WARN] 2026-02-10T15:34:13.467Z - 对话服务使用内存存储模式
+[WARN] 2026-02-10T15:34:13.468Z - 对话模块使用内存存储模式
+[WARN] 2026-02-10T15:34:18.362Z - MongoDB 已断开连接
+[ERROR] 2026-02-10T15:34:18.363Z - MongoDB 连接失败: 
+[WARN] 2026-02-10T15:34:18.363Z - ============================================================
+[WARN] 2026-02-10T15:34:18.364Z - 服务器将以内存存储模式运行
+[WARN] 2026-02-10T15:34:18.364Z - 所有数据将在服务器重启后丢失
+[WARN] 2026-02-10T15:34:18.364Z - ============================================================
+[ERROR] 2026-02-10T15:34:18.364Z - MongoDB 连接错误: 
+[ERROR] 2026-02-10T15:34:24.494Z - 初始化默认游戏失败: Operation `games.findOne()` buffering timed out after 10000ms
+MongooseError: Operation `games.findOne()` buffering timed out after 10000ms
+    at Timeout.<anonymous> (F:\360MoveData\Users\Administrator\Desktop\FengYue\FengYue\backend\node_modules\mongoose\lib\drivers\node-mongodb-native\collection.js:187:23)
+    at listOnTimeout (node:internal/timers:588:17)
+    at process.processTimers (node:internal/timers:523:7)

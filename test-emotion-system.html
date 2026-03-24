@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>情感系统测试</title>
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #1a1a2e;
+            color: #fff;
+        }
+        h1 { color: #ffb347; }
+        .test-section {
+            background: rgba(255,255,255,0.05);
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border: 1px solid rgba(138, 109, 59, 0.3);
+        }
+        .test-input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(138, 109, 59, 0.5);
+            color: #fff;
+            border-radius: 5px;
+        }
+        .test-result {
+            background: rgba(0,0,0,0.3);
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 10px;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+        .emotion-calm { color: #9e9e9e; }
+        .emotion-happy { color: #ffc107; }
+        .emotion-angry { color: #f44336; }
+        .emotion-sad { color: #2196f3; }
+        .emotion-shy { color: #e91e63; }
+        .emotion-surprise { color: #9c27b0; }
+        .emotion-serious { color: #795548; }
+        .emotion-hurt { color: #607d8b; }
+        button {
+            background: rgba(138, 109, 59, 0.5);
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: rgba(138, 109, 59, 0.8);
+        }
+    </style>
+</head>
+<body>
+    <h1>🎭 情感提取系统测试</h1>
+    
+    <div class="test-section">
+        <h2>测试用例</h2>
+        <div id="testCases"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>自定义测试</h2>
+        <input type="text" class="test-input" id="customInput" placeholder="输入包含[emotion:类型]的文本...">
+        <button onclick="testCustom()">测试解析</button>
+        <div class="test-result" id="customResult"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>生成Prompt</h2>
+        <button onclick="showPrompt()">显示角色Prompt模板</button>
+        <div class="test-result" id="promptResult"></div>
+    </div>
+
+    <script src="emotion-system.js"></script>
+    <script>
+        const parser = new EmotionSystem.EmotionParser();
+        
+        const testCases = [
+            { input: "哼，找本公主何事？[emotion:angry:2]", desc: "带标签-生气" },
+            { input: "（转过头）才、才不是为了你呢...[emotion:shy:2]", desc: "带标签-害羞" },
+            { input: "（望向窗外）是啊，雪停了...[emotion:calm:1]", desc: "带标签-平静" },
+            { input: "......（低头）保重。[emotion:sad:3]", desc: "带标签-悲伤(强烈)" },
+            { input: "你好", desc: "无标签-默认" },
+            { input: "哼！", desc: "无标签-启发式检测(生气)" },
+            { input: "脸红...别看我", desc: "无标签-启发式检测(害羞)" },
+            { input: "什么！！不会吧", desc: "无标签-启发式检测(惊讶)" }
+        ];
+        
+        function runTests() {
+            const container = document.getElementById('testCases');
+            let html = '';
+            
+            testCases.forEach((test, index) => {
+                const result = parser.parse(test.input);
+                const emotionClass = `emotion-${result.emotion.type}`;
+                
+                html += `
+                    <div style="margin: 15px 0; padding: 15px; background: rgba(0,0,0,0.2); border-radius: 5px;">
+                        <div><strong>测试 ${index + 1}:</strong> ${test.desc}</div>
+                        <div style="color: #888; margin: 5px 0;">输入: "${test.input}"</div>
+                        <div style="margin-top: 10px;">
+                            <span class="${emotionClass}">
+                                ✅ 情感: ${result.emotion.type} 强度: ${result.emotion.level}
+                            </span>
+                            ${result.hasTag ? '<span style="color: #4caf50;">[AI标签]</span>' : '<span style="color: #ff9800;">[启发式]</span>'}
+                        </div>
+                        <div style="color: #bbb; margin-top: 5px;">纯文本: "${result.cleanText}"</div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+        
+        function testCustom() {
+            const input = document.getElementById('customInput').value;
+            const result = parser.parse(input);
+            const emotionClass = `emotion-${result.emotion.type}`;
+            
+            document.getElementById('customResult').innerHTML = `
+                <span class="${emotionClass}">情感: ${result.emotion.type} (${result.emotion.level})
+                </span> ${result.hasTag ? '[AI标签]' : '[启发式]'}
+                
+纯文本: ${result.cleanText}
+            `;
+        }
+        
+        function showPrompt() {
+            const prompt = EmotionSystem.CHARACTER_PROMPTS.ailya;
+            document.getElementById('promptResult').textContent = prompt;
+        }
+        
+        // 运行测试
+        runTests();
+    </script>
+</body>
+</html>

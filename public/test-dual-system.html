@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>双系统架构演示 - 经历与记忆</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #e8e8e8;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #d4a574;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #888;
+            margin-bottom: 30px;
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        
+        .panel {
+            background: rgba(30, 30, 45, 0.9);
+            border: 1px solid rgba(138, 109, 59, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+        }
+        
+        .panel h2 {
+            color: #d4a574;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .panel h2 .icon {
+            font-size: 24px;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+        }
+        
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #8a6d3b, #d4a574);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(212, 165, 116, 0.3);
+        }
+        
+        .btn-secondary {
+            background: rgba(138, 109, 59, 0.2);
+            color: #d4a574;
+            border: 1px solid rgba(138, 109, 59, 0.5);
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(138, 109, 59, 0.3);
+        }
+        
+        .btn-danger {
+            background: rgba(255, 107, 107, 0.2);
+            color: #ff6b6b;
+            border: 1px solid rgba(255, 107, 107, 0.5);
+        }
+        
+        .btn-danger:hover {
+            background: rgba(255, 107, 107, 0.3);
+        }
+        
+        .list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .item {
+            background: rgba(20, 20, 35, 0.6);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-left: 3px solid #8a6d3b;
+        }
+        
+        .item.experience {
+            border-left-color: #4CAF50;
+        }
+        
+        .item.memory {
+            border-left-color: #2196F3;
+        }
+        
+        .item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        
+        .item-title {
+            font-weight: bold;
+            color: #d4a574;
+        }
+        
+        .item-type {
+            font-size: 12px;
+            padding: 3px 8px;
+            border-radius: 4px;
+            background: rgba(138, 109, 59, 0.3);
+        }
+        
+        .item-desc {
+            color: #a0a0a0;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        .item-meta {
+            margin-top: 8px;
+            font-size: 12px;
+            color: #666;
+            display: flex;
+            gap: 15px;
+        }
+        
+        .tag {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+        }
+        
+        .tag-revealed {
+            background: rgba(76, 175, 80, 0.2);
+            color: #4CAF50;
+        }
+        
+        .tag-hidden {
+            background: rgba(255, 107, 107, 0.2);
+            color: #ff6b6b;
+        }
+        
+        .tag-impact {
+            background: rgba(255, 152, 0, 0.2);
+            color: #ff9800;
+        }
+        
+        .dialogue-sim {
+            grid-column: 1 / -1;
+            background: rgba(30, 30, 45, 0.9);
+            border: 1px solid rgba(138, 109, 59, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+        }
+        
+        .dialogue-sim h2 {
+            color: #d4a574;
+            margin-bottom: 15px;
+        }
+        
+        .chat-area {
+            background: rgba(20, 20, 35, 0.6);
+            border-radius: 8px;
+            padding: 15px;
+            min-height: 200px;
+            margin-bottom: 15px;
+        }
+        
+        .chat-message {
+            margin-bottom: 10px;
+            padding: 10px;
+            border-radius: 8px;
+        }
+        
+        .chat-message.player {
+            background: rgba(33, 150, 243, 0.1);
+            margin-left: 20%;
+        }
+        
+        .chat-message.ai {
+            background: rgba(138, 109, 59, 0.1);
+            margin-right: 20%;
+        }
+        
+        .chat-sender {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .input-area {
+            display: flex;
+            gap: 10px;
+        }
+        
+        input[type="text"] {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid rgba(138, 109, 59, 0.3);
+            border-radius: 8px;
+            background: rgba(20, 20, 35, 0.6);
+            color: #e8e8e8;
+            font-size: 14px;
+        }
+        
+        .status-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(26, 26, 46, 0.95);
+            border-top: 1px solid rgba(138, 109, 59, 0.3);
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .status-label {
+            color: #888;
+            font-size: 12px;
+        }
+        
+        .status-value {
+            color: #d4a574;
+            font-weight: bold;
+        }
+        
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(76, 175, 80, 0.9);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            transform: translateX(150%);
+            transition: transform 0.3s;
+            z-index: 1000;
+        }
+        
+        .notification.show {
+            transform: translateX(0);
+        }
+        
+        .empty-state {
+            text-align: center;
+            color: #666;
+            padding: 40px;
+        }
+        
+        .character-selector {
+            margin-bottom: 15px;
+        }
+        
+        select {
+            padding: 10px 15px;
+            border: 1px solid rgba(138, 109, 59, 0.3);
+            border-radius: 8px;
+            background: rgba(20, 20, 35, 0.6);
+            color: #e8e8e8;
+            font-size: 14px;
+            min-width: 200px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎭 双系统架构演示</h1>
+        <p class="subtitle">角色经历自动生成 + 玩家记忆管理</p>
+        
+        <div class="grid">
+            <!-- 角色经历面板 -->
+            <div class="panel">
+                <h2><span class="icon">📚</span> 角色经历</h2>
+                <div class="controls">
+                    <button class="btn-secondary" onclick="simulateFavorBreakthrough()">💝 模拟好感突破</button>
+                    <button class="btn-secondary" onclick="simulateDialoguePattern()">💬 模拟对话模式</button>
+                    <button class="btn-secondary" onclick="simulateLocationTime()">🌙 模拟时空组合</button>
+                    <button class="btn-danger" onclick="clearExperiences()">🗑️ 清空</button>
+                </div>
+                <div class="character-selector">
+                    <select id="characterSelect" onchange="onCharacterChange()">
+                        <option value="char_lucangxue">陆沧雪</option>
+                        <option value="char_murongxuan">慕容玄</option>
+                    </select>
+                </div>
+                <div id="experienceList" class="list">
+                    <div class="empty-state">暂无经历，开始对话或点击按钮生成</div>
+                </div>
+            </div>
+            
+            <!-- 玩家记忆面板 -->
+            <div class="panel">
+                <h2><span class="icon">🧠</span> 玩家记忆</h2>
+                <div class="controls">
+                    <button class="btn-secondary" onclick="addManualMemory()">➕ 添加记忆</button>
+                    <button class="btn-secondary" onclick="searchMemories()">🔍 搜索</button>
+                    <button class="btn-secondary" onclick="showBookmarked()">⭐ 收藏</button>
+                    <button class="btn-danger" onclick="clearMemories()">🗑️ 清空</button>
+                </div>
+                <div id="memoryList" class="list">
+                    <div class="empty-state">暂无记忆</div>
+                </div>
+            </div>
+            
+            <!-- 对话模拟器 -->
+            <div class="dialogue-sim">
+                <h2>💬 对话模拟器</h2>
+                <div class="controls">
+                    <button class="btn-primary" onclick="simulateDialogue('confession')">真情流露</button>
+                    <button class="btn-primary" onclick="simulateDialogue('apology')">和解时刻</button>
+                    <button class="btn-primary" onclick="simulateDialogue('conflict')">冲突时刻</button>
+                    <button class="btn-primary" onclick="simulateDialogue('comfort')">温情时刻</button>
+                    <button class="btn-primary" onclick="simulateDialogue('teasing')">打趣时刻</button>
+                </div>
+                <div id="chatArea" class="chat-area">
+                    <div class="empty-state">点击上方按钮模拟对话场景</div>
+                </div>
+                <div class="input-area">
+                    <input type="text" id="playerInput" placeholder="输入你想说的话..." onkeypress="if(event.key==='Enter')sendMessage()">
+                    <button class="btn-primary" onclick="sendMessage()">发送</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 状态栏 -->
+    <div class="status-bar">
+        <div class="status-item">
+            <span class="status-label">当前存档:</span>
+            <span class="status-value" id="currentSave">未加载</span>
+        </div>
+        <div class="status-item">
+            <span class="status-label">当前章节:</span>
+            <span class="status-value" id="currentChapter">-</span>
+        </div>
+        <div class="status-item">
+            <span class="status-label">经历数量:</span>
+            <span class="status-value" id="expCount">0</span>
+        </div>
+        <div class="status-item">
+            <span class="status-label">记忆数量:</span>
+            <span class="status-value" id="memCount">0</span>
+        </div>
+        <div class="status-item">
+            <button class="btn-secondary" onclick="createNewSave()">📁 新建存档</button>
+        </div>
+    </div>
+    
+    <!-- 通知 -->
+    <div id="notification" class="notification"></div>
+    
+    <!-- 脚本 -->
+    <script src="js/core/chapterTemplates.js"></script>
+    <script src="js/services/chapterSaveManager.js"></script>
+    <script src="js/core/experienceTriggers.js"></script>
+    <script src="js/core/experienceGenerator.js"></script>
+    <script src="js/core/playerMemorySystem.js"></script>
+    <script src="js/services/dialogueProcessor.js"></script>
+    
+    <script>
+        let currentSave = null;
+        let chatHistory = [];
+        
+        // 初始化
+        function init() {
+            // 尝试加载最新存档
+            const saves = chapterSaveManager.listSaves();
+            if (saves.length > 0) {
+                chapterSaveManager.loadSlot(saves[0].id);
+                currentSave = chapterSaveManager.getCurrentSlot();
+            } else {
+                createNewSave();
+            }
+            
+            updateUI();
+            
+            // 初始化对话处理器
+            dialogueProcessor.init();
+        }
+        
+        function createNewSave() {
+            currentSave = chapterSaveManager.createSlot('演示存档', 'ch1');
+            updateUI();
+            showNotification('新存档已创建');
+        }
+        
+        function onCharacterChange() {
+            updateUI();
+        }
+        
+        function getCurrentCharacterId() {
+            return document.getElementById('characterSelect').value;
+        }
+        
+        function updateUI() {
+            if (!currentSave) return;
+            
+            document.getElementById('currentSave').textContent = currentSave.name;
+            document.getElementById('currentChapter').textContent = 
+                ChapterDB.get(currentSave.currentChapter)?.name || currentSave.currentChapter;
+            
+            updateExperienceList();
+            updateMemoryList();
+            updateStats();
+        }
+        
+        function updateExperienceList() {
+            const charId = getCurrentCharacterId();
+            const char = chapterSaveManager.getCharacterState(charId);
+            const list = document.getElementById('experienceList');
+            
+            if (!char || !char.experiences || char.experiences.length === 0) {
+                list.innerHTML = '<div class="empty-state">暂无经历，开始对话或点击按钮生成</div>';
+                return;
+            }
+            
+            list.innerHTML = char.experiences.map(exp => `
+                <div class="item experience">
+                    <div class="item-header">
+                        <span class="item-title">${exp.title}</span>
+                        <span class="item-type">${exp.triggerType || 'MANUAL'}</span>
+                    </div>
+                    <div class="item-desc">${exp.description}</div>
+                    <div class="item-meta">
+                        <span class="tag ${exp.isRevealed ? 'tag-revealed' : 'tag-hidden'}">
+                            ${exp.isRevealed ? '✓ 已揭示' : '○ 未揭示'}
+                        </span>
+                        <span class="tag tag-impact">冲击: ${exp.emotionalImpact}/10</span>
+                        ${exp.favorDelta > 0 ? `<span class="tag tag-revealed">+${exp.favorDelta}好感</span>` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function updateMemoryList(filteredMemories = null) {
+            const memories = filteredMemories || currentSave?.player?.memories || [];
+            const list = document.getElementById('memoryList');
+            
+            if (memories.length === 0) {
+                list.innerHTML = '<div class="empty-state">' + 
+                    (filteredMemories ? '没有匹配的记忆' : '暂无记忆') + '</div>';
+                return;
+            }
+            
+            list.innerHTML = memories.map(mem => `
+                <div class="item memory">
+                    <div class="item-header">
+                        <span class="item-title">${mem.title}</span>
+                        <span class="item-type">${mem.type}</span>
+                    </div>
+                    <div class="item-desc">${mem.description}</div>
+                    <div class="item-meta">
+                        <span class="tag ${mem.isCore ? 'tag-impact' : ''}">
+                            ${mem.isCore ? '🔥 核心' : '标准'}
+                        </span>
+                        <span class="tag">重要度: ${mem.importance}/10</span>
+                        ${currentSave.player.bookmarks.includes(mem.id) ? '<span class="tag tag-impact">⭐</span>' : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function updateStats() {
+            const charId = getCurrentCharacterId();
+            const char = chapterSaveManager.getCharacterState(charId);
+            
+            document.getElementById('expCount').textContent = char?.experiences?.length || 0;
+            document.getElementById('memCount').textContent = currentSave?.player?.memories?.length || 0;
+        }
+        
+        // 模拟功能
+        function simulateFavorBreakthrough() {
+            const charId = getCurrentCharacterId();
+            const char = chapterSaveManager.getCharacterState(charId);
+            
+            // 模拟从25突破到35
+            const previousFavor = 25;
+            chapterSaveManager.setFavorOverride(charId, 35);
+            
+            const context = {
+                characterId: charId,
+                character: chapterSaveManager.getCharacterState(charId),
+                previousFavor,
+                playerInput: '',
+                aiReply: '',
+                save: currentSave,
+                newlySetFlags: []
+            };
+            
+            const trigger = experienceTriggerEngine.check('FAVOR_THRESHOLD', context);
+            if (trigger) {
+                const exp = experienceGenerator.generate(trigger, context);
+                const expId = chapterSaveManager.addGeneratedExperience(charId, exp);
+                showNotification(`✨ 新经历生成: ${exp.title}`);
+            }
+            
+            updateUI();
+        }
+        
+        function simulateDialoguePattern() {
+            const patterns = ['confession', 'apology', 'conflict', 'comfort', 'teasing'];
+            const pattern = patterns[Math.floor(Math.random() * patterns.length)];
+            
+            simulateDialogue(pattern);
+        }
+        
+        function simulateLocationTime() {
+            const charId = getCurrentCharacterId();
+            
+            // 设置雪夜场景
+            chapterSaveManager.updateWorld({
+                location: '阳台',
+                weather: 'snow'
+            });
+            currentSave.world.gameTime.hour = 22;
+            
+            const char = chapterSaveManager.getCharacterState(charId);
+            
+            const context = {
+                characterId: charId,
+                character: char,
+                previousFavor: char.favor,
+                playerInput: '',
+                aiReply: '',
+                save: currentSave,
+                newlySetFlags: []
+            };
+            
+            const trigger = experienceTriggerEngine.check('LOCATION_TIME', context);
+            if (trigger) {
+                const exp = experienceGenerator.generate(trigger, context);
+                const expId = chapterSaveManager.addGeneratedExperience(charId, exp);
+                showNotification(`🌙 特殊时刻: ${exp.title}`);
+            }
+            
+            updateUI();
+        }
+        
+        // 对话模拟
+        const dialogueScenarios = {
+            confession: {
+                player: '沧雪，其实我一直...对你...',
+                ai: '你...说什么傻话...（脸红，心跳加速）我...我才没有高兴呢...',
+                favorDelta: 5
+            },
+            apology: {
+                player: '对不起，是我误会你了',
+                ai: '哼，知道错了就好...下次不许再这样了',
+                favorDelta: 3
+            },
+            conflict: {
+                player: '你为什么要骗我！',
+                ai: '我没有！你...你怎么能这样说我...（眼眶微红）',
+                favorDelta: -5
+            },
+            comfort: {
+                player: '别怕，有我在',
+                ai: '嗯...有你在...我就什么都不怕了',
+                favorDelta: 3
+            },
+            teasing: {
+                player: '沧雪你脸红了，好可爱',
+                ai: '笨...笨蛋！谁脸红了！是...是天气太热！',
+                favorDelta: 2
+            }
+        };
+        
+        function simulateDialogue(type) {
+            const scenario = dialogueScenarios[type];
+            const charId = getCurrentCharacterId();
+            
+            // 显示对话
+            addChatMessage('player', scenario.player);
+            setTimeout(() => {
+                addChatMessage('ai', scenario.ai);
+                
+                // 处理对话后的系统
+                processDialogue(charId, scenario.player, scenario.ai, { favorDelta: scenario.favorDelta });
+            }, 500);
+        }
+        
+        function sendMessage() {
+            const input = document.getElementById('playerInput');
+            const message = input.value.trim();
+            if (!message) return;
+            
+            addChatMessage('player', message);
+            input.value = '';
+            
+            // 模拟AI回复
+            setTimeout(() => {
+                const aiReply = '这是模拟的AI回复...';
+                addChatMessage('ai', aiReply);
+                
+                const charId = getCurrentCharacterId();
+                processDialogue(charId, message, aiReply, { favorDelta: 1 });
+            }, 1000);
+        }
+        
+        function addChatMessage(sender, text) {
+            const chatArea = document.getElementById('chatArea');
+            const senderName = sender === 'player' ? '玩家' : 
+                (getCurrentCharacterId() === 'char_lucangxue' ? '陆沧雪' : '慕容玄');
+            
+            const div = document.createElement('div');
+            div.className = `chat-message ${sender}`;
+            div.innerHTML = `
+                <div class="chat-sender">${senderName}</div>
+                <div>${text}</div>
+            `;
+            
+            // 移除empty-state
+            const emptyState = chatArea.querySelector('.empty-state');
+            if (emptyState) emptyState.remove();
+            
+            chatArea.appendChild(div);
+            chatArea.scrollTop = chatArea.scrollHeight;
+        }
+        
+        function processDialogue(characterId, playerInput, aiReply, options) {
+            // 使用对话处理器
+            const snapshot = dialogueProcessor.beforeDialogue(characterId);
+            
+            dialogueProcessor.afterDialogue(snapshot, playerInput, aiReply, options)
+                .then(results => {
+                    if (results.experiences.length > 0) {
+                        results.experiences.forEach(exp => {
+                            showNotification(`✨ 新经历: ${exp.title}`);
+                        });
+                    }
+                    if (results.memories.length > 0) {
+                        results.memories.forEach(mem => {
+                            showNotification(`🧠 新记忆: ${mem.title}`);
+                        });
+                    }
+                    if (results.favorChanged) {
+                        showNotification(`💝 好感度: ${results.newFavor}`);
+                    }
+                    updateUI();
+                });
+        }
+        
+        // 玩家记忆操作
+        function addManualMemory() {
+            const types = ['CHARACTER_FIRST_MEET', 'IMPORTANT_DIALOGUE', 'PLOT_EVENT'];
+            const titles = ['初次相遇', '深夜谈心', '共同御敌'];
+            
+            const idx = Math.floor(Math.random() * types.length);
+            
+            const memory = {
+                type: types[idx],
+                title: titles[idx],
+                description: '这是手动添加的记忆条目',
+                relatedCharacters: [getCurrentCharacterId()],
+                importance: Math.floor(Math.random() * 5) + 5,
+                isCore: Math.random() > 0.5
+            };
+            
+            playerMemorySystem.addMemory(currentSave, memory);
+            showNotification('记忆已添加');
+            updateUI();
+        }
+        
+        function searchMemories() {
+            const query = prompt('搜索记忆:');
+            if (!query) return;
+            
+            const results = playerMemorySystem.search(currentSave, query);
+            updateMemoryList(results);
+        }
+        
+        function showBookmarked() {
+            const memories = currentSave.player.memories.filter(m => 
+                currentSave.player.bookmarks.includes(m.id)
+            );
+            updateMemoryList(memories);
+        }
+        
+        function clearExperiences() {
+            if (!confirm('确定要清空所有经历吗？')) return;
+            
+            const charId = getCurrentCharacterId();
+            const char = chapterSaveManager.getCharacterState(charId);
+            char.experiences = [];
+            chapterSaveManager.markModified();
+            updateUI();
+        }
+        
+        function clearMemories() {
+            if (!confirm('确定要清空所有记忆吗？')) return;
+            
+            currentSave.player.memories = [];
+            currentSave.player.shortTerm = [];
+            currentSave.player.longTerm = [];
+            currentSave.player.core = [];
+            chapterSaveManager.markModified();
+            updateUI();
+        }
+        
+        // 工具函数
+        function showNotification(message) {
+            const notif = document.getElementById('notification');
+            notif.textContent = message;
+            notif.classList.add('show');
+            
+            setTimeout(() => {
+                notif.classList.remove('show');
+            }, 3000);
+        }
+        
+        // 启动
+        init();
+    </script>
+</body>
+</html>

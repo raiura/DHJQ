@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>经历编辑器 - 大荒九丘</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --primary: #8a6d3b;
+            --primary-light: #d4a574;
+            --primary-dark: #5a4a3a;
+            --bg-dark: #1a1a2e;
+            --bg-card: rgba(30, 30, 45, 0.9);
+            --text: #e8e8e8;
+            --text-secondary: #a0a0a0;
+            --border: rgba(138, 109, 59, 0.3);
+            --success: #4CAF50;
+            --warning: #ff9800;
+        }
+        
+        body {
+            font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+            background: linear-gradient(135deg, var(--bg-dark) 0%, #16213e 100%);
+            min-height: 100vh;
+            color: var(--text);
+            padding: 40px 20px;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        h1 {
+            font-size: 32px;
+            color: var(--primary-light);
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+        
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+        
+        .section-title {
+            font-size: 18px;
+            color: var(--primary-light);
+            margin-bottom: 16px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        /* 角色选择 */
+        .character-select {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+        
+        .character-btn {
+            padding: 12px 24px;
+            background: rgba(138, 109, 59, 0.2);
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            color: var(--text);
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 14px;
+        }
+        
+        .character-btn:hover {
+            border-color: var(--primary);
+            background: rgba(138, 109, 59, 0.3);
+        }
+        
+        .character-btn.active {
+            border-color: var(--primary-light);
+            background: rgba(138, 109, 59, 0.4);
+        }
+        
+        /* 经历列表 */
+        .experience-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .exp-item {
+            display: flex;
+            gap: 15px;
+            padding: 16px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 12px;
+            border-left: 4px solid var(--primary);
+        }
+        
+        .exp-item.default {
+            border-left-color: var(--primary);
+        }
+        
+        .exp-item.added {
+            border-left-color: var(--success);
+        }
+        
+        .exp-item.removed {
+            border-left-color: #666;
+            opacity: 0.5;
+        }
+        
+        .exp-icon {
+            font-size: 28px;
+            width: 40px;
+            text-align: center;
+        }
+        
+        .exp-content {
+            flex: 1;
+        }
+        
+        .exp-title {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 6px;
+        }
+        
+        .exp-desc {
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-bottom: 8px;
+        }
+        
+        .exp-note {
+            width: 100%;
+            padding: 8px 12px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text);
+            font-size: 13px;
+            resize: vertical;
+            min-height: 60px;
+        }
+        
+        .exp-note::placeholder {
+            color: #666;
+        }
+        
+        .exp-actions {
+            display: flex;
+            gap: 8px;
+            align-items: flex-start;
+        }
+        
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 12px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .btn-danger {
+            background: rgba(255, 107, 107, 0.2);
+            color: #ff6b6b;
+            border: 1px solid #ff6b6b;
+        }
+        
+        .btn-danger:hover {
+            background: rgba(255, 107, 107, 0.3);
+        }
+        
+        .btn-primary {
+            background: rgba(138, 109, 59, 0.3);
+            color: var(--primary-light);
+            border: 1px solid var(--primary);
+        }
+        
+        .btn-primary:hover {
+            background: rgba(138, 109, 59, 0.5);
+        }
+        
+        /* 添加经历 */
+        .add-experience {
+            margin-top: 20px;
+            padding: 20px;
+            background: rgba(76, 175, 80, 0.05);
+            border: 1px dashed var(--success);
+            border-radius: 12px;
+        }
+        
+        .add-exp-select {
+            width: 100%;
+            padding: 10px 14px;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            font-size: 14px;
+            margin-bottom: 12px;
+        }
+        
+        /* 好感度编辑 */
+        .favor-editor {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            padding: 20px;
+            background: rgba(138, 109, 59, 0.1);
+            border-radius: 12px;
+        }
+        
+        .favor-label {
+            font-size: 16px;
+            min-width: 100px;
+        }
+        
+        .favor-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--primary-light);
+            min-width: 50px;
+            text-align: center;
+        }
+        
+        .favor-slider {
+            flex: 1;
+            height: 8px;
+            -webkit-appearance: none;
+            background: rgba(255,255,255,0.1);
+            border-radius: 4px;
+            outline: none;
+        }
+        
+        .favor-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 24px;
+            height: 24px;
+            background: var(--primary-light);
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        
+        .favor-delta {
+            font-size: 13px;
+            color: var(--text-secondary);
+            min-width: 100px;
+            text-align: right;
+        }
+        
+        /* 操作按钮 */
+        .actions {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 30px;
+        }
+        
+        .btn {
+            padding: 12px 32px;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: #fff;
+        }
+        
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+        }
+        
+        .btn-secondary {
+            background: rgba(255,255,255,0.1);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(255,255,255,0.15);
+        }
+        
+        .btn-warning {
+            background: rgba(255, 152, 0, 0.2);
+            color: #ff9800;
+            border: 1px solid #ff9800;
+        }
+        
+        /* 空状态 */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-secondary);
+        }
+        
+        .empty-state .icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+        }
+        
+        /* 标签 */
+        .tag {
+            display: inline-block;
+            padding: 2px 8px;
+            background: rgba(138, 109, 59, 0.3);
+            border-radius: 4px;
+            font-size: 11px;
+            margin-right: 6px;
+        }
+        
+        .tag.added {
+            background: rgba(76, 175, 80, 0.3);
+            color: var(--success);
+        }
+        
+        .tag.removed {
+            background: rgba(255, 107, 107, 0.3);
+            color: #ff6b6b;
+        }
+        
+        /* 通知 */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 16px 24px;
+            border-radius: 8px;
+            color: #fff;
+            z-index: 1000;
+            animation: slideIn 0.3s ease;
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateX(100px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        .notification.success { background: #4CAF50; }
+        .notification.error { background: #f44336; }
+        .notification.info { background: #2196F3; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 头部 -->
+        <div class="header">
+            <h1>✏️ 经历编辑器</h1>
+            <p class="subtitle">编辑当前存档的角色经历和好感度</p>
+            <p class="subtitle" id="saveInfo" style="margin-top: 10px;">加载中...</p>
+        </div>
+        
+        <!-- 角色选择 -->
+        <div class="card">
+            <div class="section-title">选择角色</div>
+            <div class="character-select" id="characterSelect">
+                <button class="character-btn active" data-char="char_lucangxue" onclick="switchCharacter('char_lucangxue')">
+                    ❄️ 陆苍雪
+                </button>
+                <button class="character-btn" data-char="char_xuanyuannishang" onclick="switchCharacter('char_xuanyuannishang')">
+                    👑 轩辕霓裳
+                </button>
+                <button class="character-btn" data-char="char_linwan" onclick="switchCharacter('char_linwan')">
+                    🌿 林婉
+                </button>
+            </div>
+        </div>
+        
+        <!-- 好感度编辑 -->
+        <div class="card">
+            <div class="section-title">好感度调整</div>
+            <div class="favor-editor">
+                <span class="favor-label">当前好感</span>
+                <span class="favor-value" id="favorValue">60</span>
+                <input type="range" class="favor-slider" id="favorSlider" 
+                       min="-100" max="100" value="60" 
+                       oninput="onFavorChange(this.value)">
+                <span class="favor-delta" id="favorDelta">默认 +10</span>
+            </div>
+        </div>
+        
+        <!-- 经历列表 -->
+        <div class="card">
+            <div class="section-title">角色经历</div>
+            <div class="experience-list" id="experienceList">
+                <!-- 动态生成 -->
+            </div>
+            
+            <!-- 添加经历 -->
+            <div class="add-experience">
+                <div style="font-size: 14px; margin-bottom: 10px; color: var(--success);">➕ 添加经历</div>
+                <select class="add-exp-select" id="addExperienceSelect">
+                    <option value="">选择要添加的经历...</option>
+                </select>
+                <button class="btn btn-primary btn-small" onclick="addExperience()">添加</button>
+            </div>
+        </div>
+        
+        <!-- 操作按钮 -->
+        <div class="actions">
+            <button class="btn btn-warning" onclick="resetCharacter()">🔄 重置为默认</button>
+            <button class="btn btn-secondary" onclick="goBack()">← 返回</button>
+            <button class="btn btn-success" onclick="saveChanges()">💾 保存修改</button>
+        </div>
+    </div>
+    
+    <!-- 脚本 -->
+    <script src="public/js/core/chapterTemplates.js"></script>
+    <script src="public/js/services/chapterSaveManager.js"></script>
+    
+    <script>
+        // 获取URL参数
+        const urlParams = new URLSearchParams(window.location.search);
+        const saveId = urlParams.get('save');
+        
+        let currentCharId = 'char_lucangxue';
+        let defaultFavor = 0;
+        
+        // 初始化
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (!saveId) {
+                showNotification('缺少存档ID', 'error');
+                setTimeout(() => window.location.href = 'world-guide.html', 2000);
+                return;
+            }
+            
+            // 加载存档
+            const slot = chapterSaveManager.loadSlot(saveId);
+            if (!slot) {
+                showNotification('存档加载失败', 'error');
+                return;
+            }
+            
+            // 显示存档信息
+            const chapter = ChapterDB.get(slot.startChapter);
+            document.getElementById('saveInfo').innerHTML = 
+                `当前存档：<b>${slot.name}</b> | 始于：${chapter?.name || '未知'}`;
+            
+            // 加载第一个角色的数据
+            loadCharacterData(currentCharId);
+            
+            // 加载可添加的经历列表
+            loadAvailableExperiences();
+        });
+        
+        // 切换角色
+        function switchCharacter(charId) {
+            currentCharId = charId;
+            
+            // 更新按钮状态
+            document.querySelectorAll('.character-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.char === charId);
+            });
+            
+            loadCharacterData(charId);
+        }
+        
+        // 加载角色数据
+        function loadCharacterData(charId) {
+            const char = chapterSaveManager.getCharacterState(charId);
+            if (!char) {
+                showNotification('角色数据未找到', 'error');
+                return;
+            }
+            
+            // 获取章节默认值
+            const slot = chapterSaveManager.getCurrentSlot();
+            const defaultState = ChapterDB.get(slot.startChapter)?.defaultCharacters[charId];
+            defaultFavor = defaultState?.favor || 0;
+            
+            // 更新好感度显示
+            document.getElementById('favorSlider').value = char.favor;
+            document.getElementById('favorValue').textContent = char.favor;
+            updateFavorDelta(char.favor);
+            
+            // 渲染经历列表
+            renderExperiences(charId);
+        }
+        
+        // 好感度变化
+        function onFavorChange(value) {
+            document.getElementById('favorValue').textContent = value;
+            updateFavorDelta(parseInt(value));
+        }
+        
+        // 更新好感度差值显示
+        function updateFavorDelta(currentFavor) {
+            const delta = currentFavor - defaultFavor;
+            const deltaText = delta >= 0 ? `+${delta}` : `${delta}`;
+            document.getElementById('favorDelta').textContent = `默认 ${deltaText}`;
+        }
+        
+        // 渲染经历列表
+        function renderExperiences(charId) {
+            const experiences = chapterSaveManager.getEditableExperiences(charId);
+            const container = document.getElementById('experienceList');
+            
+            if (experiences.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="icon">📭</div>
+                        <div>暂无经历记录</div>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = experiences.map(exp => `
+                <div class="exp-item ${exp.isDefault ? 'default' : ''} ${exp.isAdded ? 'added' : ''} ${exp.isRemoved ? 'removed' : ''}">
+                    <div class="exp-icon">${exp.icon}</div>
+                    <div class="exp-content">
+                        <div class="exp-title">
+                            ${exp.templateTitle}
+                            ${exp.isDefault ? '<span class="tag">默认</span>' : ''}
+                            ${exp.isAdded ? '<span class="tag added">添加</span>' : ''}
+                            ${exp.isRemoved ? '<span class="tag removed">已移除</span>' : ''}
+                        </div>
+                        <div class="exp-desc">${exp.description || exp.templateDescription}</div>
+                        <textarea class="exp-note" placeholder="添加玩家备注..." 
+                            onchange="updateNote('${exp.templateId}', this.value)">${exp.playerNote || ''}</textarea>
+                    </div>
+                    <div class="exp-actions">
+                        ${exp.isRemoved 
+                            ? `<button class="btn-small btn-primary" onclick="restoreExperience('${exp.templateId}')">恢复</button>`
+                            : `<button class="btn-small btn-danger" onclick="removeExperience('${exp.templateId}')">移除</button>`
+                        }
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        // 加载可添加的经历
+        function loadAvailableExperiences() {
+            const select = document.getElementById('addExperienceSelect');
+            const allExperiences = ExperienceDB.getAll();
+            
+            // 获取当前角色已有的经历
+            const char = chapterSaveManager.getCharacterState(currentCharId);
+            const existingIds = char?.experiences.map(e => e.templateId) || [];
+            
+            // 过滤掉已有的
+            const available = allExperiences.filter(exp => !existingIds.includes(exp.id));
+            
+            select.innerHTML = '<option value="">选择要添加的经历...</option>' +
+                available.map(exp => `<option value="${exp.id}">${exp.title} (${exp.chapter})</option>`).join('');
+        }
+        
+        // 添加经历
+        function addExperience() {
+            const select = document.getElementById('addExperienceSelect');
+            const templateId = select.value;
+            if (!templateId) return;
+            
+            chapterSaveManager.addExperience(currentCharId, templateId);
+            renderExperiences(currentCharId);
+            loadAvailableExperiences();
+            select.value = '';
+            
+            showNotification('经历已添加', 'success');
+        }
+        
+        // 移除经历
+        function removeExperience(templateId) {
+            chapterSaveManager.removeExperience(currentCharId, templateId);
+            renderExperiences(currentCharId);
+            loadAvailableExperiences();
+        }
+        
+        // 恢复经历
+        function restoreExperience(templateId) {
+            // 从removed列表中移除
+            const slot = chapterSaveManager.getCurrentSlot();
+            const override = slot.playerOverrides.characters[currentCharId];
+            if (override?.experienceModifications?.removed) {
+                override.experienceModifications.removed = 
+                    override.experienceModifications.removed.filter(id => id !== templateId);
+            }
+            
+            chapterSaveManager.recalculateState(slot);
+            renderExperiences(currentCharId);
+            loadAvailableExperiences();
+        }
+        
+        // 更新备注
+        function updateNote(templateId, note) {
+            chapterSaveManager.editExperience(currentCharId, templateId, {
+                playerNote: note
+            });
+        }
+        
+        // 重置角色
+        function resetCharacter() {
+            if (!confirm('确定要重置该角色为章节默认值吗？所有修改将丢失。')) return;
+            
+            chapterSaveManager.resetToDefault(currentCharId);
+            loadCharacterData(currentCharId);
+            loadAvailableExperiences();
+            
+            showNotification('已重置为默认', 'info');
+        }
+        
+        // 保存修改
+        function saveChanges() {
+            const favor = parseInt(document.getElementById('favorSlider').value);
+            chapterSaveManager.setFavorOverride(currentCharId, favor);
+            chapterSaveManager.saveNow();
+            
+            showNotification('修改已保存', 'success');
+        }
+        
+        // 返回
+        function goBack() {
+            window.location.href = 'world-guide.html';
+        }
+        
+        // 显示通知
+        function showNotification(message, type = 'info') {
+            const notif = document.createElement('div');
+            notif.className = `notification ${type}`;
+            notif.textContent = message;
+            document.body.appendChild(notif);
+            
+            setTimeout(() => notif.remove(), 3000);
+        }
+    </script>
+</body>
+</html>

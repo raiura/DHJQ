@@ -1,0 +1,1638 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>大荒九丘 · 世界指南</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --primary: #8a6d3b;
+            --primary-light: #d4a574;
+            --primary-dark: #5a4a3a;
+            --bg-dark: #1a1a2e;
+            --bg-card: rgba(30, 30, 45, 0.9);
+            --text: #e8e8e8;
+            --text-secondary: #a0a0a0;
+            --border: rgba(138, 109, 59, 0.3);
+            --accent: #ff6b6b;
+            --success: #4CAF50;
+        }
+        
+        body {
+            font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+        
+        /* 背景装饰 */
+        .bg-decoration {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            opacity: 0.1;
+            background: 
+                radial-gradient(circle at 20% 50%, var(--primary) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, var(--primary-light) 0%, transparent 40%),
+                radial-gradient(circle at 40% 20%, var(--primary-dark) 0%, transparent 30%);
+        }
+        
+        /* 头部导航 */
+        header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(26, 26, 46, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border);
+            z-index: 100;
+            padding: 0 30px;
+        }
+        
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 70px;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--primary-light);
+        }
+        
+        .logo-icon {
+            font-size: 32px;
+        }
+        
+        .nav-tabs {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .nav-tab {
+            padding: 10px 20px;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.3s;
+            font-size: 14px;
+        }
+        
+        .nav-tab:hover {
+            background: rgba(138, 109, 59, 0.2);
+            color: var(--text);
+        }
+        
+        .nav-tab.active {
+            background: var(--primary);
+            color: #fff;
+        }
+        
+        .header-actions {
+            display: flex;
+            gap: 12px;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-primary {
+            background: var(--primary);
+            color: #fff;
+        }
+        
+        .btn-primary:hover {
+            background: var(--primary-light);
+            transform: translateY(-2px);
+        }
+        
+        .btn-secondary {
+            background: rgba(255,255,255,0.1);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(255,255,255,0.15);
+        }
+        
+        /* 主内容区 */
+        main {
+            margin-top: 70px;
+            min-height: calc(100vh - 70px);
+            position: relative;
+            z-index: 1;
+        }
+        
+        .section {
+            display: none;
+            padding: 40px 30px;
+            max-width: 1400px;
+            margin: 0 auto;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        .section.active {
+            display: block;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* 页面标题 */
+        .page-header {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+        
+        .page-title {
+            font-size: 48px;
+            color: var(--primary-light);
+            margin-bottom: 15px;
+            text-shadow: 0 0 30px rgba(212, 165, 116, 0.3);
+        }
+        
+        .page-subtitle {
+            font-size: 18px;
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        /* 世界观概览 */
+        .world-overview {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 50px;
+        }
+        
+        .world-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 30px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .world-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary), var(--primary-light));
+        }
+        
+        .world-card h3 {
+            font-size: 24px;
+            color: var(--primary-light);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .world-card p {
+            color: var(--text-secondary);
+            line-height: 1.8;
+        }
+        
+        /* 标签组 */
+        .tag-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .tag {
+            padding: 6px 14px;
+            background: rgba(138, 109, 59, 0.2);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            font-size: 13px;
+            color: var(--primary-light);
+        }
+        
+        /* 九丘地图 */
+        .map-container {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 40px;
+            margin-bottom: 50px;
+        }
+        
+        .map-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+        
+        .map-location {
+            background: rgba(0,0,0,0.3);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 25px;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+        }
+        
+        .map-location:hover {
+            border-color: var(--primary);
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(138, 109, 59, 0.2);
+        }
+        
+        .map-location.active {
+            border-color: var(--primary-light);
+            background: rgba(138, 109, 59, 0.1);
+        }
+        
+        .location-icon {
+            font-size: 40px;
+            margin-bottom: 15px;
+        }
+        
+        .location-name {
+            font-size: 20px;
+            font-weight: bold;
+            color: var(--primary-light);
+            margin-bottom: 8px;
+        }
+        
+        .location-desc {
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+        
+        /* 角色展示 */
+        .character-showcase {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+        }
+        
+        .character-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            overflow: hidden;
+            transition: all 0.3s;
+        }
+        
+        .character-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+        }
+        
+        .character-image {
+            width: 100%;
+            height: 250px;
+            object-fit: cover;
+            background: linear-gradient(135deg, var(--primary-dark), var(--bg-dark));
+        }
+        
+        .character-info {
+            padding: 25px;
+        }
+        
+        .character-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+        }
+        
+        .character-name {
+            font-size: 24px;
+            color: var(--primary-light);
+            font-weight: bold;
+        }
+        
+        .character-title {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-top: 5px;
+        }
+        
+        .character-type {
+            padding: 6px 12px;
+            background: var(--primary);
+            border-radius: 6px;
+            font-size: 12px;
+        }
+        
+        .character-desc {
+            color: var(--text-secondary);
+            line-height: 1.8;
+            margin-bottom: 20px;
+        }
+        
+        .character-traits {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        
+        .trait {
+            padding: 4px 10px;
+            background: rgba(138, 109, 59, 0.15);
+            border-radius: 4px;
+            font-size: 12px;
+            color: var(--text);
+        }
+        
+        /* 角色卡创建工具 */
+        .creator-tool {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 40px;
+        }
+        
+        .creator-section {
+            margin-bottom: 40px;
+        }
+        
+        .creator-section h3 {
+            font-size: 20px;
+            color: var(--primary-light);
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .form-label {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+        
+        .form-input, .form-textarea, .form-select {
+            padding: 12px 15px;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        
+        .form-input:focus, .form-textarea:focus, .form-select:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+        
+        .form-textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+        
+        /* 模板选择 */
+        .template-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .template-card {
+            padding: 20px;
+            background: rgba(0,0,0,0.3);
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+        }
+        
+        .template-card:hover {
+            border-color: var(--primary);
+        }
+        
+        .template-card.selected {
+            border-color: var(--primary-light);
+            background: rgba(138, 109, 59, 0.1);
+        }
+        
+        .template-icon {
+            font-size: 36px;
+            margin-bottom: 10px;
+        }
+        
+        .template-name {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .template-desc {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        
+        /* 预览区域 */
+        .preview-panel {
+            background: rgba(0,0,0,0.5);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 25px;
+            margin-top: 20px;
+        }
+        
+        .preview-title {
+            font-size: 16px;
+            color: var(--primary-light);
+            margin-bottom: 15px;
+        }
+        
+        .preview-content {
+            color: var(--text);
+            line-height: 1.8;
+            white-space: pre-wrap;
+        }
+        
+        /* 世界书条目展示 */
+        .worldbook-list {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .worldbook-item {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 25px;
+            position: relative;
+        }
+        
+        .worldbook-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .worldbook-name {
+            font-size: 20px;
+            color: var(--primary-light);
+            font-weight: bold;
+        }
+        
+        .worldbook-keys {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        
+        .key-tag {
+            padding: 4px 10px;
+            background: rgba(76, 175, 80, 0.2);
+            border: 1px solid var(--success);
+            border-radius: 4px;
+            font-size: 12px;
+            color: var(--success);
+        }
+        
+        .worldbook-content {
+            color: var(--text-secondary);
+            line-height: 1.8;
+        }
+        
+        /* 响应式 */
+        @media (max-width: 768px) {
+            .world-overview {
+                grid-template-columns: 1fr;
+            }
+            
+            .map-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .page-title {
+                font-size: 32px;
+            }
+            
+            .nav-tabs {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-decoration"></div>
+    
+    <header>
+        <div class="header-content">
+            <div class="logo">
+                <span class="logo-icon">📖</span>
+                <span>大荒九丘 · 世界指南</span>
+            </div>
+            <nav class="nav-tabs">
+                <button class="nav-tab active" data-section="overview">🌍 世界观</button>
+                <button class="nav-tab" data-section="geography">🗺️ 地理</button>
+                <button class="nav-tab" data-section="characters">👤 角色</button>
+                <button class="nav-tab" data-section="worldbook">📖 世界书</button>
+                <button class="nav-tab" data-section="creator">✏️ 角色创建</button>
+            </nav>
+            <div class="header-actions">
+                <button class="btn btn-secondary" onclick="window.location.href='index.html'">
+                    📚 返回书店
+                </button>
+                <button class="btn btn-secondary" onclick="showWorldList()">
+                    📚 切换故事
+                </button>
+                <button class="btn btn-primary" onclick="continueStory()">
+                    ▶️ 继续游戏
+                </button>
+                <button class="btn btn-secondary" onclick="showSaveSlots()">
+                    💾 存档管理
+                </button>
+                <button class="btn btn-success" onclick="showChapterSelect()">
+                    ➕ 新游戏
+                </button>
+            </div>
+        </div>
+    </header>
+    
+    <main>
+        <!-- 世界观概览 -->
+        <section class="section active" id="section-overview">
+            <div class="page-header">
+                <h1 class="page-title">坏空之纪</h1>
+                <p class="page-subtitle">一个灵气稀薄、充满劫灰的修仙末世。天地间的灵气混杂了"劫灰"，飞升之路已经断绝，修士们为了资源相互斥杀，是一个真正"人吃人"的世界。</p>
+            </div>
+            
+            <div class="world-overview">
+                <div class="world-card">
+                    <h3>⚡ 世界背景</h3>
+                    <p>这是一个灵气稀薄、充满劫灰的修仙末世。天地间的灵气混杂了"劫灰"，修行异常艰难且危险。飞升之路已经断绝，真仙以上的存在被困在仙界，无法降临。修士们为了资源相互斥杀，是一个真正"人吃人"的世界。</p>
+                    <div class="tag-group">
+                        <span class="tag">修仙末世</span>
+                        <span class="tag">劫灰弥漫</span>
+                        <span class="tag">飞升断绝</span>
+                        <span class="tag">弱肉强食</span>
+                    </div>
+                </div>
+                
+                <div class="world-card">
+                    <h3>📜 核心设定</h3>
+                    <p>灵气中混杂的劫灰会导致修士在修炼时产生心魔，严重者走火入魔。为了抗拒劫灰的侵蚀，修士们需要使用特殊的润灵丹或者灵石来辅助修炼。而这些资源在这个世界中异常稀缺，成为了众人争夺的焦点。</p>
+                    <div class="tag-group">
+                        <span class="tag">心魔侵蚀</span>
+                        <span class="tag">润灵丹</span>
+                        <span class="tag">灵石</span>
+                        <span class="tag">资源争夺</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="world-card" style="margin-bottom: 50px;">
+                <h3>📖 推荐阅读顺序</h3>
+                <p style="margin-bottom: 20px;有兴趣创作自己角色的玩家，建议按照以下顺序了解世界观：</p>
+                <ol style="color: var(--text-secondary); line-height: 2; margin-left: 20px;">
+                    <li>阅读<strong>世界观</strong>了解基本设定和背景故事</li>
+                    <li>查看<strong>地理</strong>版块了解九丘的分布和各地特色</li>
+                    <li>阅读<strong>世界书</strong>了解详细的世界规则和设定</li>
+                    <li>参考<strong>角色</strong>页面了解已有角色的设定风格</li>
+                    <li>使用<strong>角色创建</strong>工具创作自己的角色</li>
+                </ol>
+            </div>
+        </section>
+        
+        <!-- 地理版块 -->
+        <section class="section" id="section-geography">
+            <div class="page-header">
+                <h1 class="page-title">大荒九丘</h1>
+                <p class="page-subtitle">由九块漂浮在虚空中的巨大浮陆组成，被"弱水天河"分隔。每个丘都有独特的风土和势力。</p>
+            </div>
+            
+            <div class="map-container">
+                <div class="map-grid">
+                    <div class="map-location" data-location="zhongtian">
+                        <div class="location-icon">🏰</div>
+                        <div class="location-name">中天轩辕丘</div>
+                        <div class="location-desc">皇权中心，九丘之主所在。宫殿延绵，规矩严明，是整个大荒九丘的政治和文化中心。</div>
+                    </div>
+                    
+                    <div class="map-location" data-location="beihan">
+                        <div class="location-icon">❄️</div>
+                        <div class="location-name">北寒落星丘</div>
+                        <div class="location-desc">落星剑宗所在地，常年飘雪。以剑修为主，弟子们剑术超群，性格冷峻。</div>
+                    </div>
+                    
+                    <div class="map-location" data-location="xiji">
+                        <div class="location-icon">🔱</div>
+                        <div class="location-name">西极极乐丘</div>
+                        <div class="location-desc">魔道大本营，氛围诡异。各种魔修和邪修聚集之地，危险与机遇并存。</div>
+                    </div>
+                    
+                    <div class="map-location" data-location="nanhuang">
+                        <div class="location-icon">🌲</div>
+                        <div class="location-name">南荒妖灵丘</div>
+                        <div class="location-desc">妖族聚居地，原始森林密布。保持着最原始的修炼方式，与自然和谐共存。</div>
+                    </div>
+                    
+                    <div class="map-location" data-location="donghai">
+                        <div class="location-icon">🌊</div>
+                        <div class="location-name">东海散仙丘</div>
+                        <div class="location-desc">散修联盟所在，龙蛇混杂。各色人等汇聚，消息灵通，是信息交流的中心。</div>
+                    </div>
+                    
+                    <div class="map-location" data-location="zhongtian2">
+                        <div class="location-icon">🏛️</div>
+                        <div class="location-name">中天轩辕丘（内城）</div>
+                        <div class="location-desc">皇室禁地，普通修士难以踏足。传说中藏有上古传承和前朝密藏。</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- 角色版块 -->
+        <section class="section" id="section-characters">
+            <div class="page-header">
+                <h1 class="page-title">世界角色</h1>
+                <p class="page-subtitle">大荒九丘中的重要人物，他们的故事与命运交织成这个世界的主旋律。</p>
+            </div>
+            
+            <div class="character-showcase" id="character-list">
+                <!-- 动态加载角色 -->
+            </div>
+        </section>
+        
+        <!-- 世界书版块 -->
+        <section class="section" id="section-worldbook">
+            <div class="page-header">
+                <h1 class="page-title">世界书</h1>
+                <p class="page-subtitle">详细的世界规则、设定和背景资料。当对话中触发关键词时，AI会自动引用相关内容。</p>
+            </div>
+            
+            <div class="worldbook-list" id="worldbook-list">
+                <!-- 动态加载世界书条目 -->
+            </div>
+        </section>
+        
+        <!-- 角色创建工具 -->
+        <section class="section" id="section-creator">
+            <div class="page-header">
+                <h1 class="page-title">角色创建</h1>
+                <p class="page-subtitle">创作属于你自己的九丘角色。参考世界观设定，让你的角色更有代入感。</p>
+            </div>
+            
+            <div class="creator-tool">
+                <!-- 角色模板 -->
+                <div class="creator-section">
+                    <h3>🏷️ 选择角色类型模板</h3>
+                    <div class="template-grid">
+                        <div class="template-card" data-template="disciple">
+                            <div class="template-icon">📖</div>
+                            <div class="template-name">宗门弟子</div>
+                            <div class="template-desc">正统修仙者，有师承源</div>
+                        </div>
+                        <div class="template-card" data-template="wanderer">
+                            <div class="template-icon">🏰</div>
+                            <div class="template-name">散修浪人</div>
+                            <div class="template-desc">无门无派，自学成材</div>
+                        </div>
+                        <div class="template-card" data-template="merchant">
+                            <div class="template-icon">💰</div>
+                            <div class="template-name">行商走匠</div>
+                            <div class="template-desc">走南闯北，精通世故</div>
+                        </div>
+                        <div class="template-card" data-template="heretic">
+                            <div class="template-icon">☠️</div>
+                            <div class="template-name">魔道修士</div>
+                            <div class="template-desc">走偏门，功法诡异</div>
+                        </div>
+                        <div class="template-card" data-template="demon">
+                            <div class="template-icon">🐉</div>
+                            <div class="template-name">化形妖兽</div>
+                            <div class="template-desc">妖族血脉，修炼人身</div>
+                        </div>
+                        <div class="template-card" data-template="noble">
+                            <div class="template-icon">👑</div>
+                            <div class="template-name">世家子弟</div>
+                            <div class="template-desc">贵族后裔，资源丰厚</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 基本信息 -->
+                <div class="creator-section">
+                    <h3>📝 基本信息</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">角色名称 *</label>
+                            <input type="text" class="form-input" id="char-name" placeholder="例如：李青山">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">所属势力</label>
+                            <select class="form-select" id="char-faction">
+                                <option value="">请选择...</option>
+                                <option value="luoxing">落星剑宗</option>
+                                <option value="xuanxian">玄仙门</option>
+                                <option value="yao">十万大山妖族</option>
+                                <option value="sansan">散仙联盟</option>
+                                <option value="mohuang">魔荒殿</option>
+                                <option value="none">无门无派</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">角色标签</label>
+                            <input type="text" class="form-input" id="char-tags" placeholder="用逗号分隔，如：剑修, 冷艳, 御姐">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">触发关键词</label>
+                            <input type="text" class="form-input" id="char-trigger" placeholder="用逗号分隔，用于AI识别角色">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 角色设定 -->
+                <div class="creator-section">
+                    <h3>🎭 角色设定</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">外貌特征</label>
+                            <textarea class="form-textarea" id="char-appearance" placeholder="一头乌黑的长发，皮肤白皙，身穿青色长袍..."></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">性格特点</label>
+                            <textarea class="form-textarea" id="char-personality" placeholder="温柔善良，有耐心，遇事冷静..."></textarea>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">身世背景</label>
+                            <textarea class="form-textarea" id="char-background" placeholder="出身于落星谷的剑修，父母早逝..."></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">修为/能力</label>
+                            <textarea class="form-textarea" id="char-ability" placeholder="掌握冰系剑法，能够凝结薄冰为剑..."></textarea>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">角色剧情线/秘密</label>
+                        <textarea class="form-textarea" id="char-secret" placeholder="身上有一块神秘的玉佩，似乎与某个上古传说有关..."></textarea>
+                    </div>
+                </div>
+                
+                <!-- 预览和导出 -->
+                <div class="creator-section">
+                    <h3>👀 预览与导出</h3>
+                    <div class="preview-panel">
+                        <div class="preview-title">生成的角色提示词</div>
+                        <div class="preview-content" id="preview-prompt">
+点击「生成提示词」按钮查看预览...
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 15px; margin-top: 20px;">
+                        <button class="btn btn-secondary" onclick="generatePrompt()">🔄 生成提示词</button>
+                        <button class="btn btn-primary" onclick="exportCharacter()">📤 导出角色卡</button>
+                        <button class="btn btn-secondary" onclick="saveToGame()">💾 保存到游戏</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+    
+    <!-- 章节存档系统 -->
+    <script src="public/js/core/chapterTemplates.js"></script>
+    <script src="public/js/services/chapterSaveManager.js"></script>
+    <script src="public/js/core/experienceTriggers.js"></script>
+    <script src="public/js/core/experienceGenerator.js"></script>
+    <script src="public/js/core/playerMemorySystem.js"></script>
+    <script src="public/js/services/dialogueProcessor.js"></script>
+    
+    <script>
+        // API基础地址
+        const API_BASE = 'http://localhost:3000/api';
+        
+        // 获取认证头
+        function getAuthHeaders() {
+            const token = localStorage.getItem('galgame_token');
+            return {
+                'Content-Type': 'application/json',
+                'Authorization': token ? `Bearer ${token}` : ''
+            };
+        }
+        
+        // 标签切换
+        document.querySelectorAll('.nav-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                const sectionId = tab.dataset.section;
+                
+                // 更新标签状态
+                document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                
+                // 切换内容区
+                document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+                document.getElementById(`section-${sectionId}`).classList.add('active');
+            });
+        });
+        
+        // 加载角色列表
+        async function loadCharacters() {
+            try {
+                const response = await fetch(`${API_BASE}/characters`, {
+                    headers: getAuthHeaders()
+                });
+                const data = await response.json();
+                
+                if (data.success && data.data) {
+                    const container = document.getElementById('character-list');
+                    container.innerHTML = data.data.map(char => `
+                        <div class="character-card">
+                            <img class="character-image" src="${char.image || 'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'400\' height=\'300\'%3E%3Crect fill=\'%231a1a2e\' width=\'400\' height=\'300\'/%3E%3Ctext x=\'50%25\' y=\'50%25\' fill=\'%238a6d3b\' font-family=\'Microsoft YaHei\' font-size=\'20\' text-anchor=\'middle\'%3E' + encodeURIComponent(char.name) + '%3C/text%3E%3C/svg%3E'}" 
+                                 alt="${char.name}" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'400\' height=\'300\'%3E%3Crect fill=\'%231a1a2e\' width=\'400\' height=\'300\'/%3E%3Ctext x=\'50%25\' y=\'50%25\' fill=\'%238a6d3b\' font-family=\'Microsoft YaHei\' font-size=\'20\' text-anchor=\'middle\'%3E' + encodeURIComponent(char.name) + '%3C/text%3E%3C/svg%3E'">
+                            <div class="character-info">
+                                <div class="character-header">
+                                    <div>
+                                        <div class="character-name">${char.name}</div>
+                                        <div class="character-title">${char.background || '修仙者'}</div>
+                                    </div>
+                                    <span class="character-type">${char.enabled !== false ? '启用' : '禁用'}</span>
+                                </div>
+                                <div class="character-desc">${char.prompt ? char.prompt.substring(0, 100) + '...' : '暂无详细设定'}</div>
+                                <div class="character-traits">
+                                    ${(char.keys || []).map(key => `<span class="trait">${key}</span>`).join('')}
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+            } catch (error) {
+                console.error('加载角色失败:', error);
+            }
+        }
+        
+        // 加载世界书
+        async function loadWorldbook() {
+            try {
+                const response = await fetch(`${API_BASE}/worldbook`, {
+                    headers: getAuthHeaders()
+                });
+                const data = await response.json();
+                
+                if (data.success && data.data) {
+                    const container = document.getElementById('worldbook-list');
+                    container.innerHTML = data.data.map(entry => `
+                        <div class="worldbook-item">
+                            <div class="worldbook-header">
+                                <div class="worldbook-name">${entry.name}</div>
+                                <div class="worldbook-keys">
+                                    ${(entry.keys || []).map(key => `<span class="key-tag">${key}</span>`).join('')}
+                                </div>
+                            </div>
+                            <div class="worldbook-content">${entry.content}</div>
+                        </div>
+                    `).join('');
+                }
+            } catch (error) {
+                console.error('加载世界书失败:', error);
+            }
+        }
+        
+        // 角色模板选择
+        let selectedTemplate = null;
+        document.querySelectorAll('.template-card').forEach(card => {
+            card.addEventListener('click', () => {
+                document.querySelectorAll('.template-card').forEach(c => c.classList.remove('selected'));
+                card.classList.add('selected');
+                selectedTemplate = card.dataset.template;
+                
+                // 根据模板填充默认值
+                fillTemplateDefaults(selectedTemplate);
+            });
+        });
+        
+        // 模板默认值
+        const templateDefaults = {
+            disciple: {
+                appearance: '穿着宗门制式道袍，腰挂令牌',
+                personality: '遵守门规，敬重师长',
+                faction: 'luoxing'
+            },
+            wanderer: {
+                appearance: '穿着破旧但干净的衣服，行囊简单',
+                personality: '性格不羁，不喜约束',
+                faction: 'none'
+            },
+            merchant: {
+                appearance: '穿着华丽的商人服饰，手戴金戒指',
+                personality: '精明能干，善于交际',
+                faction: 'sansan'
+            }
+        };
+        
+        function fillTemplateDefaults(template) {
+            const defaults = templateDefaults[template];
+            if (!defaults) return;
+            
+            if (defaults.appearance) document.getElementById('char-appearance').value = defaults.appearance;
+            if (defaults.personality) document.getElementById('char-personality').value = defaults.personality;
+            if (defaults.faction) document.getElementById('char-faction').value = defaults.faction;
+        }
+        
+        // 生成角色提示词
+        function generatePrompt() {
+            const name = document.getElementById('char-name').value || '未命名';
+            const appearance = document.getElementById('char-appearance').value;
+            const personality = document.getElementById('char-personality').value;
+            const background = document.getElementById('char-background').value;
+            const ability = document.getElementById('char-ability').value;
+            const secret = document.getElementById('char-secret').value;
+            const faction = document.getElementById('char-faction').value;
+            
+            let prompt = `${name}是一个修仙者，具体设定如下：\\n\\n`;
+            
+            if (appearance) prompt += `【外貌特征】\\n${appearance}\\n\\n`;
+            if (personality) prompt += `【性格特点】\\n${personality}\\n\\n`;
+            if (background) prompt += `【身世背景】\\n${background}\\n\\n`;
+            if (ability) prompt += `【修为/能力】\\n${ability}\\n\\n`;
+            if (secret) prompt += `【秘密】\\n${secret}\\n\\n`;
+            if (faction && faction !== 'none') {
+                const factionNames = {
+                    'luoxing': '落星剑宗',
+                    'xuanxian': '玄仙门',
+                    'yao': '十万大山妖族',
+                    'sansan': '散仙联盟',
+                    'mohuang': '魔荒殿'
+                };
+                prompt += `【所属势力】\\n${factionNames[faction] || faction}\\n\\n`;
+            }
+            
+            document.getElementById('preview-prompt').textContent = prompt.trim();
+        }
+        
+        // 导出角色卡
+        function exportCharacter() {
+            const character = {
+                name: document.getElementById('char-name').value,
+                keys: document.getElementById('char-trigger').value.split(/[,，]/).map(k => k.trim()).filter(k => k),
+                tags: document.getElementById('char-tags').value.split(/[,，]/).map(k => k.trim()).filter(k => k),
+                appearance: document.getElementById('char-appearance').value,
+                personality: document.getElementById('char-personality').value,
+                background: document.getElementById('char-background').value,
+                ability: document.getElementById('char-ability').value,
+                secret: document.getElementById('char-secret').value,
+                faction: document.getElementById('char-faction').value,
+                prompt: document.getElementById('preview-prompt').textContent,
+                enabled: true,
+                priority: 100
+            };
+            
+            const blob = new Blob([JSON.stringify(character, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${character.name || '角色'}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            
+            alert('角色卡已导出！');
+        }
+        
+        // 保存到游戏
+        async function saveToGame() {
+            const character = {
+                name: document.getElementById('char-name').value,
+                keys: document.getElementById('char-trigger').value.split(/[,，]/).map(k => k.trim()).filter(k => k),
+                appearance: document.getElementById('char-appearance').value,
+                personality: document.getElementById('char-personality').value,
+                background: document.getElementById('char-background').value,
+                prompt: document.getElementById('preview-prompt').textContent,
+                enabled: true,
+                priority: 100
+            };
+            
+            if (!character.name) {
+                alert('请填写角色名称');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/characters`, {
+                    method: 'POST',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify(character)
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    alert('角色保存成功！');
+                    loadCharacters(); // 刷新角色列表
+                } else {
+                    alert('保存失败：' + data.message);
+                }
+            } catch (error) {
+                console.error('保存角色失败:', error);
+                alert('保存失败，请检查网络连接');
+            }
+        }
+        
+        // 存档管理（故事内的多个存档）- 每个存档有独立的记忆系统
+        const SAVE_KEY = 'galgame_saves';
+        const CURRENT_SAVE_KEY = 'galgame_current_save';
+        
+        // 获取当前世界（书）
+        function getCurrentWorld() {
+            return new URLSearchParams(window.location.search).get('world') || 
+                   localStorage.getItem('galgame_current_world') || 
+                   'dahuang';
+        }
+        
+        // 获取当前世界的所有存档
+        function getSaves() {
+            const world = getCurrentWorld();
+            const allSaves = localStorage.getItem(SAVE_KEY);
+            const saves = allSaves ? JSON.parse(allSaves) : {};
+            return saves[world] || [];
+        }
+        
+        // 保存存档列表
+        function saveSaves(saves) {
+            const world = getCurrentWorld();
+            const allSaves = localStorage.getItem(SAVE_KEY);
+            const data = allSaves ? JSON.parse(allSaves) : {};
+            data[world] = saves;
+            localStorage.setItem(SAVE_KEY, JSON.stringify(data));
+        }
+        
+        // 创建新存档（包含完整的记忆系统结构）
+        function createNewSave(name) {
+            const saves = getSaves();
+            const newSave = {
+                id: 'save_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+                name: name || '存档 ' + (saves.length + 1),
+                world: getCurrentWorld(),
+                
+                // 对话历史
+                messages: [],
+                
+                // 三层记忆系统（每个存档独立）
+                memories: {
+                    short: [],   // 短期记忆
+                    long: [],    // 长期记忆  
+                    core: []     // 核心记忆
+                },
+                
+                // 角色好感度（按角色ID存储）
+                favor: {},
+                
+                // 经历档案
+                experiences: [],
+                
+                // 存档专属配置（对应settings.html用户视图的设置）
+                config: {
+                    memoryDepth: 10,         // 记忆深度
+                    coreMemorySlots: 5,      // 核心记忆保留数
+                    autoSummarize: true,     // 智能总结
+                    temperature: 0.7,        // AI温度
+                    maxTokens: 2000,         // 最大token
+                    model: 'deepseek-chat'   // 模型选择
+                },
+                
+                // 剧情进度
+                progress: {
+                    currentChapter: '',
+                    unlockedEvents: [],
+                    completedRoutes: [],
+                    playTime: 0  // 游戏时长（秒）
+                },
+                
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            };
+            saves.unshift(newSave);
+            saveSaves(saves);
+            return newSave;
+        }
+        
+        // 获取当前存档的完整数据
+        function getCurrentSaveData() {
+            const saveId = localStorage.getItem(CURRENT_SAVE_KEY);
+            if (!saveId) return null;
+            const saves = getSaves();
+            return saves.find(s => s.id === saveId) || null;
+        }
+        
+        // 更新当前存档的某部分数据
+        function updateSaveData(saveId, updates) {
+            const saves = getSaves();
+            const index = saves.findIndex(s => s.id === saveId);
+            if (index === -1) return false;
+            
+            saves[index] = {
+                ...saves[index],
+                ...updates,
+                updatedAt: new Date().toISOString()
+            };
+            saveSaves(saves);
+            return true;
+        }
+        
+        // 继续游戏（加载最近的存档或自动存档）
+        function continueStory() {
+            const currentSaveId = localStorage.getItem(CURRENT_SAVE_KEY);
+            const saves = getSaves();
+            const world = getCurrentWorld();
+            
+            if (currentSaveId) {
+                const save = saves.find(s => s.id === currentSaveId);
+                if (save) {
+                    window.location.href = `galgame_framework.html?world=${world}&save=${save.id}`;
+                    return;
+                }
+            }
+            
+            if (saves.length > 0) {
+                // 有存档但没有当前存档，显示存档管理
+                showSaveSlots();
+            } else {
+                // 完全没有存档，询问是否新建
+                if (confirm('当前故事还没有存档，是否开始新游戏？')) {
+                    startNewGame();
+                }
+            }
+        }
+        
+        // 开始新游戏（新建存档并跳转）
+        function startNewGame() {
+            const name = prompt('给这个存档起个名字（可选）:', '存档 1');
+            if (name === null) return;
+            
+            const save = createNewSave(name);
+            localStorage.setItem(CURRENT_SAVE_KEY, save.id);
+            localStorage.setItem('galgame_current_world', getCurrentWorld());
+            
+            const world = getCurrentWorld();
+            window.location.href = `galgame_framework.html?world=${world}&save=${save.id}&new=1`;
+        }
+        
+        // 显示存档管理
+        function showSaveSlots() {
+            loadSaveList();
+            document.getElementById('save-list-modal').style.display = 'flex';
+        }
+        
+        // 加载存档列表
+        function loadSaveList() {
+            const saves = getSaves();
+            const container = document.getElementById('save-list-container');
+            const currentSaveId = localStorage.getItem(CURRENT_SAVE_KEY);
+            const world = getCurrentWorld();
+            
+            if (saves.length > 0) {
+                container.innerHTML = saves.map(save => {
+                    const isCurrent = save.id === currentSaveId;
+                    const messageCount = save.messages ? save.messages.length : 0;
+                    const date = new Date(save.updatedAt || save.createdAt).toLocaleDateString('zh-CN');
+                    const time = new Date(save.updatedAt || save.createdAt).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+                    
+                    return `
+                        <div style="display: flex; align-items: center; gap: 15px; padding: 15px; background: ${isCurrent ? 'rgba(138, 109, 59, 0.3)' : 'rgba(255,255,255,0.05)'}; border: 1px solid ${isCurrent ? '#8a6d3b' : 'rgba(255,255,255,0.1)'}; border-radius: 12px; transition: all 0.3s;" data-save-id="${save.id}">
+                            <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #8a6d3b, #d4a574); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 28px;">
+                                📁
+                            </div>
+                            <div style="flex: 1; cursor: pointer;" onclick="loadSave('${save.id}')">
+                                <div style="color: #fff; font-size: 16px; font-weight: bold; margin-bottom: 4px;">
+                                    ${isCurrent ? '📌 ' : ''}${save.name || '未命名存档'}
+                                </div>
+                                <div style="color: #888; font-size: 13px; line-height: 1.4;">
+                                    ${messageCount} 条对话 · ${date} ${time}
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 8px;">
+                                <button onclick="copySave('${save.id}')" style="background: rgba(76, 175, 80, 0.2); border: 1px solid #4CAF50; color: #4CAF50; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;" title="复制存档">
+                                    📋 复制
+                                </button>
+                                <button onclick="deleteSave('${save.id}')" style="background: rgba(255, 107, 107, 0.2); border: 1px solid #ff6b6b; color: #ff6b6b; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;" title="删除存档">
+                                    🗑️
+                                </button>
+                                <span style="color: #666; font-size: 20px; cursor: pointer;" onclick="loadSave('${save.id}')">▶️</span>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } else {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 60px 40px; color: #888;">
+                        <div style="font-size: 48px; margin-bottom: 16px;">📂</div>
+                        <div style="font-size: 16px; margin-bottom: 8px;">还没有存档</div>
+                        <div style="font-size: 14px; margin-bottom: 20px;">点击「开始新游戏」创建第一个存档</div>
+                        <button onclick="document.getElementById('save-list-modal').style.display='none'; startNewGame();" style="background: #8a6d3b; color: #fff; border: none; padding: 10px 24px; border-radius: 8px; cursor: pointer; font-size: 14px;">
+                            ➕ 开始新游戏
+                        </button>
+                    </div>
+                `;
+            }
+        }
+        
+        // 加载指定存档
+        function loadSave(saveId) {
+            localStorage.setItem(CURRENT_SAVE_KEY, saveId);
+            const world = getCurrentWorld();
+            window.location.href = `galgame_framework.html?world=${world}&save=${saveId}`;
+        }
+        
+        // 复制存档
+        function copySave(saveId) {
+            const saves = getSaves();
+            const save = saves.find(s => s.id === saveId);
+            if (!save) return;
+            
+            const newName = prompt('复制后的存档名称:', save.name + ' (副本)');
+            if (newName === null) return;
+            
+            const newSave = {
+                ...save,
+                id: 'save_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+                name: newName || save.name + ' (副本)',
+                messages: [...(save.messages || [])],
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            };
+            
+            saves.unshift(newSave);
+            saveSaves(saves);
+            loadSaveList();
+            
+            showNotification('存档已复制', 'success');
+        }
+        
+        // 删除存档
+        function deleteSave(saveId) {
+            if (!confirm('确定要删除这个存档吗？此操作不可恢复。')) return;
+            
+            let saves = getSaves();
+            saves = saves.filter(s => s.id !== saveId);
+            saveSaves(saves);
+            
+            if (localStorage.getItem(CURRENT_SAVE_KEY) === saveId) {
+                localStorage.removeItem(CURRENT_SAVE_KEY);
+            }
+            
+            loadSaveList();
+            showNotification('存档已删除', 'info');
+        }
+        
+        // 显示故事（世界）列表
+        function showWorldList() {
+            loadWorldList();
+            document.getElementById('world-list-modal').style.display = 'flex';
+        }
+        
+        // 加载故事列表
+        async function loadWorldList() {
+            try {
+                const response = await fetch(`${API_BASE}/games`);
+                const data = await response.json();
+                const container = document.getElementById('world-list-container');
+                
+                const currentWorld = getCurrentWorld();
+                
+                if (data.success && data.data && data.data.length > 0) {
+                    container.innerHTML = data.data.map(world => {
+                        const isCurrent = world.slug === currentWorld;
+                        const cover = world.cover || 'data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27100%27 height=%27100%27%3E%3Crect fill=%27%23333%27 width=%27100%27 height=%27100%27/%3E%3Ctext x=%2750%25%27 y=%2750%25%27 fill=%27%23666%27 font-size=%2730%27 text-anchor=%27middle%27%3E%3F%3C/text%3E%3C/svg%3E';
+                        
+                        return `
+                            <div style="display: flex; align-items: center; gap: 15px; padding: 15px; background: ${isCurrent ? 'rgba(138, 109, 59, 0.3)' : 'rgba(255,255,255,0.05)'}; border: 1px solid ${isCurrent ? '#8a6d3b' : 'rgba(255,255,255,0.1)'}; border-radius: 12px; cursor: pointer; transition: all 0.3s;" 
+                                 onclick="switchToWorld('${world.slug}')"
+                                 onmouseover="this.style.background='rgba(138, 109, 59, 0.2)'"
+                                 onmouseout="this.style.background='${isCurrent ? 'rgba(138, 109, 59, 0.3)' : 'rgba(255,255,255,0.05)'}'">
+                                <img src="${cover}" style="width: 70px; height: 90px; object-fit: cover; border-radius: 8px;" alt="${world.title}">
+                                <div style="flex: 1;">
+                                    <div style="color: #fff; font-size: 16px; font-weight: bold; margin-bottom: 4px;">
+                                        ${isCurrent ? '📌 ' : ''}${world.title}
+                                    </div>
+                                    <div style="color: #888; font-size: 13px; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
+                                        ${world.subtitle || world.description || '暂无描述'}
+                                    </div>
+                                </div>
+                                ${isCurrent ? '<span style="color: #8a6d3b; font-size: 12px; padding: 4px 8px; background: rgba(138, 109, 59, 0.2); border-radius: 4px;">当前</span>' : '<span style="color: #666; font-size: 20px;">›</span>'}
+                            </div>
+                        `;
+                    }).join('');
+                } else {
+                    container.innerHTML = '<p style="color: #888; text-align: center; padding: 40px;">暂无故事</p>';
+                }
+            } catch (error) {
+                console.error('加载故事列表失败:', error);
+                document.getElementById('world-list-container').innerHTML = '<p style="color: #ff6b6b; text-align: center; padding: 40px;">加载失败</p>';
+            }
+        }
+        
+        // 切换到指定故事
+        function switchToWorld(slug) {
+            localStorage.setItem('galgame_current_world', slug);
+            localStorage.removeItem(CURRENT_SAVE_KEY); // 切换故事时清除当前存档
+            window.location.href = `world-guide.html?world=${slug}`;
+        }
+        
+        // 显示通知
+        function showNotification(message, type = 'info') {
+            const notif = document.createElement('div');
+            notif.style.cssText = `position: fixed; top: 20px; right: 20px; padding: 12px 20px; background: ${type === 'success' ? '#4CAF50' : type === 'error' ? '#f44336' : '#8a6d3b'}; color: #fff; border-radius: 8px; z-index: 10000; animation: slideIn 0.3s ease;`;
+            notif.textContent = message;
+            document.body.appendChild(notif);
+            
+            setTimeout(() => {
+                notif.style.animation = 'slideOut 0.3s ease';
+                setTimeout(() => notif.remove(), 300);
+            }, 2000);
+        }
+        
+        // 添加动画样式
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from { transform: translateX(100px); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            @keyframes slideOut {
+                from { transform: translateX(0); opacity: 1; }
+                to { transform: translateX(100px); opacity: 0; }
+            }
+        `;
+        document.head.appendChild(style);
+        
+        // 地图位置点击
+        document.querySelectorAll('.map-location').forEach(loc => {
+            loc.addEventListener('click', () => {
+                document.querySelectorAll('.map-location').forEach(l => l.classList.remove('active'));
+                loc.classList.add('active');
+            });
+        });
+        
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            loadCharacters();
+            loadWorldbook();
+            
+            // 点击背景关闭弹窗
+            document.getElementById('save-list-modal')?.addEventListener('click', (e) => {
+                if (e.target.id === 'save-list-modal') {
+                    document.getElementById('save-list-modal').style.display = 'none';
+                }
+            });
+            document.getElementById('world-list-modal')?.addEventListener('click', (e) => {
+                if (e.target.id === 'world-list-modal') {
+                    document.getElementById('world-list-modal').style.display = 'none';
+                }
+            });
+            document.getElementById('chapter-select-modal')?.addEventListener('click', (e) => {
+                if (e.target.id === 'chapter-select-modal') {
+                    document.getElementById('chapter-select-modal').style.display = 'none';
+                }
+            });
+        });
+        
+        // ==================== 新章节存档系统 ====================
+        
+        // 显示章节选择（新游戏）
+        function showChapterSelect() {
+            renderChapterList();
+            document.getElementById('chapter-select-modal').style.display = 'flex';
+        }
+        
+        // 渲染章节列表
+        function renderChapterList() {
+            const container = document.getElementById('chapter-list-container');
+            const chapters = ChapterDB.getAll();
+            
+            container.innerHTML = chapters.map((ch, index) => `
+                <div style="display: flex; align-items: center; gap: 15px; padding: 15px; background: rgba(255,255,255,0.05); border: 1px solid rgba(138, 109, 59, 0.3); border-radius: 12px; cursor: pointer; transition: all 0.3s;" 
+                     onclick="startNewGameWithChapter('${ch.id}')"
+                     onmouseenter="this.style.background='rgba(138, 109, 59, 0.2)'"
+                     onmouseout="this.style.background='rgba(255,255,255,0.05)'">
+                    <div style="width: 50px; height: 50px; background: linear-gradient(135deg, #8a6d3b, #d4a574); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: bold; color: #fff;">
+                        ${index + 1}
+                    </div>
+                    <div style="flex: 1;">
+                        <div style="color: #fff; font-size: 16px; font-weight: bold; margin-bottom: 4px;">${ch.name}</div>
+                        <div style="color: #888; font-size: 13px; line-height: 1.4;">${ch.description || ''}</div>
+                    </div>
+                    <span style="color: #666; font-size: 20px;">›</span>
+                </div>
+            `).join('');
+        }
+        
+        // 从指定章节开始新游戏
+        function startNewGameWithChapter(chapterId) {
+            const name = prompt('给这个存档起个名字（可选）:', '新存档');
+            if (name === null) return; // 用户取消
+            
+            // 使用新的章节存档管理器
+            const save = chapterSaveManager.createSlot(name || '新存档', chapterId);
+            
+            // 关闭弹窗
+            document.getElementById('chapter-select-modal').style.display = 'none';
+            
+            // 跳转到游戏
+            const world = getCurrentWorld();
+            window.location.href = `galgame_framework.html?world=${world}&save=${save.id}&new=1`;
+        }
+        
+        // 重写加载存档列表函数（使用新系统）
+        function loadSaveList() {
+            const slots = chapterSaveManager.getAllSlots();
+            const container = document.getElementById('save-list-container');
+            
+            if (slots.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 60px 40px; color: #888;">
+                        <div style="font-size: 48px; margin-bottom: 16px;">📂</div>
+                        <div style="font-size: 16px; margin-bottom: 8px;">还没有存档</div>
+                        <div style="font-size: 14px; margin-bottom: 20px;">点击「➕ 新游戏」创建第一个存档</div>
+                        <button onclick="document.getElementById('save-list-modal').style.display='none'; showChapterSelect();" style="background: #8a6d3b; color: #fff; border: none; padding: 10px 24px; border-radius: 8px; cursor: pointer; font-size: 14px;">
+                            ➕ 开始新游戏
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = slots.map(slot => {
+                const chapter = ChapterDB.get(slot.startChapter);
+                const date = new Date(slot.lastPlayed).toLocaleDateString('zh-CN');
+                const time = new Date(slot.lastPlayed).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+                
+                return `
+                    <div style="display: flex; align-items: center; gap: 15px; padding: 15px; background: rgba(255,255,255,0.05); border: 1px solid rgba(138, 109, 59, 0.3); border-radius: 12px; transition: all 0.3s;">
+                        <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #8a6d3b, #d4a574); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 28px;">
+                            📁
+                        </div>
+                        <div style="flex: 1; cursor: pointer;" onclick="loadSave('${slot.id}')">
+                            <div style="color: #fff; font-size: 16px; font-weight: bold; margin-bottom: 4px;">${slot.name}</div>
+                            <div style="color: #888; font-size: 13px; line-height: 1.4;">
+                                始于: ${chapter?.name || '未知章节'} · ${date} ${time}
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 8px;">
+                            <button onclick="event.stopPropagation(); editSave('${slot.id}')" style="background: rgba(76, 175, 80, 0.2); border: 1px solid #4CAF50; color: #4CAF50; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;" title="编辑经历">
+                                ✏️ 编辑
+                            </button>
+                            <button onclick="event.stopPropagation(); copySaveNew('${slot.id}')" style="background: rgba(138, 109, 59, 0.2); border: 1px solid #8a6d3b; color: #8a6d3b; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;" title="复制存档">
+                                📋 复制
+                            </button>
+                            <button onclick="event.stopPropagation(); deleteSaveNew('${slot.id}')" style="background: rgba(255, 107, 107, 0.2); border: 1px solid #ff6b6b; color: #ff6b6b; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;" title="删除存档">
+                                🗑️
+                            </button>
+                            <span style="color: #666; font-size: 20px; cursor: pointer;" onclick="loadSave('${slot.id}')">▶️</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        // 加载存档（使用新系统）
+        function loadSave(slotId) {
+            chapterSaveManager.loadSlot(slotId);
+            const world = getCurrentWorld();
+            window.location.href = `galgame_framework.html?world=${world}&save=${slotId}`;
+        }
+        
+        // 编辑存档（跳转到经历编辑器）
+        function editSave(slotId) {
+            window.location.href = `experience-editor.html?save=${slotId}`;
+        }
+        
+        // 复制存档（新系统）
+        function copySaveNew(slotId) {
+            const name = prompt('复制后的存档名称:', '副本');
+            if (name === null) return;
+            
+            try {
+                chapterSaveManager.copySlot(slotId, name);
+                loadSaveList();
+                showNotification('存档已复制', 'success');
+            } catch (e) {
+                showNotification('复制失败: ' + e.message, 'error');
+            }
+        }
+        
+        // 删除存档（新系统）
+        function deleteSaveNew(slotId) {
+            if (!confirm('确定要删除这个存档吗？此操作不可恢复。')) return;
+            
+            chapterSaveManager.deleteSlot(slotId);
+            loadSaveList();
+            showNotification('存档已删除', 'info');
+        }
+        
+        // 重写继续游戏函数
+        function continueStory() {
+            const slots = chapterSaveManager.getAllSlots();
+            
+            if (slots.length === 0) {
+                // 没有存档，显示章节选择
+                showChapterSelect();
+            } else {
+                // 加载最新的存档
+                const latest = slots[0];
+                loadSave(latest.id);
+            }
+        }
+    </script>
+    
+    <!-- 存档管理弹窗 -->
+    <div id="save-list-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 2000; justify-content: center; align-items: center;">
+        <div style="background: linear-gradient(135deg, #1a1a2e, #16213e); border: 1px solid rgba(138, 109, 59, 0.3); border-radius: 16px; padding: 30px; max-width: 700px; width: 90%; max-height: 80vh; overflow-y: auto;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="color: #fff; margin: 0;">💾 存档管理</h2>
+                <div style="display: flex; gap: 10px;">
+                    <button onclick="document.getElementById('save-list-modal').style.display='none'; startNewGame();" style="background: #8a6d3b; color: #fff; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px;">
+                        ➕ 新存档
+                    </button>
+                    <button onclick="document.getElementById('save-list-modal').style.display='none'" style="background: none; border: none; color: #fff; font-size: 24px; cursor: pointer;">&times;</button>
+                </div>
+            </div>
+            <div id="save-list-container" style="display: flex; flex-direction: column; gap: 15px;">
+                <p style="color: #888; text-align: center; padding: 40px;">加载中...</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 故事列表弹窗（切换书） -->
+    <div id="world-list-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 2000; justify-content: center; align-items: center;">
+        <div style="background: linear-gradient(135deg, #1a1a2e, #16213e); border: 1px solid rgba(138, 109, 59, 0.3); border-radius: 16px; padding: 30px; max-width: 600px; width: 90%; max-height: 80vh; overflow-y: auto;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="color: #fff; margin: 0;">📚 选择故事</h2>
+                <button onclick="document.getElementById('world-list-modal').style.display='none'" style="background: none; border: none; color: #fff; font-size: 24px; cursor: pointer;">&times;</button>
+            </div>
+            <div id="world-list-container" style="display: flex; flex-direction: column; gap: 15px;">
+                <p style="color: #888; text-align: center; padding: 40px;">加载中...</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 章节选择弹窗（新游戏） -->
+    <div id="chapter-select-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 2000; justify-content: center; align-items: center;">
+        <div style="background: linear-gradient(135deg, #1a1a2e, #16213e); border: 1px solid rgba(138, 109, 59, 0.3); border-radius: 16px; padding: 30px; max-width: 700px; width: 90%; max-height: 80vh; overflow-y: auto;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="color: #fff; margin: 0;">➕ 开始新游戏</h2>
+                <button onclick="document.getElementById('chapter-select-modal').style.display='none'" style="background: none; border: none; color: #fff; font-size: 24px; cursor: pointer;">&times;</button>
+            </div>
+            <p style="color: var(--text-secondary); margin-bottom: 20px;">选择起始章节，从该时间点开始你的冒险：</p>
+            <div id="chapter-list-container" style="display: flex; flex-direction: column; gap: 15px;">
+                <!-- 动态生成章节列表 -->
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,90 @@
+/**
+ * 基础样式表
+ * @description 包含CSS变量、重置样式和工具类
+ */
+
+/* ==================== CSS变量 ==================== */
+:root {
+    --primary: #8a6d3b;
+    --primary-light: #d4a574;
+    --primary-dark: #5a4a3a;
+    --bg-dark: #1a1a2e;
+    --bg-card: rgba(30, 30, 45, 0.9);
+    --text: #e8e8e8;
+    --text-secondary: #a0a0a0;
+    --border: rgba(138, 109, 59, 0.3);
+    --accent: #ff6b6b;
+    --success: #4CAF50;
+    --warning: #ffc107;
+    --info: #2196F3;
+}
+
+/* ==================== 重置样式 ==================== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+    overflow: hidden;
+    background-color: #000;
+    color: var(--text);
+    line-height: 1.6;
+}
+
+/* ==================== 工具类 ==================== */
+.flex { display: flex; }
+.flex-col { display: flex; flex-direction: column; }
+.items-center { align-items: center; }
+.justify-center { justify-content: center; }
+.justify-between { justify-content: space-between; }
+.gap-10 { gap: 10px; }
+.gap-15 { gap: 15px; }
+.gap-20 { gap: 20px; }
+
+.hidden { display: none !important; }
+.invisible { visibility: hidden; }
+.opacity-0 { opacity: 0; }
+.opacity-1 { opacity: 1; }
+
+.text-center { text-align: center; }
+.text-left { text-align: left; }
+.text-right { text-align: right; }
+
+.w-full { width: 100%; }
+.h-full { height: 100%; }
+
+.rounded { border-radius: 8px; }
+.rounded-lg { border-radius: 12px; }
+.rounded-full { border-radius: 50%; }
+
+.transition { transition: all 0.3s ease; }
+.transition-fast { transition: all 0.2s ease; }
+
+/* ==================== 滚动条样式 ==================== */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(0,0,0,0.3);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(138, 109, 59, 0.5);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(138, 109, 59, 0.7);
+}
+
+/* ==================== 选中文本样式 ==================== */
+::selection {
+    background: rgba(138, 109, 59, 0.3);
+    color: #fff;
+}

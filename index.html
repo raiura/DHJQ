@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>大荒书店 - AI互动小说平台</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        :root {
+            --primary: #8a6d3b;
+            --primary-light: #b89b6c;
+            --bg-dark: #1a1a2e;
+            --bg-card: rgba(30, 30, 46, 0.95);
+            --text-primary: #f5f2eb;
+            --text-secondary: rgba(245, 242, 235, 0.7);
+            --border: rgba(138, 109, 59, 0.3);
+            --gradient-1: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, var(--bg-dark) 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            color: var(--text-primary);
+        }
+
+        .bg-decoration {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 0;
+            background: radial-gradient(circle at 20% 80%, rgba(138, 109, 59, 0.1) 0%, transparent 50%);
+        }
+
+        /* 导航栏 */
+        .navbar {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            height: 70px;
+            background: rgba(26, 26, 46, 0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 40px;
+            z-index: 100;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            background: linear-gradient(135deg, var(--primary-light), var(--primary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            cursor: pointer;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 30px;
+        }
+
+        .nav-link {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 14px;
+            cursor: pointer;
+            padding: 8px 16px;
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            color: var(--primary-light);
+            background: rgba(138, 109, 59, 0.1);
+        }
+
+        .nav-user {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .user-menu {
+            position: relative;
+        }
+
+        .user-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            margin-top: 8px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 8px 0;
+            min-width: 160px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+        }
+
+        .user-dropdown a {
+            display: block;
+            padding: 10px 16px;
+            color: var(--text-primary);
+            text-decoration: none;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+
+        .user-dropdown a:hover {
+            background: rgba(138, 109, 59, 0.2);
+        }
+
+        .user-dropdown hr {
+            border: none;
+            border-top: 1px solid var(--border);
+            margin: 8px 0;
+        }
+
+        .btn {
+            padding: 10px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: var(--gradient-1);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: rgba(138, 109, 59, 0.2);
+            color: var(--primary-light);
+            border: 1px solid var(--border);
+        }
+
+        /* 主内容 */
+        .main-content {
+            position: relative;
+            z-index: 1;
+            padding-top: 70px;
+            min-height: 100vh;
+        }
+
+        /* 页面区域 */
+        .page-section {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .page-section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Hero区域 */
+        .hero {
+            padding: 80px 40px;
+            text-align: center;
+            background: linear-gradient(180deg, rgba(138, 109, 59, 0.1) 0%, transparent 100%);
+        }
+
+        .hero-title {
+            font-size: 48px;
+            font-weight: 800;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, var(--text-primary), var(--primary-light));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero-subtitle {
+            font-size: 18px;
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin: 0 auto 40px;
+        }
+
+        /* 内容区域 */
+        .content-section {
+            padding: 40px;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .section-title {
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        /* 游戏网格 */
+        .game-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 24px;
+        }
+
+        .game-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            overflow: hidden;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .game-card:hover {
+            transform: translateY(-8px);
+            box-shadow: var(--shadow);
+        }
+
+        .game-cover {
+            height: 160px;
+            background: var(--gradient-1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .game-cover img {
+            width: 100%; height: 100%;
+            object-fit: cover;
+        }
+
+        .game-genre {
+            position: absolute;
+            top: 12px; left: 12px;
+            padding: 4px 12px;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 12px;
+            font-size: 12px;
+            color: var(--primary-light);
+        }
+
+        .game-info {
+            padding: 20px;
+        }
+
+        .game-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .game-subtitle {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+        }
+
+        .game-meta {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        /* 分页 */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 40px;
+        }
+
+        .page-btn {
+            padding: 10px 16px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .page-btn:hover, .page-btn.active {
+            background: var(--gradient-1);
+            color: white;
+            border-color: transparent;
+        }
+
+        /* 搜索栏 */
+        .search-box {
+            max-width: 600px;
+            margin: 0 auto 40px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .search-input {
+            flex: 1;
+            padding: 14px 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-size: 16px;
+        }
+
+        /* 分类标签 */
+        .category-list {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+
+        .category-tag {
+            padding: 8px 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            font-size: 14px;
+            color: var(--text-secondary);
+            cursor: pointer;
+        }
+
+        .category-tag:hover, .category-tag.active {
+            background: var(--gradient-1);
+            color: white;
+            border-color: transparent;
+        }
+
+        /* 空状态 */
+        .empty-state {
+            text-align: center;
+            padding: 80px;
+            color: var(--text-secondary);
+        }
+
+        .empty-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+
+        /* 加载 */
+        .loading {
+            text-align: center;
+            padding: 60px;
+        }
+
+        .spinner {
+            width: 40px; height: 40px;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-top-color: var(--primary-light);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            top: 90px; right: 20px;
+            padding: 16px 24px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            transform: translateX(150%);
+            transition: transform 0.3s;
+            z-index: 1000;
+        }
+
+        .toast.show { transform: translateX(0); }
+    </style>
+</head>
+<body>
+    <div class="bg-decoration"></div>
+
+    <nav class="navbar">
+        <div class="logo" onclick="showPage('featured')">📚 大荒书店</div>
+        <div class="nav-links">
+            <a class="nav-link active" data-page="featured" onclick="showPage('featured')">首页推荐</a>
+            <a class="nav-link" data-page="all" onclick="showPage('all')">全部作品</a>
+            <a class="nav-link" data-page="my" onclick="showPage('my')">我的创作</a>
+        </div>
+        <div class="nav-user">
+            <button class="btn btn-secondary" onclick="window.location.href='settings.html'">✏️ 创作</button>
+            <div class="user-menu" id="userMenu" style="display: none;">
+                <button class="btn btn-primary" onclick="toggleUserDropdown()">
+                    <span id="userName">用户</span> ▼
+                </button>
+                <div class="user-dropdown" id="userDropdown" style="display: none;">
+                    <a href="user-character.html">🎭 我的角色</a>
+                    <a href="user-settings.html">⚙️ 设置</a>
+                    <hr>
+                    <a href="#" onclick="handleAuth()">🚪 退出</a>
+                </div>
+            </div>
+            <button class="btn btn-primary" id="authBtn" onclick="handleAuth()">登录</button>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <!-- 首页推荐 -->
+        <section class="page-section active" id="page-featured">
+            <div class="hero">
+                <h1 class="hero-title">探索无限世界</h1>
+                <p class="hero-subtitle">每一本书都是一个世界，每一个选择都决定命运</p>
+            </div>
+
+            <div class="content-section">
+                <div class="section-header">
+                    <h2 class="section-title">🔥 热门推荐</h2>
+                    <button class="btn btn-secondary" onclick="showPage('all')">查看全部 →</button>
+                </div>
+                <div class="game-grid" id="featuredGrid">
+                    <div class="loading"><div class="spinner"></div><p>加载中...</p></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 全部作品 -->
+        <section class="page-section" id="page-all">
+            <div class="content-section">
+                <h2 class="section-title" style="margin-bottom: 30px;">📚 全部作品</h2>
+                
+                <div class="search-box">
+                    <input type="text" class="search-input" id="searchInput" placeholder="搜索世界、故事..." onkeypress="if(event.key==='Enter')loadAllGames()">
+                    <button class="btn btn-primary" onclick="loadAllGames()">🔍 搜索</button>
+                </div>
+
+                <div class="category-list" id="categoryList">
+                    <span class="category-tag active" data-genre="" onclick="filterByGenre('')">全部</span>
+                    <span class="category-tag" data-genre="修仙" onclick="filterByGenre('修仙')">修仙</span>
+                    <span class="category-tag" data-genre="奇幻" onclick="filterByGenre('奇幻')">奇幻</span>
+                    <span class="category-tag" data-genre="科幻" onclick="filterByGenre('科幻')">科幻</span>
+                    <span class="category-tag" data-genre="历史" onclick="filterByGenre('历史')">历史</span>
+                    <span class="category-tag" data-genre="恋爱" onclick="filterByGenre('恋爱')">恋爱</span>
+                </div>
+
+                <div class="game-grid" id="allGamesGrid">
+                    <div class="loading"><div class="spinner"></div><p>加载中...</p></div>
+                </div>
+
+                <div class="pagination" id="pagination"></div>
+            </div>
+        </section>
+
+        <!-- 我的创作 -->
+        <section class="page-section" id="page-my">
+            <div class="content-section">
+                <div class="section-header">
+                    <h2 class="section-title">✏️ 我的创作</h2>
+                    <button class="btn btn-primary" onclick="window.location.href='settings.html'">+ 创建新世界</button>
+                </div>
+                <div class="game-grid" id="myGamesGrid">
+                    <div class="loading"><div class="spinner"></div><p>加载中...</p></div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        const API_BASE = 'http://localhost:3000/api';
+        let currentUser = null;
+        let currentPage = 1;
+        let currentGenre = '';
+        let totalPages = 1;
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            checkAuth();
+            loadFeaturedGames();
+            loadAllGames();
+            // 默认加载featured页面，my页面等点击时再加载
+        });
+
+        // 检查登录
+        function checkAuth() {
+            const token = localStorage.getItem('galgame_token');
+            const userStr = localStorage.getItem('galgame_user');
+            
+            if (token && userStr) {
+                currentUser = JSON.parse(userStr);
+                document.getElementById('authBtn').style.display = 'none';
+                document.getElementById('userMenu').style.display = 'block';
+                document.getElementById('userName').textContent = currentUser.nickname || currentUser.username;
+            } else {
+                document.getElementById('authBtn').style.display = 'block';
+                document.getElementById('userMenu').style.display = 'none';
+            }
+        }
+
+        // 切换用户下拉菜单
+        function toggleUserDropdown() {
+            const dropdown = document.getElementById('userDropdown');
+            dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
+        }
+
+        // 点击外部关闭下拉菜单
+        document.addEventListener('click', (e) => {
+            const userMenu = document.getElementById('userMenu');
+            if (userMenu && !userMenu.contains(e.target)) {
+                document.getElementById('userDropdown').style.display = 'none';
+            }
+        });
+
+        // 处理登录/退出
+        function handleAuth() {
+            if (currentUser) {
+                localStorage.removeItem('galgame_token');
+                localStorage.removeItem('galgame_user');
+                currentUser = null;
+                checkAuth();
+                showToast('已退出登录');
+                showPage('featured');
+            } else {
+                window.location.href = 'login.html';
+            }
+        }
+
+        // 页面切换
+        function showPage(page) {
+            // 更新导航状态
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.remove('active');
+                if (link.dataset.page === page) {
+                    link.classList.add('active');
+                }
+            });
+
+            // 显示对应页面
+            document.querySelectorAll('.page-section').forEach(section => {
+                section.classList.remove('active');
+            });
+            document.getElementById(`page-${page}`).classList.add('active');
+
+            // 加载对应数据
+            if (page === 'my') {
+                if (!currentUser) {
+                    window.location.href = 'login.html';
+                    return;
+                }
+                loadMyGames();
+            } else if (page === 'all') {
+                loadAllGames();
+            }
+        }
+
+        // 加载推荐游戏
+        async function loadFeaturedGames() {
+            try {
+                const response = await fetch(`${API_BASE}/games/featured/list`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    // 合并推荐数据去重
+                    const allGames = [...data.data.popular, ...data.data.newest, ...data.data.topRated];
+                    const uniqueGames = allGames.filter((game, index, self) => 
+                        index === self.findIndex(g => g._id === game._id)
+                    ).slice(0, 6);
+                    
+                    renderGames('featuredGrid', uniqueGames);
+                }
+            } catch (error) {
+                console.error('加载推荐失败:', error);
+                document.getElementById('featuredGrid').innerHTML = '<div class="empty-state">加载失败</div>';
+            }
+        }
+
+        // 加载全部游戏
+        async function loadAllGames(page = 1) {
+            try {
+                const search = document.getElementById('searchInput').value;
+                let url = `${API_BASE}/games?page=${page}&limit=12`;
+                if (currentGenre) url += `&genre=${currentGenre}`;
+                if (search) url += `&search=${encodeURIComponent(search)}`;
+
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                if (data.success) {
+                    renderGames('allGamesGrid', data.data);
+                    totalPages = Math.ceil(data.pagination.total / data.pagination.pageSize);
+                    renderPagination(page);
+                    currentPage = page;
+                }
+            } catch (error) {
+                console.error('加载游戏失败:', error);
+                document.getElementById('allGamesGrid').innerHTML = '<div class="empty-state">加载失败</div>';
+            }
+        }
+
+        // 加载我的游戏
+        async function loadMyGames() {
+            if (!currentUser) return;
+
+            try {
+                const token = localStorage.getItem('galgame_token');
+                const response = await fetch(`${API_BASE}/games/my`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    if (data.data.length === 0) {
+                        document.getElementById('myGamesGrid').innerHTML = `
+                            <div class="empty-state" style="grid-column: 1 / -1;">
+                                <div class="empty-icon">📝</div>
+                                <p>还没有创作任何世界</p>
+                                <button class="btn btn-primary" onclick="window.location.href='settings.html'" style="margin-top: 20px;">
+                                    创建第一个世界
+                                </button>
+                            </div>
+                        `;
+                    } else {
+                        renderGames('myGamesGrid', data.data, true);
+                    }
+                }
+            } catch (error) {
+                console.error('加载我的游戏失败:', error);
+            }
+        }
+
+        // 渲染游戏卡片
+        function renderGames(containerId, games, isMyGame = false) {
+            const container = document.getElementById(containerId);
+            
+            if (!games || games.length === 0) {
+                container.innerHTML = '<div class="empty-state" style="grid-column: 1 / -1;"><div class="empty-icon">📚</div><p>暂无游戏</p></div>';
+                return;
+            }
+
+            container.innerHTML = games.map(game => {
+                // 判断是否可以编辑：是自己的游戏，或者是管理员
+                const canEdit = isMyGame || (currentUser && currentUser.role === 'admin');
+                
+                return `
+                <div class="game-card" style="position: relative;">
+                    <div onclick="enterGame('${game.slug}')" style="cursor: pointer;">
+                        <div class="game-cover">
+                            ${game.cover ? `<img src="${game.cover}" alt="${game.title}">` : ''}
+                            <span class="game-genre">${game.genre || '其他'}</span>
+                            ${isMyGame ? `
+                                <span class="game-status" style="
+                                    position: absolute;
+                                    top: 10px;
+                                    right: 10px;
+                                    padding: 4px 10px;
+                                    border-radius: 12px;
+                                    font-size: 11px;
+                                    font-weight: 500;
+                                    background: ${game.status === 'published' ? 'rgba(40, 167, 69, 0.9)' : 'rgba(255, 193, 7, 0.9)'};
+                                    color: ${game.status === 'published' ? '#fff' : '#000'};
+                                ">${game.status === 'published' ? '已发布' : '草稿'}</span>
+                            ` : ''}
+                        </div>
+                        <div class="game-info">
+                            <h3 class="game-title">${game.title}</h3>
+                            <p class="game-subtitle">${game.subtitle || '暂无简介'}</p>
+                            <div class="game-meta">
+                                <span>👤 ${game.creatorName || '匿名'}</span>
+                                <span>▶ ${game.stats?.plays || 0} 次游玩</span>
+                            </div>
+                        </div>
+                    </div>
+                    ${canEdit ? `
+                        <div class="game-actions" style="
+                            display: flex;
+                            gap: 8px;
+                            padding: 12px 16px;
+                            border-top: 1px solid rgba(138, 109, 59, 0.2);
+                            margin-top: 12px;
+                        ">
+                            <button class="btn btn-secondary" style="flex: 1; padding: 8px; font-size: 13px;" 
+                                onclick="event.stopPropagation(); editGame('${game._id}')">
+                                ✏️ 编辑
+                            </button>
+                            ${game.status !== 'published' ? `
+                                <button class="btn btn-primary" style="flex: 1; padding: 8px; font-size: 13px;"
+                                    onclick="event.stopPropagation(); publishGame('${game._id}')">
+                                    🚀 发布
+                                </button>
+                            ` : ''}
+                        </div>
+                    ` : ''}
+                </div>
+            `}).join('');
+        }
+
+        // 编辑游戏
+        function editGame(gameId) {
+            window.location.href = `settings.html?id=${gameId}`;
+        }
+
+        // 发布游戏
+        async function publishGame(gameId) {
+            if (!confirm('确定要发布这个世界吗？发布后其他玩家将可以看到。')) {
+                return;
+            }
+
+            try {
+                const token = localStorage.getItem('galgame_token');
+                const response = await fetch(`${API_BASE}/games/${gameId}/publish`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showToast('发布成功！');
+                    loadMyGames(); // 刷新列表
+                } else {
+                    showToast(result.message || '发布失败');
+                }
+            } catch (error) {
+                showToast('网络错误');
+            }
+        }
+
+        // 渲染分页
+        function renderPagination(currentPage) {
+            const container = document.getElementById('pagination');
+            if (totalPages <= 1) {
+                container.innerHTML = '';
+                return;
+            }
+
+            let html = '';
+            
+            // 上一页
+            if (currentPage > 1) {
+                html += `<button class="page-btn" onclick="loadAllGames(${currentPage - 1})">←</button>`;
+            }
+
+            // 页码
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
+                    html += `<button class="page-btn ${i === currentPage ? 'active' : ''}" onclick="loadAllGames(${i})">${i}</button>`;
+                } else if (i === currentPage - 3 || i === currentPage + 3) {
+                    html += `<span style="color: var(--text-secondary);">...</span>`;
+                }
+            }
+
+            // 下一页
+            if (currentPage < totalPages) {
+                html += `<button class="page-btn" onclick="loadAllGames(${currentPage + 1})">→</button>`;
+            }
+
+            container.innerHTML = html;
+        }
+
+        // 按分类筛选
+        function filterByGenre(genre) {
+            currentGenre = genre;
+            currentPage = 1;
+            
+            // 更新标签样式
+            document.querySelectorAll('.category-tag').forEach(tag => {
+                tag.classList.remove('active');
+                if (tag.dataset.genre === genre) {
+                    tag.classList.add('active');
+                }
+            });
+            
+            loadAllGames(1);
+        }
+
+        // 进入游戏
+        function enterGame(slug) {
+            localStorage.setItem('galgame_current_world', slug);
+            window.location.href = `world-guide.html?world=${slug}`;
+        }
+
+        // Toast
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+    </script>
+</body>
+</html>

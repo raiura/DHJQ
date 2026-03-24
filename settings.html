@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>大荒九丘 - AI设置中心</title>
+    <link rel="stylesheet" href="public/css/settings.css">
+</head>
+<body>
+    <!-- 背景动画 -->
+    <div class="bg-animation"></div>
+    <div class="particles" id="particles"></div>
+
+    <!-- 主容器 -->
+    <div class="app-container">
+        <!-- 侧边栏 -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo" id="headerTitle">🔮 世界编辑器</div>
+                <div class="logo-subtitle" id="headerSubtitle">创建你的独特世界</div>
+            </div>
+
+            <nav class="nav-menu">
+                <!-- 基础设置 -->
+                <div class="nav-section">
+                    <div class="nav-section-title">基础设置</div>
+                    <div class="nav-item active" data-page="dashboard">
+                        <span class="nav-icon">📊</span>
+                        <span class="nav-text">总览面板</span>
+                    </div>
+                    <div class="nav-item" data-page="ai-settings">
+                        <span class="nav-icon">🤖</span>
+                        <span class="nav-text">AI 配置</span>
+                    </div>
+                    <div class="nav-item" data-page="worldbook">
+                        <span class="nav-icon">📚</span>
+                        <span class="nav-text">世界书</span>
+                    </div>
+                </div>
+
+                <!-- 内容 -->
+                <div class="nav-section">
+                    <div class="nav-section-title">内容</div>
+                    <div class="nav-item" data-page="prompts">
+                        <span class="nav-icon">📝</span>
+                        <span class="nav-text">提示词设置</span>
+                    </div>
+                    <div class="nav-item" data-page="characters">
+                        <span class="nav-icon">👥</span>
+                        <span class="nav-text">世界角色</span>
+                    </div>
+                    <div class="nav-item" data-page="memories">
+                        <span class="nav-icon">🧠</span>
+                        <span class="nav-text">记忆管理</span>
+                    </div>
+                    <div class="nav-item" data-page="gallery">
+                        <span class="nav-icon">🖼️</span>
+                        <span class="nav-text">图库管理</span>
+                    </div>
+                    <div class="nav-item" data-page="chat-ui">
+                        <span class="nav-icon">💬</span>
+                        <span class="nav-text">聊天界面</span>
+                    </div>
+                </div>
+
+                <!-- 用户 -->
+                <div class="nav-section">
+                    <div class="nav-section-title">用户</div>
+                    <div class="nav-item" data-page="user-worldbook">
+                        <span class="nav-icon">📖</span>
+                        <span class="nav-text">我的世界书</span>
+                    </div>
+                    <div class="nav-item" data-page="user-prompts">
+                        <span class="nav-icon">✏️</span>
+                        <span class="nav-text">我的提示词</span>
+                    </div>
+                    <div class="nav-item" data-page="user-characters">
+                        <span class="nav-icon">🎭</span>
+                        <span class="nav-text">我的角色</span>
+                    </div>
+                    <div class="nav-item" data-page="user-ai-config">
+                        <span class="nav-icon">⚙️</span>
+                        <span class="nav-text">AI配置</span>
+                    </div>
+                    <div class="nav-item" data-page="user-memory">
+                        <span class="nav-icon">💾</span>
+                        <span class="nav-text">记忆管理</span>
+                    </div>
+                </div>
+                
+                <!-- 平台 -->
+                <div class="nav-section">
+                    <div class="nav-section-title">平台</div>
+                    <div class="nav-item" onclick="window.location.href='user-settings.html'" style="cursor: pointer;">
+                        <span class="nav-icon">⚙️</span>
+                        <span class="nav-text">账号设置</span>
+                    </div>
+                    <div class="nav-item" onclick="window.location.href='index.html'" style="cursor: pointer;">
+                        <span class="nav-icon">🏠</span>
+                        <span class="nav-text">返回书店</span>
+                    </div>
+                </div>
+                
+                <!-- 存档选择器（用户视图显示） -->
+                <div class="nav-section user-only" id="saveSelectorSection" style="display: none;">
+                    <div class="nav-section-title">当前存档</div>
+                    <div style="padding: 10px; background: rgba(138, 109, 59, 0.1); border-radius: 8px; margin: 0 10px;">
+                        <select id="saveSelector" onchange="onSaveChange(this.value)" style="width: 100%; padding: 8px; background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 6px; color: var(--text-primary); font-size: 13px;">
+                            <option value="">选择存档...</option>
+                        </select>
+                        <div id="saveInfo" style="margin-top: 8px; font-size: 11px; color: var(--text-secondary);"></div>
+                        <button onclick="createNewSaveFromSettings()" style="width: 100%; margin-top: 8px; padding: 6px; background: var(--primary); border: none; border-radius: 6px; color: #fff; font-size: 12px; cursor: pointer;">
+                            ➕ 新建存档
+                        </button>
+                    </div>
+                </div>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <div class="user-avatar">👤</div>
+                    <div class="user-details">
+                        <div class="user-name" id="currentUsername">加载中...</div>
+                        <div class="user-role">创作者</div>
+                    </div>
+                </div>
+                <button class="btn btn-secondary" style="width: 100%; margin-top: 15px;" onclick="logout()">
+                    <span>🚪</span> 退出登录
+                </button>
+            </div>
+        </aside>
+
+        <!-- 主内容区 -->
+        <main class="main-content">
+            <!-- ==================== 总览面板 ==================== -->
+            <section class="page-section active" id="page-dashboard">
+                <div class="page-header">
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <h1 class="page-title" id="pageTitle">📊 创建新世界</h1>
+                        <span class="status-badge status-draft" id="gameStatus">草稿</span>
+                    </div>
+                    <div class="page-actions">
+                        <!-- 视图切换按钮（作者/管理员可见并可切换） -->
+                        <button class="view-toggle-btn" id="viewToggleBtn" onclick="toggleViewMode()" title="点击切换视图">
+                            <span class="mode-indicator"></span>
+                            <span id="viewModeText">管理员视图</span>
+                        </button>
+                        <button class="btn btn-secondary" id="previewBtn" onclick="previewGame()">
+                            <span>👁️</span> 预览
+                        </button>
+                        <button class="btn btn-success admin-only" id="publishBtn" onclick="publishGame()" style="display: none;">
+                            <span>🚀</span> 发布
+                        </button>
+                        <button class="btn btn-warning admin-only" id="unpublishBtn" onclick="unpublishGame()" style="display: none;">
+                            <span>⏸️</span> 下架
+                        </button>
+                        <button class="btn btn-primary admin-only" onclick="saveGame()">
+                            <span>💾</span> 保存
+                        </button>
+                        <button class="btn btn-secondary admin-only" onclick="exportGameData()">
+                            <span>📤</span> 导出
+                        </button>
+                        <button class="btn btn-secondary admin-only" onclick="importGameData()">
+                            <span>📥</span> 导入
+                        </button>
+                        <button class="btn btn-danger admin-only" id="deleteBtn" onclick="deleteGame()" style="display: none;">
+                            <span>🗑️</span> 删除
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 管理员视图：世界编辑表单 -->
+                <div class="admin-view admin-only">
+                    <div class="content-grid">
+                        <!-- 基本信息 -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">📋 基本信息</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="form-group">
+                                    <label class="form-label">世界名称 *</label>
+                                    <input type="text" class="form-input" id="gameTitle" placeholder="输入世界名称">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">副标题</label>
+                                    <input type="text" class="form-input" id="gameSubtitle" placeholder="简短的副标题">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">URL标识 *</label>
+                                    <input type="text" class="form-input" id="gameSlug" placeholder="如：my-world">
+                                    <p class="form-hint">用于URL访问，只能包含字母、数字和连字符</p>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">类型</label>
+                                    <select class="form-select" id="gameGenre">
+                                        <option value="修真">修真</option>
+                                        <option value="玄幻">玄幻</option>
+                                        <option value="科幻">科幻</option>
+                                        <option value="现代">现代</option>
+                                        <option value="古风">古风</option>
+                                        <option value="其他">其他</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 封面与背景 -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">🎨 封面与背景</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="form-group">
+                                    <label class="form-label">封面图片 URL</label>
+                                    <input type="text" class="form-input" id="gameCover" placeholder="https://example.com/cover.jpg">
+                                    <p class="form-hint">建议尺寸：800x450px</p>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">背景图片 URL</label>
+                                    <input type="text" class="form-input" id="gameBackground" placeholder="https://example.com/bg.jpg">
+                                    <p class="form-hint">聊天界面的背景图片</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 世界描述 -->
+                        <div class="card" style="grid-column: 1 / -1;">
+                            <div class="card-header">
+                                <h3 class="card-title">📝 世界描述</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="form-group">
+                                    <label class="form-label">简介</label>
+                                    <textarea class="form-textarea" id="gameDescription" rows="3" placeholder="介绍你的世界，吸引玩家来体验..."></textarea>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">详细世界观</label>
+                                    <textarea class="form-textarea" id="gameWorldSetting" rows="6" placeholder="详细描述你的世界观设定，包括历史背景、地理结构、势力分布、力量体系等..."></textarea>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">开场白</label>
+                                    <textarea class="form-textarea" id="gameOpening" rows="3" placeholder="玩家首次进入时看到的欢迎语..."></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 用户视图：世界展示 -->
+                <div class="user-view" style="display: none;">
+                    <div class="world-preview">
+                        <div class="preview-cover" id="userViewCoverPlaceholder">
+                            <img id="userViewCover" style="display: none;" alt="封面">
+                            <div class="cover-overlay">
+                                <h2 id="userViewTitle">未知世界</h2>
+                                <p id="userViewSubtitle">暂无副标题</p>
+                            </div>
+                        </div>
+                        <div class="preview-content">
+                            <div class="preview-meta">
+                                <span class="preview-genre" id="userViewGenre">未分类</span>
+                                <span class="preview-status" id="userViewStatus">草稿</span>
+                            </div>
+                            <div class="preview-description" id="userViewDescription">
+                                暂无介绍
+                            </div>
+                            <div class="preview-opening">
+                                <h4>🎬 开场</h4>
+                                <p id="userViewOpening">欢迎来到这个游戏世界...</p>
+                            </div>
+                            <div class="preview-worldsetting">
+                                <h4>🌍 世界观</h4>
+                                <p id="userViewWorldSetting">暂无详细设定</p>
+                            </div>
+                            <div class="preview-actions" style="margin-top: 30px; text-align: center;">
+                                <button class="btn btn-primary btn-lg" onclick="previewGame()" style="width: 100%; max-width: 300px;">
+                                    <span>🎮</span> 开始体验
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==================== AI 配置 ==================== -->
+            <section class="page-section" id="page-ai-settings">
+                <div class="page-header">
+                    <h1 class="page-title">🤖 AI 配置</h1>
+                </div>
+                <div class="content-grid">
+                    <div class="card" style="grid-column: 1 / -1;">
+                        <div class="card-header">
+                            <h3 class="card-title">API 设置</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label class="form-label">API 密钥</label>
+                                <input type="password" class="form-input" id="apiKey" placeholder="sk-...">
+                                <p class="form-hint">你的 OpenAI 或兼容 API 密钥</p>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">API 地址</label>
+                                <input type="text" class="form-input" id="apiUrl" placeholder="https://api.openai.com/v1">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">模型</label>
+                                <input type="text" class="form-input" id="model" placeholder="gpt-4">
+                            </div>
+                            <div class="form-actions">
+                                <button class="btn btn-secondary" onclick="testAIConnection()">测试连接</button>
+                                <button class="btn btn-primary" onclick="saveAISettings()">保存设置</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==================== 世界书 ==================== -->
+            <section class="page-section" id="page-worldbook">
+                <div class="page-header">
+                    <h1 class="page-title">📚 世界书清单（知识库）</h1>
+                    <div class="page-actions">
+                        <button class="btn btn-secondary" onclick="exportWorldbookOnly()">导出</button>
+                        <button class="btn btn-secondary" onclick="importWorldbookEntries()">导入</button>
+                        <button class="btn btn-primary" onclick="openWorldbookModal()">+ 新建条目</button>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-body">
+                        <div class="entries-stats" style="margin-bottom: 20px;">
+                            <span>总条目数: <strong id="originalWbTotalEntries">0</strong></span>
+                        </div>
+                        <div class="entries-list" id="originalWorldbookList">
+                            <!-- 动态生成 -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==================== 提示词设置 ==================== -->
+            <section class="page-section" id="page-prompts">
+                <div class="page-header">
+                    <h1 class="page-title">📝 提示词设置</h1>
+                    <div class="page-actions">
+                        <button class="btn btn-secondary" onclick="resetPrompts()">重置</button>
+                        <button class="btn btn-primary" onclick="savePrompts()">保存</button>
+                    </div>
+                </div>
+                <div class="content-grid">
+                    <div class="card" style="grid-column: 1 / -1;">
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label class="form-label">前置提示词</label>
+                                <textarea class="form-textarea" id="originalPrePrompt" rows="4" placeholder="在对话开始前注入的提示词..."></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">主提示词</label>
+                                <textarea class="form-textarea" id="originalMainPrompt" rows="6" placeholder="主要的角色扮演提示词..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==================== 世界角色 ==================== -->
+            <section class="page-section" id="page-characters">
+                <div class="page-header">
+                    <h1 class="page-title">👥 世界角色</h1>
+                    <div class="page-actions">
+                        <button class="btn btn-secondary" onclick="exportCharactersOnly()">导出</button>
+                        <button class="btn btn-secondary" onclick="importCharactersBatch()">导入</button>
+                        <button class="btn btn-secondary" onclick="resetCharacters()">重置</button>
+                        <button class="btn btn-secondary" onclick="fixCharacterImages(event)" title="修复失效的外部图片地址">🔧 修复图片</button>
+                        <button class="btn btn-primary" onclick="openCharacterModal()">+ 新建角色</button>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-body">
+                        <div class="characters-grid" id="originalCharacterList">
+                            <!-- 动态生成 -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==================== 记忆管理 ==================== -->
+            <section class="page-section" id="page-memories">
+                <div class="page-header">
+                    <h1 class="page-title">🧠 记忆管理</h1>
+                    <div class="page-actions">
+                        <button class="btn btn-secondary" onclick="loadMemories()">刷新</button>
+                        <button class="btn btn-warning" onclick="solidifyTimeline()" title="将当前核心记忆写入世界书存档">固化时间线</button>
+                        <button class="btn btn-secondary" onclick="exportAllMemories()">导出</button>
+                        <button class="btn btn-secondary" onclick="importMemories()">导入</button>
+                        <button class="btn btn-danger" onclick="clearMemories()">清空</button>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-body">
+                        <div class="memories-list" id="memoriesList">
+                            <!-- 动态生成 -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==================== 图库管理 ==================== -->
+            <section class="page-section" id="page-gallery">
+                <div class="page-header">
+                    <h1 class="page-title">🖼️ 图库管理</h1>
+                    <div class="page-actions">
+                        <button class="btn btn-primary" onclick="uploadGalleryImage()">+ 上传图片</button>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-body">
+                        <div class="gallery-grid" id="galleryGrid">
+                            <!-- 动态生成 -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==================== 聊天界面 ==================== -->
+            <section class="page-section" id="page-chat-ui">
+                <div class="page-header">
+                    <h1 class="page-title">💬 聊天界面设置</h1>
+                    <div class="page-actions">
+                        <button class="btn btn-secondary" onclick="resetChatUISettings()">重置</button>
+                        <button class="btn btn-primary" onclick="saveChatUISettings()">保存</button>
+                    </div>
+                </div>
+                <div class="content-grid">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">外观设置</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label class="form-label">字体</label>
+                                <select class="form-select" id="chatUIFont">
+                                    <option value="Microsoft YaHei">微软雅黑</option>
+                                    <option value="SimSun">宋体</option>
+                                    <option value="Arial">Arial</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">字号</label>
+                                <input type="number" class="form-input" id="chatUIFontSize" value="16" min="12" max="24">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">布局设置</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label class="form-label">对话框位置</label>
+                                <select class="form-select" id="chatUIDialogPosition">
+                                    <option value="bottom">底部</option>
+                                    <option value="right">右侧</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==================== 用户页面（简化版） ==================== -->
+            <section class="page-section" id="page-user-worldbook">
+                <div class="page-header">
+                    <h1 class="page-title">📖 我的世界书</h1>
+                </div>
+                <div class="card">
+                    <div class="card-body">
+                        <div class="entries-stats" style="margin-bottom: 20px;">
+                            <span>我的条目数: <strong id="userWbTotalEntries">0</strong></span>
+                        </div>
+                        <div class="entries-list" id="userWorldbookList"></div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="page-section" id="page-user-prompts">
+                <div class="page-header">
+                    <h1 class="page-title">✏️ 我的提示词</h1>
+                </div>
+                <div class="card">
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label class="form-label">个人背景</label>
+                            <textarea class="form-textarea" id="userPersonalBackground" rows="4" placeholder="描述你自己的背景故事..."></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">前置提示词</label>
+                            <textarea class="form-textarea" id="userPrePrompt" rows="4"></textarea>
+                        </div>
+                        <div class="form-actions">
+                            <button class="btn btn-primary" onclick="saveUserPrompt()">保存</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="page-section" id="page-user-characters">
+                <div class="page-header">
+                    <h1 class="page-title">🎭 我的角色</h1>
+                    <div class="page-actions">
+                        <button class="btn btn-primary" onclick="openCharacterModal()">+ 新建角色</button>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-body">
+                        <div class="characters-grid" id="userCharacterList"></div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="page-section" id="page-user-ai-config">
+                <div class="page-header">
+                    <h1 class="page-title">⚙️ AI 配置</h1>
+                </div>
+                <div class="card">
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label class="form-label">温度 (Temperature)</label>
+                            <input type="range" class="form-range" id="userAITemperature" min="0" max="2" step="0.1" value="0.7">
+                            <span id="tempValue">0.7</span>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">最大Token</label>
+                            <input type="number" class="form-input" id="userAIMaxTokens" value="2000" min="100" max="4000">
+                        </div>
+                        <div class="form-actions">
+                            <button class="btn btn-secondary" onclick="testUserAIConnection()">测试</button>
+                            <button class="btn btn-primary" onclick="saveUserAIConfig()">保存</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="page-section" id="page-user-memory">
+                <div class="page-header">
+                    <h1 class="page-title">💾 记忆管理</h1>
+                    <div class="page-actions">
+                        <button class="btn btn-secondary" onclick="loadUserMemoryList()">刷新</button>
+                        <button class="btn btn-secondary" onclick="exportUserMemories()">导出</button>
+                        <button class="btn btn-danger" onclick="clearAllUserMemories()">清空所有</button>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-body">
+                        <div id="userMemoryStats" style="margin-bottom: 20px;"></div>
+                        <div class="memories-list" id="userMemoryList"></div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- 模态框容器 -->
+    <div class="modal-overlay" id="modalOverlay" onclick="closeAllModals()" style="display: none;"></div>
+    
+    <!-- 世界书条目模态框 -->
+    <div class="modal" id="worldbookModal" style="display: none;">
+        <div class="modal-header">
+            <h3 class="modal-title">编辑世界书条目</h3>
+            <button class="modal-close" onclick="closeModal('worldbookModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label class="form-label">关键词 *</label>
+                <input type="text" class="form-input" id="wbKeyword" placeholder="用逗号分隔多个关键词">
+            </div>
+            <div class="form-group">
+                <label class="form-label">内容 *</label>
+                <textarea class="form-textarea" id="wbContent" rows="6" placeholder="输入匹配此关键词时的回复内容..."></textarea>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeModal('worldbookModal')">取消</button>
+            <button class="btn btn-primary" onclick="saveWorldbookEntry()">保存</button>
+        </div>
+    </div>
+
+    <!-- 角色模态框 -->
+    <div class="modal" id="characterModal" style="display: none;">
+        <div class="modal-header">
+            <h3 class="modal-title">编辑角色</h3>
+            <button class="modal-close" onclick="closeModal('characterModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label class="form-label">角色名称 *</label>
+                <input type="text" class="form-input" id="charName" placeholder="角色名称">
+            </div>
+            <div class="form-group">
+                <label class="form-label">头像 URL</label>
+                <input type="text" class="form-input" id="charAvatar" placeholder="https://example.com/avatar.jpg">
+            </div>
+            <div class="form-group">
+                <label class="form-label">性格描述</label>
+                <textarea class="form-textarea" id="charPersonality" rows="3" placeholder="描述角色的性格特点..."></textarea>
+            </div>
+            <div class="form-group">
+                <label class="form-label">背景故事</label>
+                <textarea class="form-textarea" id="charBackground" rows="4" placeholder="角色的背景故事..."></textarea>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeModal('characterModal')">取消</button>
+            <button class="btn btn-primary" onclick="saveCharacter()">保存</button>
+        </div>
+    </div>
+
+    <!-- 图库图片模态框 -->
+    <div class="modal" id="galleryModal" style="display: none;">
+        <div class="modal-header">
+            <h3 class="modal-title">图片详情</h3>
+            <button class="modal-close" onclick="closeModal('galleryModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <img id="galleryPreview" style="width: 100%; border-radius: 8px; margin-bottom: 15px;">
+            <div class="form-group">
+                <label class="form-label">图片 URL</label>
+                <input type="text" class="form-input" id="galleryImageUrl" readonly>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="copyGalleryImageUrl()">复制链接</button>
+            <button class="btn btn-danger" onclick="deleteGalleryImage()">删除</button>
+            <button class="btn btn-secondary" onclick="closeModal('galleryModal')">关闭</button>
+        </div>
+    </div>
+
+    <!-- Toast 容器 -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- 外部脚本 -->
+    <script src="public/js/loader.js"></script>
+    <script src="public/js/settings/settings-main.js"></script>
+</body>
+</html>

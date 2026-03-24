@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>测试新系统</title>
+    <!-- 样式 -->
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/components.css">
+    <style>
+        body { padding: 40px; }
+        .demo-box { 
+            background: var(--bg-card); 
+            padding: 30px; 
+            border-radius: 12px; 
+            margin-bottom: 20px;
+        }
+        h2 { color: var(--primary); margin-bottom: 15px; }
+    </style>
+</head>
+<body>
+    <h1>🎮 新系统测试页面</h1>
+    
+    <div class="demo-box">
+        <h2>1. 消息提示 (Toast)</h2>
+        <button class="btn btn-primary" onclick="Toast.success('成功消息')">显示成功</button>
+        <button class="btn btn-error" onclick="Toast.error('错误消息')">显示错误</button>
+        <button class="btn btn-secondary" onclick="Toast.warning('警告消息')">显示警告</button>
+    </div>
+    
+    <div class="demo-box">
+        <h2>2. 弹窗 (Modal)</h2>
+        <button class="btn btn-primary" onclick="testModal()">打开弹窗</button>
+        <button class="btn btn-warning" onclick="testConfirm()">确认对话框</button>
+    </div>
+    
+    <div class="demo-box">
+        <h2>3. 存储 (Store)</h2>
+        <button class="btn btn-secondary" onclick="testStore()">测试存储</button>
+        <div id="storeResult" style="margin-top: 10px; color: var(--text-secondary);"></div>
+    </div>
+    
+    <div class="demo-box">
+        <h2>4. 工具函数</h2>
+        <button class="btn btn-secondary" onclick="testUtils()">测试工具</button>
+        <div id="utilsResult" style="margin-top: 10px; color: var(--text-secondary);"></div>
+    </div>
+
+    <!-- 加载模块 -->
+    <script src="js/core/api.js"></script>
+    <script src="js/core/store.js"></script>
+    <script src="js/core/utils.js"></script>
+    <script src="js/core/auth.js"></script>
+    <script src="js/components/Toast.js"></script>
+    <script src="js/components/Modal.js"></script>
+    
+    <script>
+        // 测试弹窗
+        async function testModal() {
+            const result = await Modal.open({
+                title: '测试弹窗',
+                content: '<p>这是一个弹窗内容</p>',
+                size: 'small'
+            });
+            console.log('弹窗关闭，结果:', result);
+        }
+        
+        // 测试确认框
+        async function testConfirm() {
+            const confirmed = await Modal.confirm({
+                message: '确定要执行此操作吗？',
+                iconType: 'warning'
+            });
+            if (confirmed) {
+                Toast.success('用户点击了确定');
+            } else {
+                Toast.info('用户取消了操作');
+            }
+        }
+        
+        // 测试存储
+        function testStore() {
+            // 存数据
+            Store.set('test_key', { name: '测试', time: new Date().toLocaleString() });
+            
+            // 取数据
+            const data = Store.get('test_key');
+            document.getElementById('storeResult').innerHTML = 
+                `读取结果: <code>${JSON.stringify(data)}</code>`;
+            
+            Toast.success('存储测试成功');
+        }
+        
+        // 测试工具
+        function testUtils() {
+            const results = [];
+            
+            // 格式化日期
+            results.push(`日期: ${Format.date(new Date(), 'YYYY-MM-DD HH:mm:ss')}`);
+            
+            // 截断文本
+            results.push(`截断: ${Format.truncate('这是一段很长的文本内容', 10)}`);
+            
+            // 验证邮箱
+            results.push(`邮箱验证: ${Validate.email('test@example.com') ? '✓' : '✗'}`);
+            
+            // 调整颜色亮度
+            results.push(`颜色: ${Color.lighten('#667eea', 20)}`);
+            
+            document.getElementById('utilsResult').innerHTML = 
+                results.map(r => `<div>• ${r}</div>`).join('');
+        }
+    </script>
+</body>
+</html>

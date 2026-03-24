@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>自定义游戏页面 - 大荒九丘</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            background: #1a1a2e;
+            color: #fff;
+            min-height: 100vh;
+        }
+        
+        /* 页面选择器 */
+        #page-selector {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(26, 26, 46, 0.95);
+            border-bottom: 1px solid rgba(138, 109, 59, 0.3);
+            padding: 15px 30px;
+            z-index: 1000;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .selector-title {
+            font-size: 18px;
+            color: #d4a574;
+        }
+        
+        .selector-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .selector-btn {
+            padding: 8px 16px;
+            border: 1px solid rgba(138, 109, 59, 0.3);
+            background: rgba(138, 109, 59, 0.1);
+            color: #d4a574;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.3s;
+        }
+        
+        .selector-btn:hover {
+            background: rgba(138, 109, 59, 0.2);
+        }
+        
+        .selector-btn.active {
+            background: #8a6d3b;
+            color: #fff;
+        }
+        
+        /* 自定义游戏容器 */
+        #custom-game-container {
+            margin-top: 60px;
+            min-height: calc(100vh - 60px);
+            position: relative;
+        }
+        
+        /* 默认游戏界面 - 用户可以替换这个容器的内容 */
+        #default-game-interface {
+            width: 100%;
+            height: calc(100vh - 60px);
+            position: relative;
+        }
+        
+        /* 默认样式 */
+        #default-game-interface .game-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-size: cover;
+            background-position: center;
+            z-index: 1;
+        }
+        
+        #default-game-interface .game-characters {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 70%;
+            z-index: 2;
+            display: flex;
+            justify-content: space-around;
+            align-items: flex-end;
+            padding: 0 10%;
+        }
+        
+        #default-game-interface .character {
+            height: 80%;
+            transition: all 0.5s ease;
+        }
+        
+        #default-game-interface .character img {
+            height: 100%;
+            filter: drop-shadow(0 0 20px rgba(0,0,0,0.5));
+        }
+        
+        #default-game-interface .dialogue-box {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            max-width: 900px;
+            background: rgba(0,0,0,0.85);
+            border: 1px solid rgba(138, 109, 59, 0.3);
+            border-radius: 12px;
+            padding: 25px;
+            z-index: 3;
+        }
+        
+        #default-game-interface .character-name {
+            color: #d4a574;
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        #default-game-interface .dialogue-text {
+            font-size: 16px;
+            line-height: 1.6;
+            min-height: 60px;
+        }
+        
+        #default-game-interface .chat-input-area {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        #default-game-interface .chat-input {
+            flex: 1;
+            padding: 12px 20px;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(138, 109, 59, 0.3);
+            border-radius: 25px;
+            color: #fff;
+            font-size: 14px;
+        }
+        
+        #default-game-interface .chat-input::placeholder {
+            color: #888;
+        }
+        
+        #default-game-interface .send-btn {
+            padding: 12px 30px;
+            background: #8a6d3b;
+            border: none;
+            border-radius: 25px;
+            color: #fff;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        
+        #default-game-interface .send-btn:hover {
+            background: #d4a574;
+        }
+        
+        /* 编辑器界面 */
+        #editor-panel {
+            display: none;
+            padding: 20px;
+            height: calc(100vh - 60px);
+        }
+        
+        .editor-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            height: 100%;
+        }
+        
+        .editor-section {
+            background: rgba(30, 30, 45, 0.9);
+            border: 1px solid rgba(138, 109, 59, 0.3);
+            border-radius: 12px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .editor-header {
+            background: rgba(138, 109, 59, 0.2);
+            padding: 15px 20px;
+            border-bottom: 1px solid rgba(138, 109, 59, 0.3);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .editor-title {
+            font-size: 16px;
+            color: #d4a574;
+        }
+        
+        .editor-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .editor-btn {
+            padding: 6px 12px;
+            background: rgba(138, 109, 59, 0.3);
+            border: none;
+            border-radius: 6px;
+            color: #d4a574;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        
+        .editor-btn:hover {
+            background: rgba(138, 109, 59, 0.5);
+        }
+        
+        .code-editor {
+            flex: 1;
+            padding: 15px;
+            background: #0d0d1a;
+            border: none;
+            color: #e8e8e8;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            resize: none;
+            outline: none;
+        }
+        
+        .preview-frame {
+            flex: 1;
+            border: none;
+            background: #1a1a2e;
+        }
+        
+        /* API文档面板 */
+        #api-docs-panel {
+            display: none;
+            padding: 30px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .docs-title {
+            font-size: 32px;
+            color: #d4a574;
+            margin-bottom: 30px;
+        }
+        
+        .docs-section {
+            background: rgba(30, 30, 45, 0.9);
+            border: 1px solid rgba(138, 109, 59, 0.3);
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 25px;
+        }
+        
+        .docs-section h3 {
+            color: #d4a574;
+            margin-bottom: 15px;
+            font-size: 20px;
+        }
+        
+        .docs-section p {
+            color: #a0a0a0;
+            line-height: 1.8;
+            margin-bottom: 15px;
+        }
+        
+        .code-block {
+            background: #0d0d1a;
+            border: 1px solid rgba(138, 109, 59, 0.3);
+            border-radius: 8px;
+            padding: 15px;
+            font-family: 'Consolas', monospace;
+            font-size: 13px;
+            overflow-x: auto;
+            color: #e8e8e8;
+            margin: 15px 0;
+        }
+        
+        .code-comment {
+            color: #6a9955;
+        }
+        
+        .code-keyword {
+            color: #569cd6;
+        }
+        
+        .code-string {
+            color: #ce9178;
+        }
+        
+        .code-function {
+            color: #dcdcaa;
+        }
+    </style>
+</head>
+<body>
+    <!-- 页面选择器 -->
+    <div id="page-selector">
+        <div class="selector-title">🎮 自定义游戏页面</div>
+        <div class="selector-buttons">
+            <button class="selector-btn active" data-view="game">游戏界面</button>
+            <button class="selector-btn" data-view="editor">页面编辑器</button>
+            <button class="selector-btn" data-view="docs">API文档</button>
+            <button class="selector-btn" onclick="window.location.href='world-guide.html'">世界指南</button>
+        </div>
+    </div>
+    
+    <!-- 自定义游戏容器 -->
+    <div id="custom-game-container">
+        <!-- 默认游戏界面 -->
+        <div id="default-game-interface">
+            <div class="game-bg" id="game-background"></div>
+            <div class="game-characters" id="game-characters"></div>
+            <div class="dialogue-box">
+                <div class="character-name" id="dialogue-speaker">环境描写</div>
+                <div class="dialogue-text" id="dialogue-content">欢迎来到大荒九丘...</div>
+                <div class="chat-input-area">
+                    <input type="text" class="chat-input" id="user-input" placeholder="输入你的对话...">
+                    <button class="send-btn" id="send-btn">发送</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 编辑器面板 -->
+        <div id="editor-panel">
+            <div class="editor-container">
+                <div class="editor-section">
+                    <div class="editor-header">
+                        <span class="editor-title">HTML</span>
+                        <div class="editor-actions">
+                            <button class="editor-btn" onclick="resetHTML()">重置</button>
+                            <button class="editor-btn" onclick="applyChanges()">应用更改</button>
+                        </div>
+                    </div>
+                    <textarea class="code-editor" id="html-editor" placeholder="编辑你的HTML代码..."></textarea>
+                </div>
+                <div class="editor-section">
+                    <div class="editor-header">
+                        <span class="editor-title">CSS</span>
+                        <div class="editor-actions">
+                            <button class="editor-btn" onclick="resetCSS()">重置</button>
+                        </div>
+                    </div>
+                    <textarea class="code-editor" id="css-editor" placeholder="编辑你的CSS样式..."></textarea>
+                </div>
+            </div>
+        </div>
+        
+        <!-- API文档面板 -->
+        <div id="api-docs-panel">
+            <h1 class="docs-title">📖 游戏API文档</h1>
+            
+            <div class="docs-section">
+                <h3>快速开始</h3>
+                <p>你可以通过编辑上方的HTML和CSS来完全自定义你的游戏界面。系统提供了一系列JavaScript API供你调用，让你的自定义页面能够与AI对话、加载角色、获取世界书等功能交互。</p>
+            </div>
+            
+            <div class="docs-section">
+                <h3>🚀 基础API</h3>
+                
+                <h4 style="color: #d4a574; margin: 20px 0 10px;">发送消息</h4>
+                <div class="code-block">
+<span class="code-comment">// 发送消息给AI</span>
+<span class="code-keyword">await</span> <span class="code-function">GameAPI.sendMessage</span>(<span class="code-string">'你好，我是...'</span>);
+
+<span class="code-comment">// 流式输出回调</span>
+<span class="code-keyword">await</span> <span class="code-function">GameAPI.sendMessage</span>(<span class="code-string">'你好'</span>, {
+    <span class="code-keyword">onStream</span>: (text) => {
+        <span class="code-comment">// 实时更新AI返回的文本</span>
+        document.getElementById(<span class="code-string">'dialogue'</span>).textContent = text;
+    }
+});
+                </div>
+                
+                <h4 style="color: #d4a574; margin: 20px 0 10px;">获取角色</h4>
+                <div class="code-block">
+<span class="code-comment">// 获取所有角色</span>
+<span class="code-keyword">const</span> characters = <span class="code-keyword">await</span> <span class="code-function">GameAPI.getCharacters</span>();
+
+<span class="code-comment">// 根据关键词匹配角色</span>
+<span class="code-keyword">const</span> matched = <span class="code-keyword">await</span> <span class="code-function">GameAPI.matchCharacters</span>(<span class="code-string">'小明'</span>);
+                </div>
+                
+                <h4 style="color: #d4a574; margin: 20px 0 10px;">世界书</h4>
+                <div class="code-block">
+<span class="code-comment">// 获取所有世界书条目</span>
+<span class="code-keyword">const</span> entries = <span class="code-keyword">await</span> <span class="code-function">GameAPI.getWorldbook</span>();
+
+<span class="code-comment">// 根据文本匹配世界书</span>
+<span class="code-keyword">const</span> matched = <span class="code-keyword">await</span> <span class="code-function">GameAPI.matchWorldbook</span>(<span class="code-string">'落星谷'</span>);
+                </div>
+            </div>
+            
+            <div class="docs-section">
+                <h3>🎨 视觉API</h3>
+                
+                <h4 style="color: #d4a574; margin: 20px 0 10px;">设置背景</h4>
+                <div class="code-block">
+<span class="code-comment">// 设置背景图片</span>
+<span class="code-function">GameAPI.setBackground</span>(<span class="code-string">'https://example.com/bg.png'</span>);
+
+<span class="code-comment">// 设置渐变背景</span>
+<span class="code-function">GameAPI.setBackground</span>({
+    <span class="code-keyword">gradient</span>: <span class="code-string">'linear-gradient(to bottom, #1a1a2e, #0d0d1a)'</span>
+});
+                </div>
+                
+                <h4 style="color: #d4a574; margin: 20px 0 10px;">显示角色</h4>
+                <div class="code-block">
+<span class="code-comment">// 显示角色立绘</span>
+<span class="code-function">GameAPI.showCharacter</span>({
+    <span class="code-keyword">id</span>: <span class="code-string">'char_1'</span>,
+    <span class="code-keyword">image</span>: <span class="code-string">'https://example.com/char.png'</span>,
+    <span class="code-keyword">position</span>: <span class="code-string">'center'</span>,  <span class="code-comment">// 'left', 'center', 'right'</span>
+    <span class="code-keyword">animation</span>: <span class="code-string">'fadeIn'</span>
+});
+
+<span class="code-comment">// 隐藏角色</span>
+<span class="code-function">GameAPI.hideCharacter</span>(<span class="code-string">'char_1'</span>);
+                </div>
+            </div>
+            
+            <div class="docs-section">
+                <h3>📝 完整示例</h3>
+                <div class="code-block">
+<span class="code-comment">// 示例：创建一个简单的聊天界面</span>
+&lt;div id=<span class="code-string">"my-game"</span>&gt;
+    &lt;div id=<span class="code-string">"bg"</span>&gt;&lt;/div&gt;
+    &lt;div id=<span class="code-string">"dialogue"</span>&gt;&lt;/div&gt;
+    &lt;input id=<span class="code-string">"input"</span> type=<span class="code-string">"text"</span>&gt;
+    &lt;button onclick=<span class="code-string">"send()"</span>&gt;发送&lt;/button&gt;
+&lt;/div&gt;
+
+&lt;script&gt;
+<span class="code-keyword">async function</span> <span class="code-function">send</span>() {
+    <span class="code-keyword">const</span> text = document.getElementById(<span class="code-string">'input'</span>).value;
+    
+    <span class="code-comment">// 发送消息</span>
+    <span class="code-keyword">const</span> response = <span class="code-keyword">await</span> <span class="code-function">GameAPI.sendMessage</span>(text, {
+        <span class="code-keyword">onStream</span>: (chunk) => {
+            document.getElementById(<span class="code-string">'dialogue'</span>).textContent += chunk;
+        }
+    });
+    
+    <span class="code-comment">// 匹配角色并显示</span>
+    <span class="code-keyword">const</span> chars = <span class="code-keyword">await</span> <span class="code-function">GameAPI.matchCharacters</span>(response);
+    <span class="code-keyword">if</span> (chars.length > 0) {
+        <span class="code-function">GameAPI.showCharacter</span>({
+            <span class="code-keyword">id</span>: chars[0].id,
+            <span class="code-keyword">image</span>: chars[0].image,
+            <span class="code-keyword">position</span>: <span class="code-string">'center'</span>
+        });
+    }
+}
+&lt;/script&gt;
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // ============================================
+        // GameAPI - 提供给用户的核心API
+        // ============================================
+        const GameAPI = {
+            // API基础地址
+            baseURL: 'http://localhost:3000/api',
+            
+            // 获取认证头
+            getHeaders() {
+                const token = localStorage.getItem('galgame_token');
+                return {
+                    'Content-Type': 'application/json',
+                    'Authorization': token ? `Bearer ${token}` : ''
+                };
+            },
+            
+            // ========== 对话API ==========
+            
+            // 发送消息
+            async sendMessage(message, options = {}) {
+                const settings = JSON.parse(localStorage.getItem('galgame_user_settings') || '{}');
+                const ai = settings.ai || {};
+                
+                const response = await fetch(`${this.baseURL}/dialogue/chat`, {
+                    method: 'POST',
+                    headers: this.getHeaders(),
+                    body: JSON.stringify({
+                        message,
+                        model: ai.modelName || 'Pro/deepseek-ai/DeepSeek-V3.2',
+                        temperature: ai.temperature || 0.7,
+                        maxTokens: ai.maxTokens || 2000,
+                        streaming: options.onStream ? true : false
+                    })
+                });
+                
+                if (options.onStream) {
+                    // 处理流式输出
+                    const reader = response.body.getReader();
+                    let fullText = '';
+                    
+                    while (true) {
+                        const { done, value } = await reader.read();
+                        if (done) break;
+                        
+                        const chunk = new TextDecoder().decode(value);
+                        fullText += chunk;
+                        options.onStream(fullText);
+                    }
+                    
+                    return fullText;
+                } else {
+                    const data = await response.json();
+                    return data.response || data.data;
+                }
+            },
+            
+            // 获取对话历史
+            getHistory() {
+                return JSON.parse(localStorage.getItem('galgame_chat_history') || '[]');
+            },
+            
+            // 清空历史
+            clearHistory() {
+                localStorage.removeItem('galgame_chat_history');
+            },
+            
+            // ========== 角色API ==========
+            
+            // 获取所有角色
+            async getCharacters() {
+                const response = await fetch(`${this.baseURL}/characters`, {
+                    headers: this.getHeaders()
+                });
+                const data = await response.json();
+                return data.data || [];
+            },
+            
+            // 匹配角色（根据关键词）
+            async matchCharacters(text) {
+                const characters = await this.getCharacters();
+                return characters.filter(char => {
+                    if (!char.keys || char.enabled === false) return false;
+                    return char.keys.some(key => text.includes(key));
+                });
+            },
+            
+            // 获取单个角色
+            async getCharacter(id) {
+                const response = await fetch(`${this.baseURL}/characters/${id}`, {
+                    headers: this.getHeaders()
+                });
+                const data = await response.json();
+                return data.data;
+            },
+            
+            // ========== 世界书API ==========
+            
+            // 获取所有世界书条目
+            async getWorldbook() {
+                const response = await fetch(`${this.baseURL}/worldbook`, {
+                    headers: this.getHeaders()
+                });
+                const data = await response.json();
+                return data.data || [];
+            },
+            
+            // 匹配世界书
+            async matchWorldbook(text) {
+                const response = await fetch(`${this.baseURL}/worldbook/test`, {
+                    method: 'POST',
+                    headers: this.getHeaders(),
+                    body: JSON.stringify({ text })
+                });
+                const data = await response.json();
+                return data.data?.results?.filter(r => r.matched) || [];
+            },
+            
+            // ========== 视觉API ==========
+            
+            // 设置背景
+            setBackground(options) {
+                const bg = document.getElementById('game-background');
+                if (!bg) return;
+                
+                if (typeof options === 'string') {
+                    bg.style.backgroundImage = `url(${options})`;
+                    bg.style.backgroundSize = 'cover';
+                } else if (options.gradient) {
+                    bg.style.background = options.gradient;
+                } else if (options.color) {
+                    bg.style.backgroundColor = options.color;
+                }
+            },
+            
+            // 显示角色
+            showCharacter(options) {
+                const container = document.getElementById('game-characters');
+                if (!container) return;
+                
+                let char = document.getElementById(`char-${options.id}`);
+                if (!char) {
+                    char = document.createElement('div');
+                    char.id = `char-${options.id}`;
+                    char.className = `character character-${options.position || 'center'}`;
+                    container.appendChild(char);
+                }
+                
+                char.innerHTML = `<img src="${options.image}" alt="character">`;
+                
+                // 动画
+                if (options.animation === 'fadeIn') {
+                    char.style.opacity = '0';
+                    setTimeout(() => char.style.opacity = '1', 10);
+                }
+            },
+            
+            // 隐藏角色
+            hideCharacter(id) {
+                const char = document.getElementById(`char-${id}`);
+                if (char) {
+                    char.style.opacity = '0';
+                    setTimeout(() => char.remove(), 500);
+                }
+            },
+            
+            // 显示对话
+            showDialogue(speaker, text) {
+                const speakerEl = document.getElementById('dialogue-speaker');
+                const contentEl = document.getElementById('dialogue-content');
+                
+                if (speakerEl) speakerEl.textContent = speaker;
+                if (contentEl) contentEl.textContent = text;
+            },
+            
+            // ========== 设置API ==========
+            
+            // 获取用户设置
+            getSettings() {
+                return JSON.parse(localStorage.getItem('galgame_user_settings') || '{}');
+            },
+            
+            // 保存用户设置
+            saveSettings(settings) {
+                localStorage.setItem('galgame_user_settings', JSON.stringify(settings));
+            },
+            
+            // ========== 事件API ==========
+            
+            // 添加消息监听器
+            onMessage(callback) {
+                const originalSend = this.sendMessage;
+                this.sendMessage = async function(message, options) {
+                    const result = await originalSend.call(this, message, options);
+                    callback({ message, response: result });
+                    return result;
+                };
+            }
+        };
+        
+        // 使API在全局可访问
+        window.GameAPI = GameAPI;
+        
+        // ============================================
+        // 页面切换逻辑
+        // ============================================
+        
+        const views = {
+            game: document.getElementById('default-game-interface'),
+            editor: document.getElementById('editor-panel'),
+            docs: document.getElementById('api-docs-panel')
+        };
+        
+        document.querySelectorAll('.selector-btn[data-view]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const view = btn.dataset.view;
+                
+                // 更新按钮状态
+                document.querySelectorAll('.selector-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                
+                // 切换视图
+                Object.values(views).forEach(v => v.style.display = 'none');
+                if (views[view]) {
+                    views[view].style.display = view === 'game' ? 'block' : 'block';
+                }
+            });
+        });
+        
+        // ============================================
+        // 编辑器功能
+        // ============================================
+        
+        // 默认HTML模板
+        const defaultHTML = `<div id="game-background"></div>
+<div id="game-characters"></div>
+<div class="dialogue-box">
+    <div class="character-name" id="dialogue-speaker">环境描写</div>
+    <div class="dialogue-text" id="dialogue-content">欢迎来到大荒九丘...</div>
+    <div class="chat-input-area">
+        <input type="text" class="chat-input" id="user-input" placeholder="输入你的对话...">
+        <button class="send-btn" id="send-btn">发送</button>
+    </div>
+</div>`;
+        
+        // 默认CSS模板
+        const defaultCSS = `#default-game-interface {
+    width: 100%;
+    height: calc(100vh - 60px);
+    position: relative;
+}
+
+#game-background {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-size: cover;
+    background-position: center;
+}
+
+#game-characters {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 70%;
+    display: flex;
+    justify-content: space-around;
+    align-items: flex-end;
+    padding: 0 10%;
+}
+
+.dialogue-box {
+    position: absolute;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80%;
+    max-width: 900px;
+    background: rgba(0,0,0,0.85);
+    border: 1px solid rgba(138, 109, 59, 0.3);
+    border-radius: 12px;
+    padding: 25px;
+}
+
+.character-name {
+    color: #d4a574;
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+.dialogue-text {
+    font-size: 16px;
+    line-height: 1.6;
+    min-height: 60px;
+}`;
+        
+        // 加载保存的代码
+        function loadSavedCode() {
+            const html = localStorage.getItem('galgame_custom_html') || defaultHTML;
+            const css = localStorage.getItem('galgame_custom_css') || defaultCSS;
+            
+            document.getElementById('html-editor').value = html;
+            document.getElementById('css-editor').value = css;
+        }
+        
+        // 重置HTML
+        function resetHTML() {
+            document.getElementById('html-editor').value = defaultHTML;
+        }
+        
+        // 重置CSS
+        function resetCSS() {
+            document.getElementById('css-editor').value = defaultCSS;
+        }
+        
+        // 应用更改
+        function applyChanges() {
+            const html = document.getElementById('html-editor').value;
+            const css = document.getElementById('css-editor').value;
+            
+            // 保存到localStorage
+            localStorage.setItem('galgame_custom_html', html);
+            localStorage.setItem('galgame_custom_css', css);
+            
+            // 应用到游戏界面
+            const gameContainer = document.getElementById('default-game-interface');
+            gameContainer.innerHTML = html;
+            
+            // 添加自定义样式
+            let customStyle = document.getElementById('custom-game-style');
+            if (!customStyle) {
+                customStyle = document.createElement('style');
+                customStyle.id = 'custom-game-style';
+                document.head.appendChild(customStyle);
+            }
+            customStyle.textContent = css;
+            
+            // 重新绑定事件
+            bindGameEvents();
+            
+            alert('更改已应用！请切换到游戏界面查看效果。');
+        }
+        
+        // 绑定游戏事件
+        function bindGameEvents() {
+            const sendBtn = document.getElementById('send-btn');
+            const input = document.getElementById('user-input');
+            
+            if (sendBtn) {
+                sendBtn.onclick = async () => {
+                    const text = input.value.trim();
+                    if (!text) return;
+                    
+                    input.value = '';
+                    
+                    // 显示用户消息
+                    GameAPI.showDialogue('你', text);
+                    
+                    // 发送给AI
+                    const response = await GameAPI.sendMessage(text, {
+                        onStream: (chunk) => {
+                            GameAPI.showDialogue('AI', chunk);
+                        }
+                    });
+                    
+                    // 匹配角色
+                    const chars = await GameAPI.matchCharacters(response);
+                    if (chars.length > 0) {
+                        GameAPI.showCharacter({
+                            id: chars[0]._id,
+                            image: chars[0].image,
+                            position: 'center',
+                            animation: 'fadeIn'
+                        });
+                    }
+                };
+            }
+            
+            if (input) {
+                input.onkeypress = (e) => {
+                    if (e.key === 'Enter') sendBtn?.click();
+                };
+            }
+        }
+        
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            loadSavedCode();
+            bindGameEvents();
+            
+            // 如果有保存的自定义代码，应用它
+            const savedHTML = localStorage.getItem('galgame_custom_html');
+            const savedCSS = localStorage.getItem('galgame_custom_css');
+            
+            if (savedHTML) {
+                document.getElementById('default-game-interface').innerHTML = savedHTML;
+            }
+            
+            if (savedCSS) {
+                let customStyle = document.getElementById('custom-game-style');
+                if (!customStyle) {
+                    customStyle = document.createElement('style');
+                    customStyle.id = 'custom-game-style';
+                    document.head.appendChild(customStyle);
+                }
+                customStyle.textContent = savedCSS;
+            }
+            
+            bindGameEvents();
+        });
+    </script>
+</body>
+</html>

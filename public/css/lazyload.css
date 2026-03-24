@@ -1,0 +1,70 @@
+/**
+ * 懒加载样式
+ */
+
+/* 懒加载图片基础样式 */
+[data-lazy] {
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+/* 加载中状态 */
+.lazy-loading {
+    opacity: 0.5;
+    background: linear-gradient(
+        90deg,
+        rgba(138, 109, 59, 0.1) 25%,
+        rgba(138, 109, 59, 0.2) 50%,
+        rgba(138, 109, 59, 0.1) 75%
+    );
+    background-size: 200% 100%;
+    animation: lazy-loading-shimmer 1.5s infinite;
+}
+
+@keyframes lazy-loading-shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+/* 加载完成状态 */
+.lazy-loaded {
+    opacity: 1;
+}
+
+/* 加载错误状态 */
+.lazy-error {
+    opacity: 1;
+    filter: grayscale(100%);
+}
+
+/* 图片占位符 */
+.lazy-placeholder {
+    background-color: rgba(138, 109, 59, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100px;
+}
+
+.lazy-placeholder::before {
+    content: '加载中...';
+    color: rgba(138, 109, 59, 0.5);
+    font-size: 12px;
+}
+
+/* 高分辨率屏幕优化 */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+    [data-lazy] {
+        image-rendering: -webkit-optimize-contrast;
+        image-rendering: crisp-edges;
+    }
+}
+
+/* 减少动画偏好 */
+@media (prefers-reduced-motion: reduce) {
+    [data-lazy],
+    .lazy-loading {
+        transition: none;
+        animation: none;
+    }
+}

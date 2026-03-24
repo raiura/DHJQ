@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>编辑世界 - 大荒书店</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        :root {
+            --primary: #8a6d3b;
+            --primary-light: #b89b6c;
+            --bg-dark: #1a1a2e;
+            --bg-card: rgba(30, 30, 46, 0.95);
+            --text-primary: #f5f2eb;
+            --text-secondary: rgba(245, 242, 235, 0.7);
+            --border: rgba(138, 109, 59, 0.3);
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, var(--bg-dark) 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            color: var(--text-primary);
+        }
+
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 70px;
+            background: rgba(26, 26, 46, 0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 40px;
+            z-index: 100;
+        }
+
+        .logo { font-size: 24px; font-weight: bold; cursor: pointer; }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 100px 20px 40px;
+        }
+
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .page-title { font-size: 32px; font-weight: 700; }
+
+        .status-badge {
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .status-draft { background: rgba(255, 193, 7, 0.2); color: #ffc107; border: 1px solid rgba(255, 193, 7, 0.3); }
+        .status-published { background: rgba(40, 167, 69, 0.2); color: #28a745; border: 1px solid rgba(40, 167, 69, 0.3); }
+
+        .editor-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 10px;
+        }
+
+        .tab-btn {
+            padding: 12px 24px;
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 14px;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+
+        .tab-btn:hover { color: var(--text-primary); background: rgba(255,255,255,0.05); }
+        .tab-btn.active { color: var(--primary); background: rgba(138, 109, 59, 0.2); }
+
+        .tab-panel { display: none; }
+        .tab-panel.active { display: block; }
+
+        .form-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 20px;
+        }
+
+        .form-section-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .form-group { margin-bottom: 20px; }
+
+        .form-label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .form-input, .form-textarea, .form-select {
+            width: 100%;
+            padding: 12px 16px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 14px;
+            font-family: inherit;
+        }
+
+        .form-textarea { resize: vertical; min-height: 120px; }
+        .form-textarea.large { min-height: 300px; }
+
+        .form-hint {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 6px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary-light); }
+        .btn-secondary { background: rgba(255, 255, 255, 0.1); color: var(--text-primary); border: 1px solid var(--border); }
+        .btn-success { background: #28a745; color: white; }
+        .btn-danger { background: #dc3545; color: white; }
+        .btn-sm { padding: 8px 16px; font-size: 13px; }
+
+        .actions-bar {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            padding: 20px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            position: sticky;
+            bottom: 20px;
+        }
+
+        /* 角色编辑 */
+        .character-card {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 16px;
+        }
+
+        .character-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .character-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: 2px solid var(--border);
+        }
+
+        .character-color-picker {
+            width: 40px;
+            height: 40px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        /* 图库 */
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 16px;
+            margin-top: 20px;
+        }
+
+        .gallery-item {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .gallery-item img {
+            width: 100%;
+            height: 150px;
+            object-fit: cover;
+        }
+
+        .gallery-item-info {
+            padding: 12px;
+        }
+
+        .gallery-item-name {
+            font-weight: 600;
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+
+        .gallery-item-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            margin-top: 8px;
+        }
+
+        .tag {
+            padding: 2px 8px;
+            background: rgba(138, 109, 59, 0.3);
+            border-radius: 4px;
+            font-size: 11px;
+        }
+
+        .add-image-btn {
+            border: 2px dashed var(--border);
+            background: transparent;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 200px;
+            cursor: pointer;
+            border-radius: 12px;
+            color: var(--text-secondary);
+        }
+
+        .add-image-btn:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        /* 弹窗 */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active { display: flex; }
+
+        .modal-content {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 30px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: var(--bg-card);
+            color: var(--text-primary);
+            padding: 16px 32px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            opacity: 0;
+            transition: all 0.3s;
+            z-index: 2000;
+        }
+
+        .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo" onclick="window.location.href='index.html'">📚 大荒书店</div>
+        <div style="display: flex; gap: 12px; align-items: center;">
+            <span id="gameStatus" class="status-badge status-draft">草稿</span>
+            <button class="btn btn-secondary" onclick="previewGame()">👁️ 预览</button>
+            <button class="btn btn-primary" onclick="saveGame()">💾 保存</button>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="page-header">
+            <h1 class="page-title" id="gameTitle">编辑世界</h1>
+        </div>
+
+        <div class="editor-tabs">
+            <button class="tab-btn active" data-tab="basic">📖 基本信息</button>
+            <button class="tab-btn" data-tab="world">🌍 世界观</button>
+            <button class="tab-btn" data-tab="characters">👥 角色设定</button>
+            <button class="tab-btn" data-tab="gallery">🖼️ 图库管理</button>
+            <button class="tab-btn" data-tab="config">⚙️ 游戏配置</button>
+        </div>
+
+        <!-- 基本信息 -->
+        <div class="tab-panel active" id="tab-basic">
+            <div class="form-card">
+                <h3 class="form-section-title">基本信息</h3>
+                <div class="form-group">
+                    <label class="form-label">世界名称</label>
+                    <input type="text" class="form-input" id="title" placeholder="给你的世界起个名字">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">副标题</label>
+                    <input type="text" class="form-input" id="subtitle" placeholder="简短描述你的世界">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">标识 (Slug)</label>
+                    <input type="text" class="form-input" id="slug" placeholder="唯一标识，如 my-world">
+                    <div class="form-hint">用于URL访问，创建后不可修改</div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">类型</label>
+                    <select class="form-select" id="genre">
+                        <option value="修仙">修仙</option>
+                        <option value="奇幻">奇幻</option>
+                        <option value="科幻">科幻</option>
+                        <option value="历史">历史</option>
+                        <option value="现代">现代</option>
+                        <option value="悬疑">悬疑</option>
+                        <option value="恋爱">恋爱</option>
+                        <option value="其他">其他</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">简介</label>
+                    <textarea class="form-textarea" id="description" rows="4" placeholder="介绍你的世界，吸引玩家来体验..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">封面图 URL</label>
+                    <input type="url" class="form-input" id="cover" placeholder="https://example.com/cover.jpg">
+                </div>
+            </div>
+        </div>
+
+        <!-- 世界观 -->
+        <div class="tab-panel" id="tab-world">
+            <div class="form-card">
+                <h3 class="form-section-title">详细世界观</h3>
+                <div class="form-group">
+                    <textarea class="form-textarea large" id="worldSetting" placeholder="详细描述你的世界观：&#10;- 历史背景&#10;- 地理结构&#10;- 力量体系&#10;- 势力分布&#10;- 主要事件..."></textarea>
+                </div>
+            </div>
+            <div class="form-card">
+                <h3 class="form-section-title">开场白</h3>
+                <div class="form-group">
+                    <textarea class="form-textarea" id="openingMessage" rows="4" placeholder="玩家进入游戏时看到的欢迎语"></textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- 角色设定 -->
+        <div class="tab-panel" id="tab-characters">
+            <div class="form-card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h3 class="form-section-title" style="margin: 0;">角色列表</h3>
+                    <button class="btn btn-primary btn-sm" onclick="addNewCharacter()">+ 添加角色</button>
+                </div>
+                <div id="charactersList"></div>
+            </div>
+        </div>
+
+        <!-- 图库管理 -->
+        <div class="tab-panel" id="tab-gallery">
+            <div class="form-card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h3 class="form-section-title" style="margin: 0;">背景图库</h3>
+                    <button class="btn btn-primary btn-sm" onclick="showAddImageModal()">+ 添加图片</button>
+                </div>
+                <div class="form-hint">AI会根据剧情自动匹配合适的背景图。建议为常见场景（森林、城市、室内等）添加图片。</div>
+                <div class="gallery-grid" id="galleryGrid">
+                    <div class="add-image-btn" onclick="showAddImageModal()">
+                        <div style="font-size: 32px; margin-bottom: 8px;">+</div>
+                        <div>添加图片</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 游戏配置 -->
+        <div class="tab-panel" id="tab-config">
+            <div class="form-card">
+                <h3 class="form-section-title">视觉配置</h3>
+                <div class="form-group">
+                    <label class="form-label">默认背景图</label>
+                    <input type="url" class="form-input" id="background" placeholder="默认显示的背景图">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">主题色</label>
+                    <input type="color" class="form-input" id="themeColor" value="#8a6d3b" style="height: 50px;">
+                </div>
+            </div>
+            <div class="form-card">
+                <h3 class="form-section-title">功能开关</h3>
+                <div class="form-group">
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                        <input type="checkbox" id="allowCustomCharacter" checked>
+                        允许玩家自定义角色
+                    </label>
+                </div>
+                <div class="form-group">
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                        <input type="checkbox" id="enableWorldbook" checked>
+                        启用世界书（知识库）
+                    </label>
+                </div>
+                <div class="form-group">
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                        <input type="checkbox" id="enableAutoBg" checked>
+                        启用自动背景切换
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <div class="actions-bar">
+            <button class="btn btn-secondary" onclick="window.location.href='index.html'">返回</button>
+            <button class="btn btn-danger" id="deleteBtn" style="display: none;" onclick="deleteGame()">删除</button>
+            <button class="btn btn-secondary" id="unpublishBtn" style="display: none;" onclick="unpublishGame()">下架</button>
+            <button class="btn btn-success" id="publishBtn" onclick="publishGame()">🚀 发布</button>
+            <button class="btn btn-primary" onclick="saveGame()">保存更改</button>
+        </div>
+    </div>
+
+    <!-- 添加图片弹窗 -->
+    <div class="modal" id="addImageModal">
+        <div class="modal-content">
+            <h3 style="margin-bottom: 20px;">添加图片</h3>
+            <div class="form-group">
+                <label class="form-label">图片名称</label>
+                <input type="text" class="form-input" id="imageName" placeholder="如：森林场景">
+            </div>
+            <div class="form-group">
+                <label class="form-label">图片 URL</label>
+                <input type="url" class="form-input" id="imageUrl" placeholder="https://example.com/image.jpg">
+            </div>
+            <div class="form-group">
+                <label class="form-label">类型</label>
+                <select class="form-select" id="imageType">
+                    <option value="background">背景图</option>
+                    <option value="cg">CG图</option>
+                    <option value="character">角色立绘</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">标签（用逗号分隔）</label>
+                <input type="text" class="form-input" id="imageTags" placeholder="森林,夜晚,战斗">
+                <div class="form-hint">AI会根据这些标签匹配场景</div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">描述</label>
+                <textarea class="form-textarea" id="imageDesc" rows="2" placeholder="图片描述..."></textarea>
+            </div>
+            <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                <button class="btn btn-secondary" onclick="closeModal()">取消</button>
+                <button class="btn btn-primary" onclick="saveImage()">添加</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        const API_BASE = 'http://localhost:3000/api';
+        const token = localStorage.getItem('galgame_token');
+        let gameId = null;
+        let gameData = null;
+        let characters = [];
+        let gallery = [];
+
+        if (!token) window.location.href = 'login.html';
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            gameId = new URLSearchParams(window.location.search).get('id');
+            
+            if (gameId) {
+                loadGameData();
+            } else {
+                // 创建新模式
+                document.getElementById('gameTitle').textContent = '创建新世界';
+                document.getElementById('deleteBtn').style.display = 'none';
+                document.getElementById('publishBtn').style.display = 'none';
+                document.getElementById('unpublishBtn').style.display = 'none';
+                addDefaultCharacters();
+            }
+
+            // 绑定标签页切换
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+            });
+        });
+
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+            document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
+            document.getElementById(`tab-${tab}`).classList.add('active');
+        }
+
+        async function loadGameData() {
+            try {
+                const response = await fetch(`${API_BASE}/games/${gameId}/edit`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const result = await response.json();
+
+                if (result.success) {
+                    gameData = result.data.game;
+                    characters = result.data.characters || [];
+                    
+                    fillForm(gameData);
+                    renderCharacters();
+                    updateStatusUI(gameData.status);
+                    
+                    // 加载图库
+                    loadGallery();
+                } else {
+                    showToast(result.message || '加载失败');
+                    window.location.href = 'index.html';
+                }
+            } catch (error) {
+                showToast('加载失败');
+            }
+        }
+
+        function fillForm(data) {
+            document.getElementById('title').value = data.title || '';
+            document.getElementById('subtitle').value = data.subtitle || '';
+            document.getElementById('slug').value = data.slug || '';
+            document.getElementById('genre').value = data.genre || '其他';
+            document.getElementById('description').value = data.description || '';
+            document.getElementById('worldSetting').value = data.worldSetting || '';
+            document.getElementById('cover').value = data.cover || '';
+            document.getElementById('background').value = data.background || '';
+            
+            if (data.config) {
+                document.getElementById('openingMessage').value = data.config.openingMessage || '';
+                document.getElementById('themeColor').value = data.config.themeColor || '#8a6d3b';
+                document.getElementById('allowCustomCharacter').checked = data.config.allowCustomCharacter !== false;
+                document.getElementById('enableWorldbook').checked = data.config.enableWorldbook !== false;
+            }
+        }
+
+        function updateStatusUI(status) {
+            const badge = document.getElementById('gameStatus');
+            const publishBtn = document.getElementById('publishBtn');
+            const unpublishBtn = document.getElementById('unpublishBtn');
+            const deleteBtn = document.getElementById('deleteBtn');
+
+            if (status === 'published') {
+                badge.textContent = '已发布';
+                badge.className = 'status-badge status-published';
+                publishBtn.style.display = 'none';
+                unpublishBtn.style.display = 'inline-block';
+                deleteBtn.style.display = 'none';
+            } else {
+                badge.textContent = '草稿';
+                badge.className = 'status-badge status-draft';
+                publishBtn.style.display = 'inline-block';
+                unpublishBtn.style.display = 'none';
+                deleteBtn.style.display = 'inline-block';
+            }
+        }
+
+        function renderCharacters() {
+            const container = document.getElementById('charactersList');
+            if (characters.length === 0) {
+                container.innerHTML = '<p style="color: var(--text-secondary);">暂无角色</p>';
+                return;
+            }
+
+            container.innerHTML = characters.map((char, index) => `
+                <div class="character-card">
+                    <div class="character-header">
+                        <input type="color" class="character-color-picker" value="${char.color || '#999999'}" onchange="updateCharacterColor(${index}, this.value)">
+                        <div style="flex: 1;">
+                            <input type="text" class="form-input" value="${char.name}" placeholder="角色名称" onchange="updateCharacterName(${index}, this.value)">
+                        </div>
+                        <button class="btn btn-danger btn-sm" onclick="deleteCharacter(${index})">删除</button>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">角色设定 (Prompt)</label>
+                        <textarea class="form-textarea" rows="3" placeholder="描述角色的性格、外貌、说话方式..." onchange="updateCharacterPrompt(${index}, this.value)">${char.prompt || ''}</textarea>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function addNewCharacter() {
+            characters.push({
+                name: '新角色',
+                color: '#999999',
+                prompt: '',
+                gameId: gameId
+            });
+            renderCharacters();
+        }
+
+        function addDefaultCharacters() {
+            characters = [
+                { name: '向导', color: '#FF69B4', prompt: '友好的向导，帮助玩家了解世界' },
+                { name: '伙伴', color: '#87CEFA', prompt: '陪伴玩家冒险的伙伴' }
+            ];
+            renderCharacters();
+        }
+
+        async function loadGallery() {
+            try {
+                const response = await fetch(`${API_BASE}/gallery/${gameId}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const result = await response.json();
+                if (result.success) {
+                    gallery = result.data || [];
+                    renderGallery();
+                }
+            } catch (error) {
+                console.error('加载图库失败:', error);
+            }
+        }
+
+        function renderGallery() {
+            const grid = document.getElementById('galleryGrid');
+            const itemsHtml = gallery.map(img => `
+                <div class="gallery-item">
+                    <img src="${img.url}" alt="${img.name}" onerror="this.src='https://via.placeholder.com/200x150?text=No+Image'">
+                    <div class="gallery-item-info">
+                        <div class="gallery-item-name">${img.name}</div>
+                        <div style="font-size: 12px; color: var(--text-secondary);">${img.type}</div>
+                        <div class="gallery-item-tags">
+                            ${(img.tags || []).map(tag => `<span class="tag">${tag}</span>`).join('')}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            grid.innerHTML = `
+                <div class="add-image-btn" onclick="showAddImageModal()">
+                    <div style="font-size: 32px; margin-bottom: 8px;">+</div>
+                    <div>添加图片</div>
+                </div>
+                ${itemsHtml}
+            `;
+        }
+
+        function showAddImageModal() {
+            document.getElementById('addImageModal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('addImageModal').classList.remove('active');
+            document.getElementById('imageName').value = '';
+            document.getElementById('imageUrl').value = '';
+            document.getElementById('imageTags').value = '';
+            document.getElementById('imageDesc').value = '';
+        }
+
+        async function saveImage() {
+            if (!gameId) {
+                showToast('请先保存世界');
+                return;
+            }
+
+            const data = {
+                name: document.getElementById('imageName').value,
+                url: document.getElementById('imageUrl').value,
+                type: document.getElementById('imageType').value,
+                tags: document.getElementById('imageTags').value.split(',').map(t => t.trim()).filter(t => t),
+                description: document.getElementById('imageDesc').value
+            };
+
+            try {
+                const response = await fetch(`${API_BASE}/gallery/${gameId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    showToast('添加成功');
+                    closeModal();
+                    loadGallery();
+                } else {
+                    showToast(result.message || '添加失败');
+                }
+            } catch (error) {
+                showToast('网络错误');
+            }
+        }
+
+        async function saveGame() {
+            const data = {
+                title: document.getElementById('title').value,
+                slug: document.getElementById('slug').value,
+                subtitle: document.getElementById('subtitle').value,
+                genre: document.getElementById('genre').value,
+                description: document.getElementById('description').value,
+                worldSetting: document.getElementById('worldSetting').value,
+                cover: document.getElementById('cover').value,
+                background: document.getElementById('background').value,
+                config: {
+                    openingMessage: document.getElementById('openingMessage').value,
+                    themeColor: document.getElementById('themeColor').value,
+                    allowCustomCharacter: document.getElementById('allowCustomCharacter').checked,
+                    enableWorldbook: document.getElementById('enableWorldbook').checked
+                }
+            };
+
+            try {
+                let url, method;
+                if (gameId) {
+                    url = `${API_BASE}/games/${gameId}`;
+                    method = 'PUT';
+                } else {
+                    url = `${API_BASE}/games`;
+                    method = 'POST';
+                }
+
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    showToast('保存成功');
+                    if (!gameId) {
+                        window.location.href = `game-editor.html?id=${result.data._id}`;
+                    }
+                } else {
+                    showToast(result.message || '保存失败');
+                }
+            } catch (error) {
+                showToast('网络错误');
+            }
+        }
+
+        async function publishGame() {
+            if (!gameId) return;
+            if (!confirm('确定要发布这个世界吗？')) return;
+
+            try {
+                const response = await fetch(`${API_BASE}/games/${gameId}/publish`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const result = await response.json();
+                if (result.success) {
+                    showToast('发布成功');
+                    updateStatusUI('published');
+                } else {
+                    showToast(result.message || '发布失败');
+                }
+            } catch (error) {
+                showToast('网络错误');
+            }
+        }
+
+        async function unpublishGame() {
+            if (!gameId) return;
+            if (!confirm('确定要下架这个世界吗？')) return;
+
+            try {
+                const response = await fetch(`${API_BASE}/games/${gameId}/unpublish`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const result = await response.json();
+                if (result.success) {
+                    showToast('已下架');
+                    updateStatusUI('draft');
+                } else {
+                    showToast(result.message || '下架失败');
+                }
+            } catch (error) {
+                showToast('网络错误');
+            }
+        }
+
+        async function deleteGame() {
+            if (!gameId) return;
+            if (!confirm('确定要删除这个世界吗？此操作不可恢复！')) return;
+
+            try {
+                const response = await fetch(`${API_BASE}/games/${gameId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const result = await response.json();
+                if (result.success) {
+                    showToast('删除成功');
+                    window.location.href = 'index.html';
+                } else {
+                    showToast(result.message || '删除失败');
+                }
+            } catch (error) {
+                showToast('网络错误');
+            }
+        }
+
+        function previewGame() {
+            const slug = document.getElementById('slug').value;
+            if (slug) {
+                window.open(`galgame_framework.html?world=${slug}`, '_blank');
+            } else {
+                showToast('请先设置标识');
+            }
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+    </script>
+</body>
+</html>

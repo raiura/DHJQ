@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>风月阁 - 重构版</title>
+    
+    <!-- 基础样式 -->
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/components.css">
+    
+    <style>
+        /* 页面特定样式 */
+        .game-container {
+            display: grid;
+            grid-template-columns: 260px 1fr 280px;
+            gap: 20px;
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        /* 左侧角色面板 */
+        .character-panel {
+            background: var(--bg-card);
+            border-radius: var(--border-radius-lg);
+            padding: var(--space-md);
+            height: fit-content;
+        }
+        
+        .panel-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: var(--space-md);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        /* 中央游戏区域 */
+        .game-stage {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-md);
+        }
+        
+        .scene-display {
+            aspect-ratio: 16/9;
+            background: var(--bg-secondary);
+            border-radius: var(--border-radius);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .scene-character {
+            position: absolute;
+            bottom: 0;
+            height: 90%;
+            transition: all var(--transition);
+        }
+        
+        .dialogue-box {
+            background: linear-gradient(180deg, rgba(26, 26, 46, 0.95) 0%, rgba(22, 33, 62, 0.98) 100%);
+            border-radius: var(--border-radius);
+            padding: var(--space-lg);
+            min-height: 180px;
+            border: 1px solid var(--border-color);
+        }
+        
+        .dialogue-speaker {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: var(--space-sm);
+        }
+        
+        .dialogue-text {
+            font-size: 16px;
+            line-height: 1.8;
+            color: var(--text-secondary);
+            min-height: 60px;
+        }
+        
+        .dialogue-input {
+            margin-top: var(--space-md);
+            display: flex;
+            gap: var(--space-sm);
+        }
+        
+        .dialogue-input input {
+            flex: 1;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-sm);
+            padding: 12px 16px;
+            color: var(--text-primary);
+            font-size: 14px;
+        }
+        
+        .dialogue-input input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+        
+        /* 右侧信息面板 */
+        .info-panel {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-md);
+        }
+        
+        .info-card {
+            background: var(--bg-card);
+            border-radius: var(--border-radius);
+            padding: var(--space-md);
+        }
+        
+        /* 记忆列表 */
+        .memory-section {
+            flex: 1;
+            overflow: hidden;
+        }
+        
+        /* 响应式 */
+        @media (max-width: 1200px) {
+            .game-container {
+                grid-template-columns: 200px 1fr 240px;
+            }
+        }
+        
+        @media (max-width: 992px) {
+            .game-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .character-panel,
+            .info-panel {
+                display: none; /* 移动端通过抽屉展示 */
+            }
+        }
+        
+        /* 动画 */
+        @keyframes character-enter {
+            from {
+                opacity: 0;
+                transform: translateX(50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        .character-enter {
+            animation: character-enter 0.5s ease;
+        }
+        
+        /* 情感效果 */
+        .emotion-happy { filter: brightness(1.1); }
+        .emotion-angry { filter: contrast(1.2) sepia(0.3); }
+        .emotion-sad { filter: brightness(0.85) saturate(0.8); }
+        .emotion-shy { filter: sepia(0.2) hue-rotate(-10deg); }
+        .emotion-surprise { filter: brightness(1.15); }
+        .emotion-serious { filter: grayscale(0.5) contrast(1.1); }
+        .emotion-hurt { filter: brightness(0.8) sepia(0.2); }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <!-- 左侧角色面板 -->
+        <aside class="character-panel">
+            <div class="panel-title">
+                <span>👥</span>
+                <span>在场角色</span>
+            </div>
+            <div id="characterList" class="character-list">
+                <!-- 动态渲染 -->
+            </div>
+        </aside>
+        
+        <!-- 中央游戏区域 -->
+        <main class="game-stage">
+            <!-- 场景显示 -->
+            <div class="scene-display" id="sceneDisplay">
+                <!-- 角色立绘将显示在这里 -->
+            </div>
+            
+            <!-- 对话框 -->
+            <div class="dialogue-box">
+                <div class="dialogue-speaker" id="speakerName">选择一个角色开始对话</div>
+                <div class="dialogue-text" id="dialogueText">...</div>
+                <div class="dialogue-input">
+                    <input 
+                        type="text" 
+                        id="messageInput" 
+                        placeholder="输入消息..."
+                        autocomplete="off"
+                    >
+                    <button class="btn btn-primary" id="sendBtn">
+                        发送
+                    </button>
+                </div>
+            </div>
+        </main>
+        
+        <!-- 右侧信息面板 -->
+        <aside class="info-panel">
+            <!-- 当前角色信息 -->
+            <div class="info-card">
+                <div class="panel-title">
+                    <span>💝</span>
+                    <span>好感度</span>
+                </div>
+                <div id="favorDisplay">
+                    <div class="empty-state" style="padding: 24px;">
+                        <div style="font-size: 32px; margin-bottom: 8px;">💭</div>
+                        <div style="font-size: 13px; color: var(--text-tertiary);">
+                            选择角色查看好感度
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 记忆列表 -->
+            <div class="info-card memory-section">
+                <div class="panel-title">
+                    <span>📚</span>
+                    <span>记忆</span>
+                </div>
+                <div id="memoryList">
+                    <!-- 动态渲染 -->
+                </div>
+            </div>
+        </aside>
+    </div>
+    
+    <!-- 角色详情弹窗容器 -->
+    <div id="modalContainer"></div>
+
+    <!-- 加载核心模块 -->
+    <script src="js/core/api.js"></script>
+    <script src="js/core/auth.js"></script>
+    <script src="js/core/store.js"></script>
+    <script src="js/core/utils.js"></script>
+    
+    <!-- 加载组件 -->
+    <script src="js/components/Toast.js"></script>
+    <script src="js/components/Modal.js"></script>
+    <script src="js/components/CharacterCard.js"></script>
+    <script src="js/components/MemoryList.js"></script>
+    
+    <!-- 加载服务 -->
+    <script src="js/services/characterService.js"></script>
+    <script src="js/services/memoryService.js"></script>
+    <script src="js/services/dialogueService.js"></script>
+    
+    <!-- 应用入口 -->
+    <script src="js/app.js"></script>
+    
+    <!-- 页面逻辑 -->
+    <script>
+        /**
+         * 游戏主控制器 - 重构后版本
+         * @class GameController
+         */
+        class GameController {
+            constructor() {
+                this.characters = [];
+                this.currentCharacter = null;
+                this.dialogueHistory = [];
+                this.isLoading = false;
+                
+                this.init();
+            }
+            
+            /**
+             * 初始化
+             */
+            async init() {
+                // 检查认证
+                if (!Auth.isLoggedIn()) {
+                    window.location.href = '/login.html';
+                    return;
+                }
+                
+                // 绑定事件
+                this.bindEvents();
+                
+                // 加载角色
+                await this.loadCharacters();
+                
+                // 显示欢迎提示
+                Toast.success('欢迎来到风月阁', { duration: 2000 });
+            }
+            
+            /**
+             * 绑定事件
+             */
+            bindEvents() {
+                // 发送消息
+                DOM.$('#sendBtn').addEventListener('click', () => this.sendMessage());
+                DOM.$('#messageInput').addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') this.sendMessage();
+                });
+            }
+            
+            /**
+             * 加载角色列表
+             */
+            async loadCharacters() {
+                try {
+                    this.characters = await CharacterService.getAll();
+                    this.renderCharacterList();
+                } catch (error) {
+                    App.handleError(error);
+                }
+            }
+            
+            /**
+             * 渲染角色列表
+             */
+            renderCharacterList() {
+                const container = DOM.$('#characterList');
+                container.innerHTML = '';
+                
+                if (this.characters.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-icon">👤</div>
+                            <div class="empty-desc">暂无角色</div>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                this.characters.forEach(char => {
+                    const card = new CharacterCard(char, {
+                        size: 'small',
+                        showStats: false,
+                        onClick: () => this.selectCharacter(char)
+                    });
+                    container.appendChild(card.getElement());
+                });
+            }
+            
+            /**
+             * 选择角色
+             * @param {Object} character - 角色数据
+             */
+            selectCharacter(character) {
+                this.currentCharacter = character;
+                
+                // 更新UI
+                DOM.$('#speakerName').textContent = character.name;
+                DOM.$('#dialogueText').textContent = `与 ${character.name} 的对话开始了...`;
+                
+                // 显示角色
+                this.showCharacterInScene(character);
+                
+                // 更新好感度显示
+                this.updateFavorDisplay(character);
+                
+                // 加载记忆
+                this.loadMemories(character._id);
+                
+                // 更新输入框焦点
+                DOM.$('#messageInput').focus();
+            }
+            
+            /**
+             * 在场景中显示角色
+             * @param {Object} character - 角色数据
+             */
+            showCharacterInScene(character) {
+                const scene = DOM.$('#sceneDisplay');
+                scene.innerHTML = '';
+                
+                const charEl = DOM.create('img', {
+                    src: character.image || '/assets/default-avatar.png',
+                    className: 'scene-character character-enter',
+                    style: `
+                        left: 50%;
+                        transform: translateX(-50%);
+                        height: 95%;
+                        object-fit: contain;
+                    `,
+                    onerror: 'this.src="/assets/default-avatar.png"'
+                });
+                
+                scene.appendChild(charEl);
+            }
+            
+            /**
+             * 更新好感度显示
+             * @param {Object} character - 角色数据
+             */
+            updateFavorDisplay(character) {
+                const container = DOM.$('#favorDisplay');
+                const favorLevel = CharacterCard.getFavorLevel(character.favor || 50);
+                
+                container.innerHTML = `
+                    <div style="text-align: center; margin-bottom: 16px;">
+                        <div style="font-size: 18px; font-weight: 600; margin-bottom: 4px;">
+                            ${character.name}
+                        </div>
+                        <span class="badge" style="background: ${favorLevel.color}20; color: ${favorLevel.color};">
+                            ${favorLevel.name}
+                        </span>
+                    </div>
+                    
+                    <div style="margin-bottom: 12px;">
+                        <div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--text-tertiary); margin-bottom: 4px;">
+                            <span>好感度</span>
+                            <span>${Math.round(character.favor || 50)}</span>
+                        </div>
+                        <div class="progress">
+                            <div class="progress-bar" style="width: ${character.favor || 50}%; background: ${favorLevel.color};"></div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--text-tertiary); margin-bottom: 4px;">
+                            <span>信任度</span>
+                            <span>${Math.round(character.trust || 50)}</span>
+                        </div>
+                        <div class="progress">
+                            <div class="progress-bar" style="width: ${character.trust || 50}%; background: #4CAF50;"></div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            /**
+             * 加载角色记忆
+             * @param {string} characterId - 角色ID
+             */
+            async loadMemories(characterId) {
+                const container = DOM.$('#memoryList');
+                container.innerHTML = '<div class="loading"><div class="loading-spinner"></div></div>';
+                
+                try {
+                    const memories = await MemoryService.getCharacterMemories(characterId);
+                    const allMemories = [
+                        ...memories.short,
+                        ...memories.long,
+                        ...memories.core,
+                        ...memories.experiences
+                    ].sort((a, b) => new Date(b.createdAt || b.timestamp) - new Date(a.createdAt || a.timestamp));
+                    
+                    // 使用MemoryList组件
+                    const memoryList = new MemoryList({
+                        container,
+                        memories: allMemories.slice(0, 20),
+                        showPagination: false,
+                        onMemoryClick: (memory) => {
+                            Modal.open({
+                                title: '记忆详情',
+                                content: DOM.escape(memory.content || memory.description || ''),
+                                size: 'small'
+                            });
+                        }
+                    });
+                    
+                } catch (error) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-desc">加载失败</div>
+                        </div>
+                    `;
+                }
+            }
+            
+            /**
+             * 发送消息
+             */
+            async sendMessage() {
+                const input = DOM.$('#messageInput');
+                const message = input.value.trim();
+                
+                if (!message || !this.currentCharacter || this.isLoading) return;
+                
+                // 清空输入
+                input.value = '';
+                
+                // 显示用户消息
+                this.appendToDialogue('你', message);
+                
+                // 显示加载状态
+                this.isLoading = true;
+                const dialogueText = DOM.$('#dialogueText');
+                dialogueText.innerHTML = '<div class="loading-dots"><span></span><span></span><span></span></div>';
+                
+                try {
+                    // 调用对话服务
+                    const response = await DialogueService.sendMessage({
+                        characterId: this.currentCharacter._id,
+                        message,
+                        history: this.dialogueHistory
+                    });
+                    
+                    // 显示AI回复
+                    dialogueText.textContent = response.content;
+                    this.appendToDialogue(this.currentCharacter.name, response.content);
+                    
+                    // 应用情感效果
+                    if (response.emotion) {
+                        this.applyEmotionEffect(response.emotion);
+                    }
+                    
+                    // 更新历史
+                    this.dialogueHistory.push(
+                        { role: 'user', content: message },
+                        { role: 'assistant', content: response.content }
+                    );
+                    
+                    // 限制历史长度
+                    if (this.dialogueHistory.length > 20) {
+                        this.dialogueHistory = this.dialogueHistory.slice(-20);
+                    }
+                    
+                } catch (error) {
+                    dialogueText.textContent = '抱歉，发生了错误，请重试。';
+                    App.handleError(error);
+                } finally {
+                    this.isLoading = false;
+                }
+            }
+            
+            /**
+             * 应用情感效果
+             * @param {Object} emotion - 情感对象 {type, level}
+             */
+            applyEmotionEffect(emotion) {
+                const charEl = DOM.$('.scene-character');
+                if (!charEl) return;
+                
+                // 移除旧效果
+                charEl.className = charEl.className.replace(/emotion-\w+/g, '');
+                
+                // 添加新效果
+                if (emotion.type && emotion.type !== 'calm') {
+                    charEl.classList.add(`emotion-${emotion.type}`);
+                }
+            }
+            
+            /**
+             * 添加到对话历史
+             * @param {string} speaker - 说话者
+             * @param {string} content - 内容
+             */
+            appendToDialogue(speaker, content) {
+                // 这里可以扩展为显示完整对话历史
+                console.log(`${speaker}: ${content}`);
+            }
+        }
+        
+        // 启动游戏
+        document.addEventListener('DOMContentLoaded', () => {
+            window.game = new GameController();
+        });
+    </script>
+</body>
+</html>
