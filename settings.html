@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>大荒九丘 - AI设置中心</title>
     <link rel="stylesheet" href="public/css/settings.css">
+    <link rel="stylesheet" href="public/css/settings-world-guide.css">
 </head>
 <body>
     <!-- 背景动画 -->
@@ -41,6 +42,10 @@
                 <!-- 内容 -->
                 <div class="nav-section">
                     <div class="nav-section-title">内容</div>
+                    <div class="nav-item active" data-page="world-overview">
+                        <span class="nav-icon">🌍</span>
+                        <span class="nav-text">世界概览</span>
+                    </div>
                     <div class="nav-item" data-page="prompts">
                         <span class="nav-icon">📝</span>
                         <span class="nav-text">提示词设置</span>
@@ -279,6 +284,100 @@
                                 </button>
                             </div>
                         </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==================== 世界概览 (整合 world-guide 设计) ==================== -->
+            <section class="page-section" id="page-world-overview">
+                <div class="page-header-enhanced">
+                    <h1 class="page-title-enhanced" id="worldOverviewTitle">坏空之纪</h1>
+                    <p class="page-subtitle-enhanced" id="worldOverviewSubtitle">一个灵气稀薄、充满劫灰的修仙末世。天地间的灵气混杂了"劫灰"，飞升之路已经断绝，修士们为了资源相互厮杀。</p>
+                </div>
+
+                <!-- 统计卡片 -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value" id="statCharacterCount">0</div>
+                        <div class="stat-label">世界角色</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="statWorldbookCount">0</div>
+                        <div class="stat-label">世界书条目</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="statLocationCount">5</div>
+                        <div class="stat-label">地理区域</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="statCultivation">8</div>
+                        <div class="stat-label">修行境界</div>
+                    </div>
+                </div>
+
+                <!-- 世界观展示 -->
+                <div class="world-card">
+                    <h3>🌍 世界观核心</h3>
+                    <p id="worldCoreSetting">这是一个灵气熵增的末法时代。天地间的灵气不再是纯净的能量，而是混杂了"劫灰"的浑浊之气。修士吸纳灵气变得极其困难且危险，容易滋生心魔...</p>
+                    <div class="tag-group" id="worldTags">
+                        <span class="tag">修仙末世</span>
+                        <span class="tag">劫灰弥漫</span>
+                        <span class="tag">飞升断绝</span>
+                        <span class="tag">弱肉强食</span>
+                    </div>
+                </div>
+
+                <!-- 地理地图 -->
+                <div class="map-container">
+                    <h3 style="margin-bottom: 20px; color: var(--primary-light);">🗺️ 大荒九丘</h3>
+                    <div class="map-grid">
+                        <div class="map-location" data-location="zhongtian" onclick="showLocationDetail('中天轩辕丘')">
+                            <div class="location-icon">🏰</div>
+                            <div class="location-name">中天轩辕丘</div>
+                            <div class="location-desc">皇权中心，九丘之主所在。宫殿延绵，规矩严明，是整个大荒九丘的政治和文化中心。</div>
+                        </div>
+                        <div class="map-location" data-location="beihan" onclick="showLocationDetail('北寒落星丘')">
+                            <div class="location-icon">❄️</div>
+                            <div class="location-name">北寒落星丘</div>
+                            <div class="location-desc">落星剑宗所在地，常年飘雪。以剑修为主，弟子们剑术超群，性格冷峻。</div>
+                        </div>
+                        <div class="map-location" data-location="xiji" onclick="showLocationDetail('西极极乐丘')">
+                            <div class="location-icon">🔱</div>
+                            <div class="location-name">西极极乐丘</div>
+                            <div class="location-desc">魔道大本营，氛围诡异。各种魔修和邪修聚集之地，危险与机遇并存。</div>
+                        </div>
+                        <div class="map-location" data-location="nanhuang" onclick="showLocationDetail('南荒妖灵丘')">
+                            <div class="location-icon">🌲</div>
+                            <div class="location-name">南荒妖灵丘</div>
+                            <div class="location-desc">妖族聚居地，原始森林密布。保持着最原始的修炼方式，与自然和谐共存。</div>
+                        </div>
+                        <div class="map-location" data-location="donghai" onclick="showLocationDetail('东海散仙丘')">
+                            <div class="location-icon">🌊</div>
+                            <div class="location-name">东海散仙丘</div>
+                            <div class="location-desc">散修联盟所在，龙蛇混杂。各色人等汇聚，消息灵通，是信息交流的中心。</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 角色预览 -->
+                <div class="world-card">
+                    <h3 style="display: flex; justify-content: space-between; align-items: center;">
+                        <span>👤 主要角色</span>
+                        <button class="btn btn-sm btn-primary" onclick="switchToPage('characters')">管理角色</button>
+                    </h3>
+                    <div id="worldOverviewCharacters" style="margin-top: 20px;">
+                        <p style="color: var(--text-secondary); text-align: center; padding: 40px;">暂无角色</p>
+                    </div>
+                </div>
+
+                <!-- 世界书预览 -->
+                <div class="world-card">
+                    <h3 style="display: flex; justify-content: space-between; align-items: center;">
+                        <span>📚 核心设定</span>
+                        <button class="btn btn-sm btn-primary" onclick="switchToPage('worldbook')">管理设定</button>
+                    </h3>
+                    <div id="worldOverviewWorldbook" style="margin-top: 20px;">
+                        <p style="color: var(--text-secondary); text-align: center; padding: 40px;">暂无世界书条目</p>
                     </div>
                 </div>
             </section>

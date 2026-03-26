@@ -422,6 +422,11 @@ function switchToPage(pageId) {
     if (targetSection) {
         targetSection.classList.add('active');
         console.log('[Settings] Switched to page:', pageId);
+        
+        // 如果切换到世界概览页面，刷新数据
+        if (pageId === 'world-overview') {
+            renderWorldOverview();
+        }
     } else {
         console.error('[Settings] Page section not found:', 'page-' + pageId);
     }
@@ -436,6 +441,64 @@ function switchToPageFromURL() {
 
 function setupTabs() {
     // Tab setup logic if needed
+}
+
+// ==================== 世界概览 ====================
+function renderWorldOverview() {
+    // 更新统计数据
+    const charCountEl = document.getElementById('statCharacterCount');
+    const wbCountEl = document.getElementById('statWorldbookCount');
+    
+    if (charCountEl) charCountEl.textContent = characters?.length || 0;
+    if (wbCountEl) wbCountEl.textContent = worldbookManager?.getAllEntriesForDisplay()?.length || 0;
+    
+    // 渲染角色预览
+    const charContainer = document.getElementById('worldOverviewCharacters');
+    if (charContainer && characters && characters.length > 0) {
+        charContainer.innerHTML = `
+            <div class="character-showcase">
+                ${characters.slice(0, 3).map(char => `
+                    <div class="character-showcase-card" style="--char-color: ${char.color || '#8a6d3b'}">
+                        <div class="character-showcase-image" style="height: 160px;">
+                            ${char.avatar ? 
+                                `<img src="${char.avatar}" alt="${char.name}" onerror="this.parentElement.innerHTML='<div class=\'character-showcase-placeholder\'>${char.name.charAt(0)}</div>'">` : 
+                                `<div class="character-showcase-placeholder">${char.name.charAt(0)}</div>`
+                            }
+                        </div>
+                        <div class="character-showcase-info" style="padding: 16px;">
+                            <div class="character-showcase-name" style="font-size: 18px;">${char.name}</div>
+                            <div class="character-showcase-title">${char.background || char.title || '修仙者'}</div>
+                            <div class="character-showcase-desc" style="font-size: 13px; margin-top: 8px;">${char.prompt?.substring(0, 60) || ''}...</div>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+    }
+    
+    // 渲染世界书预览
+    const wbContainer = document.getElementById('worldOverviewWorldbook');
+    if (wbContainer && worldbookManager) {
+        const entries = worldbookManager.getAllEntriesForDisplay().slice(0, 3);
+        if (entries.length > 0) {
+            wbContainer.innerHTML = entries.map(entry => `
+                <div class="worldbook-entry-card" style="--entry-color: ${entry.groupColor || '#888'}; margin-bottom: 12px;">
+                    <div class="worldbook-entry-header">
+                        <span class="worldbook-entry-title">${entry.name}</span>
+                        <span class="worldbook-entry-group">${entry.group}</span>
+                    </div>
+                    <div class="worldbook-entry-content" style="max-height: 60px;">
+                        ${entry.content.substring(0, 100)}...
+                    </div>
+                </div>
+            `).join('');
+        }
+    }
+}
+
+function showLocationDetail(locationName) {
+    showToast(`查看 ${locationName} 详情`, 'info');
+    // 可以在这里展开更详细的地理信息
 }
 
 // ==================== 角色管理 ====================
@@ -705,38 +768,39 @@ function renderWorldbookList() {
         groups[group].push(entry);
     });
     
-    // 渲染分组
+    // 渲染分组 - 使用增强卡片样式
     container.innerHTML = Object.entries(groups).map(([groupName, groupEntries]) => `
-        <div class="worldbook-group" style="margin-bottom: 24px;">
-            <div class="worldbook-group-header" style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid rgba(138, 109, 59, 0.2);">
-                <span style="width: 12px; height: 12px; border-radius: 50%; background: ${groupEntries[0].groupColor || '#888'};"></span>
-                <span style="font-weight: 600; color: var(--primary-light);">${groupName}</span>
-                <span style="color: var(--text-secondary); font-size: 13px;">(${groupEntries.length})</span>
+        <div class="worldbook-group" style="margin-bottom: 32px;">
+            <div class="worldbook-group-header" style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 2px solid rgba(138, 109, 59, 0.3);">
+                <span style="width: 16px; height: 16px; border-radius: 50%; background: ${groupEntries[0].groupColor || '#888'}; box-shadow: 0 0 10px ${groupEntries[0].groupColor || '#888'};"></span>
+                <span style="font-weight: 700; color: var(--primary-light); font-size: 18px;">${groupName}</span>
+                <span style="color: var(--text-secondary); font-size: 14px; background: rgba(138, 109, 59, 0.15); padding: 4px 12px; border-radius: 12px;">${groupEntries.length} 条目</span>
             </div>
             <div class="worldbook-entries">
                 ${groupEntries.map(entry => `
-                    <div class="worldbook-entry ${entry.isUserEntry ? 'user-entry' : ''}" 
-                         style="background: rgba(0,0,0,0.2); border-radius: 12px; padding: 16px; margin-bottom: 12px; border-left: 3px solid ${entry.groupColor || '#888'}; ${entry.enabled === false ? 'opacity: 0.5;' : ''}">
-                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
+                    <div class="worldbook-entry-card" style="--entry-color: ${entry.groupColor || '#888'}; ${entry.enabled === false ? 'opacity: 0.5;' : ''}">
+                        <div class="worldbook-entry-header">
                             <div style="flex: 1;">
-                                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
-                                    <span style="font-weight: 600; font-size: 15px; color: var(--text-primary);">${entry.name}</span>
-                                    ${entry.isUserEntry ? '<span style="font-size: 11px; background: rgba(33, 150, 243, 0.2); color: #2196F3; padding: 2px 6px; border-radius: 4px;">用户</span>' : ''}
-                                    ${entry.constant ? '<span style="font-size: 11px; background: rgba(255, 152, 0, 0.2); color: #FF9800; padding: 2px 6px; border-radius: 4px;">恒常</span>' : ''}
+                                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                                    <span class="worldbook-entry-title">${entry.name}</span>
+                                    ${entry.isUserEntry ? '<span style="font-size: 11px; background: rgba(33, 150, 243, 0.2); color: #2196F3; padding: 3px 8px; border-radius: 4px;">用户</span>' : ''}
+                                    ${entry.constant ? '<span style="font-size: 11px; background: rgba(255, 152, 0, 0.2); color: #FF9800; padding: 3px 8px; border-radius: 4px;">恒常</span>' : ''}
                                 </div>
-                                <div style="font-size: 12px; color: var(--text-secondary); display: flex; gap: 15px; flex-wrap: wrap;">
-                                    <span>🔑 ${entry.keys.join(', ')}</span>
-                                    <span>📊 优先级: ${entry.priority}</span>
-                                    <span>📍 ${getInsertPositionLabel(entry.insertPosition)}</span>
+                                <div class="worldbook-entry-keys">
+                                    ${entry.keys.map(k => `<span class="key-tag">${k}</span>`).join('')}
                                 </div>
                             </div>
-                            <div style="display: flex; gap: 8px;">
-                                <button class="btn btn-sm btn-secondary" onclick="editWorldbookEntry('${entry.id}', ${entry.isUserEntry})" style="padding: 6px 12px; font-size: 12px;">编辑</button>
-                                <button class="btn btn-sm btn-danger" onclick="deleteWorldbookEntry('${entry.id}', ${entry.isUserEntry})" style="padding: 6px 12px; font-size: 12px;">删除</button>
+                            <div class="worldbook-entry-meta">
+                                <span class="worldbook-entry-priority">优先级 ${entry.priority}</span>
+                                <span class="worldbook-entry-group">${getInsertPositionLabel(entry.insertPosition)}</span>
                             </div>
                         </div>
-                        <div style="color: var(--text-secondary); font-size: 13px; line-height: 1.6; border-top: 1px solid rgba(138, 109, 59, 0.1); padding-top: 10px;">
-                            ${entry.content.substring(0, 150)}${entry.content.length > 150 ? '...' : ''}
+                        <div class="worldbook-entry-content">
+                            ${entry.content.substring(0, 200)}${entry.content.length > 200 ? '...' : ''}
+                        </div>
+                        <div class="worldbook-entry-actions">
+                            <button class="btn btn-sm btn-secondary" onclick="editWorldbookEntry('${entry.id}', ${entry.isUserEntry})">✏️ 编辑</button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteWorldbookEntry('${entry.id}', ${entry.isUserEntry})">🗑️ 删除</button>
                         </div>
                     </div>
                 `).join('')}
