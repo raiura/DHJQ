@@ -2587,15 +2587,21 @@
             updateChatDisplay('旁白', 'AI正在思考，请稍候...');
             console.log('开始生成AI回复:', userMessage);
             try {
-                // ========== 新世界书系统 ==========
+                // ========== 世界书系统 2.0 ==========
                 let worldbookEntries = [];
-                if (worldbookManager) {
-                    // 使用新的世界书引擎检测触发
-                    const context = {
-                        userName: window.currentUserCharacter?.name || '用户',
-                        characterName: currentCharacter?.name,
-                        recentMessages: chatHistory.slice(-5).map(h => h.text)
-                    };
+                const context = {
+                    userName: window.currentUserCharacter?.name || '用户',
+                    characterName: currentCharacter?.name,
+                    recentMessages: chatHistory.slice(-5).map(h => h.text)
+                };
+                
+                // 优先使用新的世界书库系统
+                if (worldbookLibrary) {
+                    worldbookEntries = worldbookLibrary.detectTriggers(userMessage, context);
+                    console.log('[WorldbookLibrary] 触发的条目:', worldbookEntries.length);
+                } 
+                // 向后兼容：使用旧系统
+                else if (worldbookManager) {
                     worldbookEntries = worldbookManager.detectTriggers(userMessage, context);
                     console.log('[Worldbook] 触发的条目:', worldbookEntries.length);
                 }
@@ -3226,6 +3232,9 @@
             });
         }
 
+        // 世界书图书馆实例（2.0 新系统）
+        let worldbookLibrary = null;
+        
         // 初始化世界书系统
         async function initWorldbookSystem() {
             console.log('[Worldbook] 初始化世界书系统...');
@@ -3238,16 +3247,20 @@
                     return;
                 }
                 
-                // 创建世界书管理器
+                // 创建世界书管理器（旧系统，向后兼容）
                 worldbookManager = new WorldbookManager({ gameId });
-                
-                // 加载全局世界书
                 await worldbookManager.loadGlobalWorldbook();
                 
                 // 如果有当前存档，设置存档
                 const currentSaveId = localStorage.getItem(`galgame_current_save_${gameId}`);
                 if (currentSaveId) {
                     worldbookManager.setCurrentSave(currentSaveId);
+                }
+                
+                // 初始化新世界书图书馆 2.0
+                if (typeof WorldbookLibrary !== 'undefined') {
+                    worldbookLibrary = new WorldbookLibrary({ gameId });
+                    console.log('[WorldbookLibrary] 已初始化，激活书本数:', worldbookLibrary.getActiveBooks().length);
                 }
                 
                 const stats = worldbookManager.getStats();

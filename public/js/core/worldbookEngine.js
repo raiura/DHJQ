@@ -540,3 +540,8 @@ WorldbookEngine.validateEntry = function(entry) {
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = WorldbookEngine;
 }
+
+// 浏览器全局暴露
+if (typeof window !== 'undefined') {
+    window.WorldbookEngine = WorldbookEngine;
+}

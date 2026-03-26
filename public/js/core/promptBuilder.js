@@ -467,3 +467,8 @@ class PromptBuilder {
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = PromptBuilder;
 }
+
+// 浏览器全局暴露
+if (typeof window !== 'undefined') {
+    window.PromptBuilder = PromptBuilder;
+}

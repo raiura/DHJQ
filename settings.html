@@ -416,73 +416,20 @@
                 </div>
             </section>
 
-            <!-- ==================== 世界书 ==================== -->
+            <!-- ==================== 世界书 2.0 ==================== -->
             <section class="page-section" id="page-worldbook">
                 <div class="page-header">
-                    <h1 class="page-title">📚 世界书清单（知识库）</h1>
+                    <h1 class="page-title">📚 世界书图书馆</h1>
                     <div class="page-actions">
-                        <div class="btn-group" style="position: relative;">
-                            <button class="btn btn-secondary" onclick="exportWorldbookOnly('json')">📤 导出 JSON</button>
-                            <button class="btn btn-secondary" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='block'?'none':'block'" style="padding-left: 8px; padding-right: 8px;">▼</button>
-                            <div style="display: none; position: absolute; top: 100%; right: 0; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; margin-top: 5px; min-width: 150px; z-index: 100;">
-                                <button class="btn btn-text" onclick="exportWorldbookOnly('json'); this.parentElement.style.display='none'" style="width: 100%; text-align: left; padding: 10px 15px;">导出 JSON</button>
-                                <button class="btn btn-text" onclick="exportWorldbookOnly('csv'); this.parentElement.style.display='none'" style="width: 100%; text-align: left; padding: 10px 15px;">导出 CSV</button>
-                                <button class="btn btn-text" onclick="exportWorldbookOnly('lorebook'); this.parentElement.style.display='none'" style="width: 100%; text-align: left; padding: 10px 15px;">导出 Lorebook</button>
-                            </div>
-                        </div>
-                        <button class="btn btn-secondary" onclick="importWorldbookEntries()">📥 导入</button>
-                        <button class="btn btn-danger admin-only" onclick="resetWorldbook()" title="清空全局世界书">🗑️ 重置</button>
-                        <button class="btn btn-primary" onclick="openWorldbookModal()">+ 新建条目</button>
+                        <button class="btn btn-secondary" onclick="exportAllWorldbooks()">📤 导出全部</button>
+                        <button class="btn btn-danger admin-only" onclick="resetWorldbook()" title="清空所有世界书">🗑️ 重置</button>
+                        <button class="btn btn-primary" onclick="createNewWorldbook()">+ 新建世界书</button>
                     </div>
                 </div>
                 
-                <!-- 筛选和搜索工具栏 -->
-                <div class="card" style="margin-bottom: 20px;">
-                    <div class="card-body" style="display: flex; gap: 15px; flex-wrap: wrap; align-items: center;">
-                        <div style="flex: 1; min-width: 200px;">
-                            <input type="text" class="form-input" id="wbSearchInput" placeholder="🔍 搜索条目..." oninput="filterWorldbookList()">
-                        </div>
-                        <div>
-                            <select class="form-select" id="wbGroupFilter" onchange="filterWorldbookList()">
-                                <option value="">所有分组</option>
-                                <option value="地理">地理</option>
-                                <option value="人物">人物</option>
-                                <option value="组织">组织</option>
-                                <option value="历史">历史</option>
-                                <option value="物品">物品</option>
-                                <option value="事件">事件</option>
-                            </select>
-                        </div>
-                        <div>
-                            <select class="form-select" id="wbSortBy" onchange="sortAndRenderWorldbook()">
-                                <option value="priority-desc">优先级 ↓</option>
-                                <option value="priority-asc">优先级 ↑</option>
-                                <option value="name-asc">名称 A-Z</option>
-                                <option value="name-desc">名称 Z-A</option>
-                                <option value="group">分组</option>
-                            </select>
-                        </div>
-                        <label class="form-check" style="display: flex; align-items: center; gap: 8px; cursor: pointer; margin: 0;">
-                            <input type="checkbox" id="wbShowUserOnly" onchange="filterWorldbookList()">
-                            <span>仅显示我的</span>
-                        </label>
-                    </div>
-                </div>
-                
-                <div class="card">
-                    <div class="card-body">
-                        <div class="entries-stats" style="margin-bottom: 20px; display: flex; gap: 20px; flex-wrap: wrap;">
-                            <span>总条目数: <strong id="originalWbTotalEntries">0</strong></span>
-                            <span>全局条目: <strong id="globalWbCount">0</strong></span>
-                            <span>我的条目: <strong id="userWbCount">0</strong></span>
-                            <span style="margin-left: auto; color: var(--text-secondary);">
-                                💡 支持变量: {{user}} {{char}} {{world}} {{time}}
-                            </span>
-                        </div>
-                        <div class="entries-list" id="originalWorldbookList">
-                            <!-- 动态生成 -->
-                        </div>
-                    </div>
+                <!-- 世界书管理器容器 -->
+                <div id="worldbookManagerContainer" style="height: calc(100vh - 250px); min-height: 500px;">
+                    <!-- WorldbookManagerUI 将渲染在这里 -->
                 </div>
             </section>
 
@@ -986,10 +933,14 @@
 
     <!-- 外部脚本 -->
     <script src="public/js/loader.js"></script>
-    <script src="public/js/settings/settings-main.js"></script>
     
-    <!-- 世界书引擎（新版 2.0）-->
+    <!-- 世界书引擎 2.0 (SillyTavern 风格多书本架构) - 必须在 settings-main 之前加载 -->
     <script src="public/js/core/worldbookEngine.js"></script>
+    <script src="public/js/core/worldBook.js"></script>
+    <script src="public/js/core/worldbookLibrary.js"></script>
     <script src="public/js/services/worldbookManager.js"></script>
+    <script src="public/js/components/worldbookManagerUI.js"></script>
+    
+    <script src="public/js/settings/settings-main.js"></script>
 </body>
 </html>

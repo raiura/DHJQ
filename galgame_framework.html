@@ -391,6 +391,8 @@
     </div>
     <!-- 核心模块 -->
     <script src="public/js/core/worldbookEngine.js"></script>
+    <script src="public/js/core/worldBook.js"></script>
+    <script src="public/js/core/worldbookLibrary.js"></script>
     <script src="public/js/core/promptBuilder.js"></script>
     <script src="public/js/services/worldbookManager.js"></script>
     <script src="public/js/loader.js"></script>
@@ -2984,12 +2986,30 @@
             updateChatDisplay('旁白', 'AI正在思考，请稍候...');
             console.log('开始生成AI回复:', userMessage);
             try {
-                // 收集用户个人设置
-                const userPromptAddon = getUserPromptAddon();
+                // ========== 新版世界书系统 ==========
+                let worldbookEntries = [];
+                if (worldbookManager) {
+                    // 使用新的世界书引擎检测触发
+                    const context = {
+                        userName: window.currentUserCharacter?.name || '用户',
+                        characterName: currentCharacter?.name,
+                        recentMessages: chatHistory.slice(-5).map(h => h.text)
+                    };
+                    worldbookEntries = worldbookManager.detectTriggers(userMessage, context);
+                    console.log('[Worldbook] 触发的条目:', worldbookEntries.length);
+                }
+                
+                // 旧版用户个人世界书（兼容）
                 const userEntries = userSettings.worldbook.entries
                     .filter(e => userMessage.includes(e.keyword))
                     .map(e => `[${e.keyword}] ${e.content}`)
                     .join('\n');
+                
+                // 合并新旧世界书条目
+                const allWorldbookEntries = [
+                    ...worldbookEntries.map(e => `[${e.name}] ${e.content}`),
+                    userEntries
+                ].filter(Boolean).join('\n');
                 
                 // 准复情感系统提示词
                 const emotionPrompt = getEmotionSystemPrompt();
@@ -3006,8 +3026,8 @@
                         message: userMessage,
                         characterId: '123',
                         userSettings: {
-                            promptAddon: userPromptAddon,
-                            worldbookEntries: userEntries,
+                            promptAddon: getUserPromptAddon(),
+                            worldbookEntries: allWorldbookEntries,
                             temperature: userSettings.ai.temperature,
                             systemPrompt: fullSystemPrompt
                         }
@@ -3574,9 +3594,53 @@
             initGameWithCharacter(selectedUserCharacter);
         };
 
+        // 世界书管理器实例
+        let worldbookManager = null;
+        
+        // 初始化世界书系统
+        async function initWorldbookSystem() {
+            console.log('[Worldbook] 初始化世界书系统...');
+            
+            try {
+                const gameId = currentWorld?._id || currentWorld?.id;
+                if (!gameId) {
+                    console.warn('[Worldbook] 未找到游戏ID');
+                    return;
+                }
+                
+                // 创建世界书管理器
+                worldbookManager = new WorldbookManager({ gameId });
+                
+                // 尝试从 settings 的 localStorage 加载世界书数据
+                const localWbKey = `wb_global_${gameId}`;
+                const localWbData = localStorage.getItem(localWbKey);
+                
+                if (localWbData) {
+                    console.log('[Worldbook] 从 localStorage 加载世界书数据');
+                    const wbData = JSON.parse(localWbData);
+                    worldbookManager.globalWorldbook = wbData;
+                }
+                
+                // 设置当前存档
+                const currentSaveId = localStorage.getItem(`galgame_current_save_${gameId}`);
+                if (currentSaveId) {
+                    worldbookManager.setCurrentSave(currentSaveId);
+                }
+                
+                const stats = worldbookManager.getStats();
+                console.log('[Worldbook] 世界书系统初始化完成:', stats);
+                
+            } catch (error) {
+                console.error('[Worldbook] 初始化失败:', error);
+            }
+        }
+        
         async function initGameWithCharacter(userCharacter) {
             // 初始化世界角色
             await initCharacters(currentWorld?._id);
+            
+            // 初始化世界书系统
+            await initWorldbookSystem();
             
             // 如果用户选择了角色，将其信息添加到开场白
             if (userCharacter) {

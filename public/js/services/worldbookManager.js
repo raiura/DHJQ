@@ -401,14 +401,20 @@ class WorldbookManager {
     }
 }
 
-// 创建全局实例
-let worldbookManager = null;
+// 创建全局实例（使用不同变量名避免冲突）
+let _worldbookManagerInstance = null;
 
 function getWorldbookManager(gameId) {
-    if (!worldbookManager || worldbookManager.gameId !== gameId) {
-        worldbookManager = new WorldbookManager({ gameId });
+    if (!_worldbookManagerInstance || _worldbookManagerInstance.gameId !== gameId) {
+        _worldbookManagerInstance = new WorldbookManager({ gameId });
     }
-    return worldbookManager;
+    return _worldbookManagerInstance;
+}
+
+// 浏览器全局暴露
+if (typeof window !== 'undefined') {
+    window.WorldbookManager = WorldbookManager;
+    window.getWorldbookManager = getWorldbookManager;
 }
 
 // 导出

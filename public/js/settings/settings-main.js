@@ -11,6 +11,9 @@ let gallery = [];
 // 世界书相关变量
 let editingWorldbookId = null;
 let editingWorldbookIsUser = false;
+let worldbookManager = null; // 旧版世界书管理器实例
+let worldbookLibrary = null; // 新世界书图书馆实例
+let worldbookManagerUI = null; // 世界书管理器 UI 实例
 
 // 全局错误处理
 window.onerror = function(msg, url, lineNo, columnNo, error) {
@@ -853,6 +856,38 @@ async function initWorldbookManager() {
     renderWorldbookGroups();
     
     console.log('[Worldbook] Manager initialized');
+    
+    // 初始化新世界书图书馆 2.0
+    initWorldbookLibrary();
+}
+
+/**
+ * 初始化新世界书图书馆 2.0 (SillyTavern 风格)
+ */
+function initWorldbookLibrary() {
+    console.log('[WorldbookLibrary] Initializing...');
+    
+    // 创建世界书图书馆实例
+    worldbookLibrary = new WorldbookLibrary({ gameId });
+    
+    // 初始化世界书管理器 UI
+    const container = document.getElementById('worldbookManagerContainer');
+    if (container && typeof WorldbookManagerUI !== 'undefined') {
+        worldbookManagerUI = new WorldbookManagerUI(container, {
+            library: worldbookLibrary,
+            gameId: gameId,
+            onEntrySelect: (entry) => {
+                // 打开条目编辑器
+                openWorldbookEntryEditor(entry);
+            },
+            onBookSelect: (book) => {
+                console.log('[WorldbookManagerUI] Selected book:', book?.name);
+            }
+        });
+        console.log('[WorldbookLibrary] UI initialized with', worldbookLibrary.getAllBooks().length, 'books');
+    } else {
+        console.warn('[WorldbookLibrary] Container or UI class not found');
+    }
 }
 
 /**
@@ -1071,7 +1106,118 @@ function openWorldbookModal() {
 }
 
 /**
- * 编辑世界书条目
+ * 从世界书管理器 UI 打开条目编辑器
+ * 这是 2.0 版本使用的函数
+ */
+function openWorldbookEntryEditor(entry) {
+    if (!entry) {
+        // 新建条目模式
+        openWorldbookModal();
+        return;
+    }
+    
+    console.log('[Worldbook] Opening editor for entry:', entry.id);
+    
+    // 设置编辑状态
+    editingWorldbookId = entry.id;
+    // 标记为来自新系统
+    editingWorldbookIsUser = entry._bookId ? 'library' : false;
+    
+    // 填充表单
+    const nameEl = document.getElementById('wbEntryName');
+    if (nameEl) nameEl.value = entry.name || '';
+    
+    const keywordEl = document.getElementById('wbKeyword');
+    if (keywordEl) keywordEl.value = (entry.keys || []).join(', ');
+    
+    const contentEl = document.getElementById('wbContent');
+    if (contentEl) contentEl.value = entry.content || '';
+    
+    const excludeKeysEl = document.getElementById('wbExcludeKeys');
+    if (excludeKeysEl) excludeKeysEl.value = (entry.excludeKeys || []).join(', ');
+    
+    const priorityEl = document.getElementById('wbPriority');
+    if (priorityEl) priorityEl.value = entry.priority || 100;
+    
+    const matchTypeEl = document.getElementById('wbMatchType');
+    if (matchTypeEl) matchTypeEl.value = entry.matchType || 'contains';
+    
+    const positionEl = document.getElementById('wbInsertPosition');
+    if (positionEl) positionEl.value = entry.insertPosition || 'character';
+    
+    const groupEl = document.getElementById('wbEntryGroup');
+    if (groupEl) groupEl.value = entry.group || '';
+    
+    const constantEl = document.getElementById('wbConstant');
+    if (constantEl) constantEl.checked = entry.constant || false;
+    
+    const modalTitle = document.getElementById('wbModalTitle');
+    if (modalTitle) modalTitle.textContent = '编辑世界书条目';
+    
+    // 显示模态框
+    const overlay = document.getElementById('worldbookModalOverlay');
+    if (overlay) {
+        overlay.style.display = 'flex';
+        overlay.classList.add('show');
+    }
+    
+    renderWorldbookGroups();
+}
+
+/**
+ * 创建新的世界书
+ * 用于世界书管理器 UI 的新建按钮
+ */
+function createNewWorldbook() {
+    if (!worldbookLibrary) {
+        showToast('世界书系统未初始化', 'error');
+        return;
+    }
+    
+    const name = prompt('请输入世界书名称:', '新建世界书');
+    if (!name) return;
+    
+    const book = worldbookLibrary.createBook({ 
+        name,
+        description: ''
+    });
+    
+    worldbookLibrary.selectBook(book.id);
+    
+    // 刷新 UI
+    if (worldbookManagerUI) {
+        worldbookManagerUI.refresh();
+    }
+    
+    showToast(`世界书 "${name}" 创建成功`, 'success');
+    
+    // 切换到世界书页面
+    switchToPage('worldbook');
+}
+
+/**
+ * 导出所有世界书
+ */
+function exportAllWorldbooks() {
+    if (!worldbookLibrary) {
+        showToast('世界书系统未初始化', 'error');
+        return;
+    }
+    
+    const data = worldbookLibrary.exportLibrary();
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `worldbook_library_${gameId || 'export'}_${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    
+    showToast('世界书库已导出', 'success');
+}
+
+/**
+ * 编辑世界书条目（旧版兼容）
  */
 function editWorldbookEntry(entryId, isUserEntry) {
     if (!worldbookManager) return;
@@ -1206,7 +1352,39 @@ async function saveWorldbookEntry() {
     }
     
     try {
-        // 判断是新建还是编辑
+        // 判断是否使用新的世界书库系统（library）
+        const isLibraryEntry = editingWorldbookIsUser === 'library' || 
+                               (editingWorldbookId && worldbookLibrary?.getSelectedBook()?.entries?.some(e => e.id === editingWorldbookId));
+        
+        if (isLibraryEntry && worldbookLibrary) {
+            // 使用新系统保存
+            const book = worldbookLibrary.getSelectedBook();
+            if (!book) {
+                showToast('请先选择一本世界书', 'error');
+                return;
+            }
+            
+            if (editingWorldbookId) {
+                // 更新条目
+                worldbookLibrary.updateEntry(book.id, editingWorldbookId, entryData);
+                showToast('条目已更新', 'success');
+            } else {
+                // 新建条目
+                worldbookLibrary.addEntry(entryData);
+                showToast('条目已创建', 'success');
+            }
+            
+            // 刷新世界书管理器 UI
+            if (worldbookManagerUI) {
+                worldbookManagerUI.refresh();
+            }
+            
+            // 关闭模态框
+            closeWorldbookModal();
+            return;
+        }
+        
+        // 判断是新建还是编辑（旧系统）
         const isUserEntry = editingWorldbookId && editingWorldbookIsUser;
         const isGlobalEntry = editingWorldbookId && !editingWorldbookIsUser;
         
