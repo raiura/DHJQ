@@ -3171,6 +3171,21 @@
         // 初始化角色
         async function initCharacters(gameId) {
             console.log('开始初始化角色...', gameId ? `(游戏ID: ${gameId})` : '(无游戏ID，获取全局角色)');
+            
+            // 首先尝试从 settings.html 保存的 localStorage 读取
+            let localCharacters = [];
+            if (gameId) {
+                try {
+                    const saved = localStorage.getItem(`game_${gameId}_characters`);
+                    if (saved) {
+                        localCharacters = JSON.parse(saved);
+                        console.log('从 localStorage 读取到角色:', localCharacters.length);
+                    }
+                } catch (e) {
+                    console.warn('读取 localStorage 角色失败:', e);
+                }
+            }
+            
             try {
                 // 调用后端 API 获取角色列表
                 const url = gameId ? `${API_BASE}/characters?gameId=${gameId}` : `${API_BASE}/characters`;
@@ -3188,28 +3203,53 @@
                 console.log('角色响应:', result);
                 
                 // 获取角色数据数组
-                const characters = result.data || [];
-                console.log('获取到的角色数量:', characters.length);
+                const apiCharacters = result.data || [];
+                console.log('从API获取到的角色数量:', apiCharacters.length);
                 
-                // 如果没有角色，创建默认角色
-                if (characters.length === 0) {
-                    console.log('没有角色，创建默认角色...');
-                    await createDefaultCharacters();
-                } else {
-                    // 更新角色配置
+                // 合并 API 数据和 localStorage 数据（localStorage 优先）
+                const apiCharNames = new Set(apiCharacters.map(c => c.name));
+                const mergedCharacters = [
+                    ...apiCharacters,
+                    ...localCharacters.filter(c => !apiCharNames.has(c.name))
+                ];
+                
+                console.log('合并后角色数量:', mergedCharacters.length);
+                
+                // 使用合并后的数据
+                if (mergedCharacters.length > 0) {
                     console.log('更新角色配置...');
-                    characters.forEach(character => {
+                    mergedCharacters.forEach(character => {
                         characterConfig[character.name] = {
                             color: character.color,
-                            image: character.image
+                            image: character.image || character.avatar
                         };
                         characterColors[character.name] = character.color;
                     });
+                    
+                    // 保存到 localStorage 供后续使用
+                    if (gameId) {
+                        localStorage.setItem(`game_${gameId}_characters`, JSON.stringify(mergedCharacters));
+                    }
+                } else {
+                    console.log('没有角色，创建默认角色...');
+                    await createDefaultCharacters();
                 }
             } catch (error) {
                 console.error('初始化角色错误:', error);
-                // 如果后端不可用，使用本地默认角色
-                console.log('使用本地默认角色');
+                // 如果后端不可用，使用 localStorage 数据
+                if (localCharacters.length > 0) {
+                    console.log('API失败，使用 localStorage 角色数据');
+                    localCharacters.forEach(character => {
+                        characterConfig[character.name] = {
+                            color: character.color,
+                            image: character.image || character.avatar
+                        };
+                        characterColors[character.name] = character.color;
+                    });
+                } else {
+                    console.log('使用本地默认角色');
+                    await createDefaultCharacters();
+                }
             }
         }
 

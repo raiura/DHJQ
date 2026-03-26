@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-03-26T00:48:13.086Z",
+  "timestamp": "2026-03-26T13:18:34.748Z",
   "collections": {
     "users": [
       {
@@ -244,8 +244,8 @@
           "favorites": 66
         },
         "createdAt": "2026-03-12T14:02:56.145Z",
-        "updatedAt": "2026-03-12T16:07:20.273Z",
-        "version": null
+        "updatedAt": "2026-03-26T13:13:17.785Z",
+        "version": 1
       }
     ],
     "gallery": [],

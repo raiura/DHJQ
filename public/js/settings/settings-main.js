@@ -134,6 +134,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         // 初始化世界书管理器
         await initWorldbookManager();
         
+        // 初始化角色编辑器事件
+        initCharacterEditorEvents();
+        
         if (isEditMode) {
             loadGameData().then(() => {
                 restoreViewMode();
@@ -459,7 +462,7 @@ function renderWorldOverview() {
             <div class="character-showcase">
                 ${characters.slice(0, 3).map(char => `
                     <div class="character-showcase-card" style="--char-color: ${char.color || '#8a6d3b'}">
-                        <div class="character-showcase-image" style="height: 160px;">
+                        <div class="character-showcase-image" style="height: 280px;">
                             ${char.avatar ? 
                                 `<img src="${char.avatar}" alt="${char.name}" onerror="this.parentElement.innerHTML='<div class=\'character-showcase-placeholder\'>${char.name.charAt(0)}</div>'">` : 
                                 `<div class="character-showcase-placeholder">${char.name.charAt(0)}</div>`
@@ -499,6 +502,89 @@ function renderWorldOverview() {
 function showLocationDetail(locationName) {
     showToast(`查看 ${locationName} 详情`, 'info');
     // 可以在这里展开更详细的地理信息
+}
+
+/**
+ * 更新好感度等级显示
+ */
+function updateFavorLevel(value) {
+    const favorValue = document.getElementById('favorValue');
+    const favorBadge = document.getElementById('favorLevelBadge');
+    if (favorValue) favorValue.textContent = value;
+    
+    if (favorBadge) {
+        let level, color, emoji;
+        if (value >= 80) { level = '热恋'; color = '#ff1744'; emoji = '💖'; }
+        else if (value >= 60) { level = '友好'; color = '#ff6b9d'; emoji = '💕'; }
+        else if (value >= 40) { level = '中立'; color = '#ffb347'; emoji = '💛'; }
+        else if (value >= 20) { level = '冷淡'; color = '#9e9e9e'; emoji = '💚'; }
+        else { level = '敌对'; color = '#616161'; emoji = '💀'; }
+        
+        favorBadge.textContent = emoji + ' ' + level;
+        favorBadge.style.background = color;
+    }
+}
+
+/**
+ * 更新信任度等级显示
+ */
+function updateTrustLevel(value) {
+    const trustValue = document.getElementById('trustValue');
+    const trustBadge = document.getElementById('trustLevelBadge');
+    if (trustValue) trustValue.textContent = value;
+    
+    if (trustBadge) {
+        let level, color;
+        if (value >= 80) { level = '托付'; color = '#e91e63'; }
+        else if (value >= 60) { level = '信任'; color = '#9c27b0'; }
+        else if (value >= 40) { level = '观察'; color = '#ff9800'; }
+        else if (value >= 20) { level = '警惕'; color = '#795548'; }
+        else { level = '防备'; color = '#ff5722'; }
+        
+        trustBadge.textContent = level;
+        trustBadge.style.background = color;
+    }
+}
+
+/**
+ * 初始化角色编辑器事件
+ */
+function initCharacterEditorEvents() {
+    // 颜色选择器联动
+    const colorPicker = document.getElementById('charColorPicker');
+    const colorInput = document.getElementById('charColor');
+    
+    if (colorPicker && colorInput) {
+        colorPicker.addEventListener('input', (e) => {
+            colorInput.value = e.target.value;
+        });
+        colorInput.addEventListener('input', (e) => {
+            colorPicker.value = e.target.value;
+        });
+    }
+    
+    // 头像预览
+    const avatarInput = document.getElementById('charAvatar');
+    if (avatarInput) {
+        avatarInput.addEventListener('input', (e) => {
+            const previewEl = document.getElementById('charAvatarPreview');
+            const imgEl = previewEl?.querySelector('img');
+            if (previewEl && imgEl) {
+                if (e.target.value) {
+                    imgEl.src = e.target.value;
+                    previewEl.style.display = 'block';
+                } else {
+                    previewEl.style.display = 'none';
+                }
+            }
+        });
+    }
+    
+    // 初始化好感度/信任度显示
+    const favorInput = document.getElementById('charFavor');
+    const trustInput = document.getElementById('charTrust');
+    if (favorInput) updateFavorLevel(favorInput.value);
+    if (trustInput) updateTrustLevel(trustInput.value);
 }
 
 // ==================== 角色管理 ====================
@@ -551,17 +637,45 @@ function renderCharacterList() {
 
 function openCharacterModal() {
     editingCharacterId = null;
-    const nameEl = document.getElementById('charName');
-    const avatarEl = document.getElementById('charAvatar');
-    const personalityEl = document.getElementById('charPersonality');
-    const backgroundEl = document.getElementById('charBackground');
-    const modalTitle = document.querySelector('#characterModal .modal-title');
     
-    if (nameEl) nameEl.value = '';
-    if (avatarEl) avatarEl.value = '';
-    if (personalityEl) personalityEl.value = '';
-    if (backgroundEl) backgroundEl.value = '';
-    if (modalTitle) modalTitle.textContent = '新建角色';
+    // 重置所有字段
+    const fields = {
+        'charName': '',
+        'charColor': '#8a6d3b',
+        'charColorPicker': '#8a6d3b',
+        'charAvatar': '',
+        'charImageFit': 'cover',
+        'charKeys': '',
+        'charPriority': '100',
+        'charFavor': '50',
+        'charTrust': '50',
+        'charMood': '平静',
+        'charAppearance': '',
+        'charPersonality': '',
+        'charBackground': '',
+        'charPhysique': '',
+        'charSpecial': ''
+    };
+    
+    for (const [id, value] of Object.entries(fields)) {
+        const el = document.getElementById(id);
+        if (el) el.value = value;
+    }
+    
+    // 隐藏头像预览
+    const previewEl = document.getElementById('charAvatarPreview');
+    if (previewEl) previewEl.style.display = 'none';
+    
+    // 重置预览
+    const promptPreview = document.getElementById('charPromptPreview');
+    if (promptPreview) promptPreview.textContent = '点击「生成预览」查看AI提示词...';
+    
+    // 初始化好感度/信任度显示
+    updateFavorLevel(50);
+    updateTrustLevel(50);
+    
+    const modalTitle = document.querySelector('#characterModal .modal-title');
+    if (modalTitle) modalTitle.textContent = '🎭 新建角色';
     
     const overlay = document.getElementById('characterModalOverlay');
     if (overlay) {
@@ -588,36 +702,118 @@ function deleteCharacter(id) {
 }
 
 function saveCharacter() {
-    const nameEl = document.getElementById('charName');
-    const avatarEl = document.getElementById('charAvatar');
-    const personalityEl = document.getElementById('charPersonality');
-    const backgroundEl = document.getElementById('charBackground');
-    
-    const name = nameEl ? nameEl.value.trim() : '';
-    const avatar = avatarEl ? avatarEl.value.trim() : '';
-    const personality = personalityEl ? personalityEl.value.trim() : '';
-    const background = backgroundEl ? backgroundEl.value.trim() : '';
+    // 收集所有字段
+    const name = document.getElementById('charName')?.value.trim() || '';
+    const color = document.getElementById('charColor')?.value.trim() || '#8a6d3b';
+    const avatar = document.getElementById('charAvatar')?.value.trim() || '';
+    const imageFit = document.getElementById('charImageFit')?.value || 'cover';
+    const keysText = document.getElementById('charKeys')?.value.trim() || '';
+    const priority = parseInt(document.getElementById('charPriority')?.value) || 100;
+    const favor = parseInt(document.getElementById('charFavor')?.value) || 50;
+    const trust = parseInt(document.getElementById('charTrust')?.value) || 50;
+    const mood = document.getElementById('charMood')?.value || '平静';
+    const appearance = document.getElementById('charAppearance')?.value.trim() || '';
+    const personality = document.getElementById('charPersonality')?.value.trim() || '';
+    const background = document.getElementById('charBackground')?.value.trim() || '';
+    const physique = document.getElementById('charPhysique')?.value.trim() || '';
+    const special = document.getElementById('charSpecial')?.value.trim() || '';
     
     if (!name) { showToast('请输入角色名称', 'error'); return; }
     
-    const char = { 
-        name, 
-        avatar, 
-        personality, 
+    // 解析关键词
+    const keys = keysText.split(/[,，]/).map(k => k.trim()).filter(Boolean);
+    
+    // 构建角色对象 (与后端模型完全一致)
+    const char = {
+        name,
+        color,
+        image: avatar,
+        imageFit,
+        avatar,
+        keys,
+        priority,
+        favor,
+        trust,
+        stats: { mood, encounters: 0, dialogueTurns: 0 },
+        appearance,
+        personality,
         background,
-        _id: editingCharacterId || 'local_' + Date.now() 
+        physique,
+        special,
+        // 生成AI提示词
+        prompt: buildCharacterPrompt({ name, appearance, personality, background, physique, special }),
+        enabled: true,
+        _id: editingCharacterId || 'char_' + Date.now(),
+        updatedAt: new Date().toISOString()
     };
     
     if (editingCharacterId) {
         const idx = characters.findIndex(c => c._id === editingCharacterId || c.id === editingCharacterId);
-        if (idx >= 0) characters[idx] = char;
+        if (idx >= 0) {
+            // 保留原有统计字段
+            char.stats.encounters = characters[idx].stats?.encounters || 0;
+            char.stats.dialogueTurns = characters[idx].stats?.dialogueTurns || 0;
+            characters[idx] = char;
+        }
     } else {
+        char.createdAt = new Date().toISOString();
         characters.push(char);
+    }
+    
+    // 保存到localStorage
+    if (gameId) {
+        localStorage.setItem(`game_${gameId}_characters`, JSON.stringify(characters));
     }
     
     closeCharacterModal();
     renderCharacterList();
-    showToast('角色已保存');
+    showToast('角色已保存', 'success');
+}
+
+/**
+ * 构建角色提示词
+ */
+function buildCharacterPrompt(data) {
+    const parts = [];
+    parts.push(`【角色名称】${data.name}`);
+    
+    if (data.appearance) {
+        parts.push(`\n【外貌特征】${data.appearance}`);
+    }
+    if (data.personality) {
+        parts.push(`\n【性格特点】${data.personality}`);
+    }
+    if (data.background) {
+        parts.push(`\n【身世背景】${data.background}`);
+    }
+    if (data.physique) {
+        parts.push(`\n【体质/修为】${data.physique}`);
+    }
+    if (data.special) {
+        parts.push(`\n【特殊能力/秘密】${data.special}`);
+    }
+    
+    return parts.join('\n');
+}
+
+/**
+ * 生成角色提示词预览
+ */
+function generateCharacterPromptPreview() {
+    const data = {
+        name: document.getElementById('charName')?.value.trim() || '未命名',
+        appearance: document.getElementById('charAppearance')?.value.trim() || '',
+        personality: document.getElementById('charPersonality')?.value.trim() || '',
+        background: document.getElementById('charBackground')?.value.trim() || '',
+        physique: document.getElementById('charPhysique')?.value.trim() || '',
+        special: document.getElementById('charSpecial')?.value.trim() || ''
+    };
+    
+    const preview = buildCharacterPrompt(data);
+    const previewEl = document.getElementById('charPromptPreview');
+    if (previewEl) {
+        previewEl.textContent = preview || '请填写角色信息生成预览...';
+    }
 }
 
 /**
@@ -2161,17 +2357,52 @@ function editCharacter(id) {
     }
     
     editingCharacterId = id;
-    const nameEl = document.getElementById('charName');
-    const avatarEl = document.getElementById('charAvatar');
-    const personalityEl = document.getElementById('charPersonality');
-    const backgroundEl = document.getElementById('charBackground');
-    const modalTitle = document.querySelector('#characterModal .modal-title');
     
-    if (nameEl) nameEl.value = char.name || '';
-    if (avatarEl) avatarEl.value = char.avatar || char.image || '';
-    if (personalityEl) personalityEl.value = char.personality || char.prompt || '';
-    if (backgroundEl) backgroundEl.value = char.background || '';
-    if (modalTitle) modalTitle.textContent = '编辑角色';
+    // 加载所有字段
+    const fields = {
+        'charName': char.name || '',
+        'charColor': char.color || '#8a6d3b',
+        'charColorPicker': char.color || '#8a6d3b',
+        'charAvatar': char.image || char.avatar || '',
+        'charImageFit': char.imageFit || 'cover',
+        'charKeys': (char.keys || []).join(', '),
+        'charPriority': char.priority || '100',
+        'charFavor': char.favor ?? 50,
+        'charTrust': char.trust ?? 50,
+        'charMood': char.stats?.mood || char.mood || '平静',
+        'charAppearance': char.appearance || '',
+        'charPersonality': char.personality || '',
+        'charBackground': char.background || '',
+        'charPhysique': char.physique || '',
+        'charSpecial': char.special || ''
+    };
+    
+    for (const [fieldId, value] of Object.entries(fields)) {
+        const el = document.getElementById(fieldId);
+        if (el) el.value = value;
+    }
+    
+    // 更新头像预览
+    const avatarPreview = document.getElementById('charAvatarPreview');
+    const avatarImg = avatarPreview?.querySelector('img');
+    if (avatarPreview && avatarImg) {
+        if (char.image || char.avatar) {
+            avatarImg.src = char.image || char.avatar;
+            avatarPreview.style.display = 'block';
+        } else {
+            avatarPreview.style.display = 'none';
+        }
+    }
+    
+    // 更新好感度/信任度显示
+    updateFavorLevel(char.favor ?? 50);
+    updateTrustLevel(char.trust ?? 50);
+    
+    // 更新预览
+    generateCharacterPromptPreview();
+    
+    const modalTitle = document.querySelector('#characterModal .modal-title');
+    if (modalTitle) modalTitle.textContent = '🎭 编辑角色';
     
     const overlay = document.getElementById('characterModalOverlay');
     if (overlay) {
