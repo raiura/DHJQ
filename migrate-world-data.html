@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>世界数据迁移工具 - 大荒九丘</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: "Microsoft YaHei", sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+            color: #f5f2eb;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #8a6d3b;
+            margin-bottom: 40px;
+        }
+        .card {
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(138, 109, 59, 0.3);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+        .card h2 {
+            color: #8a6d3b;
+            margin-bottom: 16px;
+            font-size: 18px;
+        }
+        .data-preview {
+            background: rgba(0,0,0,0.2);
+            border-radius: 8px;
+            padding: 16px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        .entry-item {
+            background: rgba(138, 109, 59, 0.1);
+            border-left: 3px solid #8a6d3b;
+            padding: 12px;
+            margin-bottom: 12px;
+            border-radius: 0 8px 8px 0;
+        }
+        .entry-item h4 {
+            color: #8a6d3b;
+            margin-bottom: 8px;
+        }
+        .entry-item .meta {
+            font-size: 12px;
+            color: #888;
+            margin-bottom: 8px;
+        }
+        .entry-item .content {
+            font-size: 13px;
+            line-height: 1.6;
+            color: #ccc;
+            max-height: 100px;
+            overflow: hidden;
+        }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 24px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #8a6d3b 0%, #6b5a3e 100%);
+            color: white;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(138, 109, 59, 0.3);
+        }
+        .btn-secondary {
+            background: rgba(255,255,255,0.1);
+            color: #f5f2eb;
+            border: 1px solid rgba(138, 109, 59, 0.3);
+        }
+        .btn-success {
+            background: linear-gradient(135deg, #4caf50 0%, #388e3c 100%);
+            color: white;
+        }
+        .actions {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+        .status {
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 16px;
+        }
+        .status.success {
+            background: rgba(76, 175, 80, 0.2);
+            border: 1px solid #4caf50;
+        }
+        .status.error {
+            background: rgba(244, 67, 54, 0.2);
+            border: 1px solid #f44336;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+        .stat-item {
+            background: rgba(138, 109, 59, 0.1);
+            padding: 16px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #8a6d3b;
+        }
+        .stat-label {
+            font-size: 12px;
+            color: #888;
+            margin-top: 4px;
+        }
+        .character-card {
+            display: flex;
+            gap: 16px;
+            background: rgba(138, 109, 59, 0.1);
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 12px;
+        }
+        .character-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #8a6d3b;
+        }
+        .character-info {
+            flex: 1;
+        }
+        .character-name {
+            font-size: 18px;
+            font-weight: bold;
+            color: #8a6d3b;
+            margin-bottom: 8px;
+        }
+        .character-prompt {
+            font-size: 13px;
+            color: #ccc;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📚 世界数据迁移工具</h1>
+        <p class="subtitle">将旧版世界书与角色数据迁移到新系统</p>
+
+        <!-- 统计概览 -->
+        <div class="card">
+            <h2>📊 数据概览</h2>
+            <div class="stats">
+                <div class="stat-item">
+                    <div class="stat-value" id="wbCount">0</div>
+                    <div class="stat-label">世界书条目</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="charCount">0</div>
+                    <div class="stat-label">角色</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 世界书预览 -->
+        <div class="card">
+            <h2>📖 世界书条目预览</h2>
+            <div id="worldbookPreview"></div>
+        </div>
+
+        <!-- 角色预览 -->
+        <div class="card">
+            <h2>👥 角色预览</h2>
+            <div id="characterPreview"></div>
+        </div>
+
+        <!-- 操作按钮 -->
+        <div class="card">
+            <h2>🚀 迁移操作</h2>
+            <div class="actions">
+                <button class="btn btn-primary" onclick="loadData()">📂 加载本地数据</button>
+                <button class="btn btn-success" onclick="migrateData()">✨ 执行迁移</button>
+                <button class="btn btn-secondary" onclick="goToSettings()">⚙️ 前往设置页</button>
+            </div>
+            <div id="status"></div>
+        </div>
+    </div>
+
+    <!-- 核心模块 -->
+    <script src="public/js/core/worldbookEngine.js"></script>
+    <script src="public/js/services/worldbookManager.js"></script>
+
+    <script>
+        // ========== 旧数据定义 ==========
+        
+        // 世界书条目（从 大荒九丘_坏空纪-20260130-234803.json 提取）
+        const oldWorldbookData = [
+            {
+                name: "修为境界",
+                keys: ["修为境界", "修为", "修炼境界", "修行境界"],
+                content: `## 修行境界
+1. 练气：入门，引气入体淬炼凡躯；灵气浑浊，易走火入魔/被劫灰侵蚀成「劫奴」（劫灰控制的半死生物），凡人难入门。
+2. 筑基：凝练灵气筑道基，寿元增；筑基丹稀缺，修士常铤而走险采补凡人精气，成功者为凡人眼中「仙师」。
+3. 金丹：灵气凝金丹（内蕴法则），可御空、法力大增；品质受灵气影响，劣质金丹易碎，金丹（内丹）是高阶修士补品，修士可金丹自爆（威力巨大）。
+4. 元婴：金丹碎诞元婴，可出窍，元婴存则近乎不死不灭；修行界中坚，元婴易被心魔侵蚀魔化，元婴是魔道极品补药。
+5. 化神：元婴与肉身融合、神魂合一，初掌天地法则，寿元数千，可转世重修（风险大）；突破瓶颈需纯净灵气+坚韧道心，心魔幻象频发，易道心崩溃成废人。
+6. 反虚：悟虚空法则、肉身返虚，可穿梭空间，寿元上万，佼佼者能短暂预知未来；各方霸主，可感知仙界壁障并冲击，易遭劫灰侵蚀/被虚空乱流吞噬。
+7. 真仙：陆地真仙，与天地同寿；受轩辕黄帝壁障限制，每300年渡雷劫、不可久留人界，人界最强战力，被规则束缚无法干预世事，是旧秩序残影。
+8. 金仙：渡劫飞升破虚空入仙界；飞升路危险，仙界非净土，是更残酷的「坏空之纪」，如从一个牢笼入另一个。`,
+                group: "世界观设定",
+                priority: 100,
+                matchType: "contains",
+                insertPosition: "system"
+            },
+            {
+                name: "地理结构",
+                keys: ["地理结构", "世界基底", "世界地理", "势力分布"],
+                content: `## 地理结构
+### 世界基底
+大荒九丘由漂浮虚空的9块巨浮陆组成，浮陆间被「弱水天河」（含罡风、虚空兽）分隔。
+### 核心浮陆（五丘）
+1. 中天轩辕丘：皇权中心，灵气最浓（轩辕皇族垄断），金碧奢靡；大荒神朝轩辕皇族统治，掌八丘传送阵吸掠天下资源；轩辕三皇子/长公主大本营，主角陆苍雪厌恶却不得不低头。
+2. 北寒落星丘：主角陆苍雪所在地，终年大雪、苦寒，灵脉几近枯竭；落星剑宗统治（曾是九丘第一剑宗，现靠陆苍雪一人镇守），山门下埋濒临死亡的「冰龙脉」。
+3. 西极极乐丘：魔道大本营，混乱血腥、唯强弱论；万魔窟（噬血魔尊）统治，盛行「炉鼎交易」，各族生灵被掳掠为玩物/修炼耗材；主要敌对势力。
+4. 南荒妖灵丘：妖族聚居地，原始森林+险峻山脉，妖气冲天、人迹罕至；万妖盟统治，妖王分领、派系林立互相攻伐；荒古圣体（荒逆）主要食物来源地。
+5. 东海散仙丘：散修/隐世者聚集地，岛屿星罗棋布，灵气平和但资源贫瘠；核心势力为松散散修联盟（不愿依附宗门/皇族），天机阁总部大概率在此；中立势力聚集地。`,
+                group: "世界观设定",
+                priority: 100,
+                matchType: "contains",
+                insertPosition: "system"
+            },
+            {
+                name: "大荒绝色榜与极阴媚骨",
+                keys: ["大荒绝色榜", "绝色榜", "名器谱", "极阴媚骨", "陆苍雪体质"],
+                content: `## 大荒秘榜与特殊体质（世界观核心衍生设定，绑定陆苍雪核心属性）
+### 1. 大荒绝色榜 & 名器谱
+- **发布方**：东海散仙丘的**天机阁**（神秘组织，掌大荒天下情报，榜单公信力被各方认可）
+- **榜单属性**：并非单纯的美人榜，而是大荒修行界的**顶级资源/猎物清单**，天机阁通过榜单暗中搅动各方势力纷争，坐收渔利；其中《大荒绝色榜》为综合颜值、体质、天赋的排名，《名器谱》专列拥有特殊体质、可作为修炼炉鼎/突破助力的修士，两榜合一成为各方势力寻找「修炼天材地宝」的核心参考。
+- **陆苍雪排名**：常年位列《大荒绝色榜》综合前五，在《名器谱》中稳居榜首，且在天机阁衍生的**「最想征服榜」**上常年第一，是大荒公认的「第一炉鼎/第一极阴体质」。
+- **天机阁官方评论**：「冰封之下，必有烈火。北寒落星雪，一剑镇九丘。谁能融化寒雪剑仙，谁便能独享那积攒千年的极阴元气，一步登仙。」
+
+### 2. 极阴媚骨（陆苍雪核心体质）& 极阴元阴的战略价值
+- **体质特征**：陆苍雪天生拥有**极阴媚骨**，为大荒仅存的纯阴体质，周身萦绕千年极阴元气，因常年修剑、镇守冰龙脉，元气被冰雪之力封印，外表清冷如霜，却难掩体质本身的媚骨与精纯元阴，是《名器谱》中最顶级的存在，也被称作大荒第一「名器」。
+- **核心价值**：处于**坏空纪**的大荒，化神、反虚境的突破本就难如登天，而陆苍雪的**纯阴处子元阴**，是大荒仅存的几份能直接辅助修士**突破反虚巅峰、甚至触摸真仙门槛**的「活神药」，无需炼化天材地宝，夺取后可直接吸收，大幅提升突破成功率，且能滋养神魂、抵御劫灰侵蚀。
+- **势力牵制逻辑**：各方势力（轩辕皇族、魔道、妖族、散修等）均知晓其元阴的价值，却无一方敢直接覆灭落星剑宗强夺——一旦某一方率先动手，必会遭到其他所有势力的联合阻击，最终可能为他人做嫁衣；因此各方均选择蛰伏，**暗中谋划等待陆苍雪「心防崩溃」「修行遇挫」或「落单」的一刻**，再伺机出手独吞，这也让陆苍雪时刻处于被觊觎的危机之中。
+- **体质副作用**：极阴媚骨会不自觉吸引异性修士（含妖、魔）的觊觎，即便陆苍雪实力强横，也会时常遭遇因体质引发的暗算与诱惑，且其体质与冰龙脉气息相融，若冰龙脉彻底消亡，极阴元气失去封印，会引来更疯狂的争夺。`,
+                group: "核心配角",
+                priority: 150,
+                matchType: "contains",
+                insertPosition: "character"
+            }
+        ];
+
+        // 角色数据（从 memory_store.json 提取）
+        const oldCharacterData = [
+            {
+                name: "林婉",
+                color: "#ff69b4",
+                avatar: "https://origin.picgo.net/2026/01/31/LinWan85351d4173bd3ae6.png",
+                prompt: "林婉是一个温柔、细腻、关心他人的女孩，说话轻声细语，总是为他人着想。她是修仙世界的向导，对周围的环境非常熟悉。",
+                keys: ["林婉", "婉儿"],
+                priority: 100
+            },
+            {
+                name: "陆苍雪",
+                color: "#87cefa",
+                avatar: "https://origin.picgo.net/2026/01/31/LuCangXued0d1fd51b000d674.png",
+                prompt: "陆苍雪是一个冷静、智慧、神秘的男孩，擅长冰系法术。他说话简洁有力，富有哲理，给人一种高深莫测的感觉。",
+                keys: ["陆苍雪", "雪儿", "寒雪剑仙", "落星剑宗掌门"],
+                priority: 100
+            },
+            {
+                name: "轩辕霓裳",
+                color: "#ff4500",
+                avatar: "https://origin.picgo.net/2026/01/31/XuanYuanNiChang934310ad29aa54d8.png",
+                prompt: "轩辕霓裳是一个活泼、热情、豪爽的女孩，充满活力和趣味性。她喜欢热闹的地方，总是能给周围的人带来快乐。",
+                keys: ["轩辕霓裳", "霓裳", "长公主殿下", "合欢宗宗主"],
+                priority: 100
+            }
+        ];
+
+        // ========== 功能函数 ==========
+
+        function updateStats() {
+            document.getElementById('wbCount').textContent = oldWorldbookData.length;
+            document.getElementById('charCount').textContent = oldCharacterData.length;
+        }
+
+        function renderWorldbookPreview() {
+            const container = document.getElementById('worldbookPreview');
+            container.innerHTML = oldWorldbookData.map(entry => `
+                <div class="entry-item">
+                    <h4>${entry.name}</h4>
+                    <div class="meta">
+                        🔑 ${entry.keys.join(', ')} | 
+                        📊 优先级: ${entry.priority} | 
+                        📁 ${entry.group}
+                    </div>
+                    <div class="content">${entry.content.substring(0, 200)}...</div>
+                </div>
+            `).join('');
+        }
+
+        function renderCharacterPreview() {
+            const container = document.getElementById('characterPreview');
+            container.innerHTML = oldCharacterData.map(char => `
+                <div class="character-card">
+                    <img src="${char.avatar}" alt="${char.name}" class="character-avatar" onerror="this.style.display='none'">
+                    <div class="character-info">
+                        <div class="character-name" style="color: ${char.color}">${char.name}</div>
+                        <div class="character-prompt">${char.prompt}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function showStatus(message, isError = false) {
+            const statusEl = document.getElementById('status');
+            statusEl.className = 'status ' + (isError ? 'error' : 'success');
+            statusEl.textContent = message;
+        }
+
+        function loadData() {
+            try {
+                updateStats();
+                renderWorldbookPreview();
+                renderCharacterPreview();
+                showStatus('✅ 数据加载成功！点击「执行迁移」导入到系统。');
+            } catch (error) {
+                showStatus('❌ 加载失败: ' + error.message, true);
+            }
+        }
+
+        async function migrateData() {
+            try {
+                showStatus('🔄 正在迁移数据...');
+
+                // 1. 确定游戏ID
+                const urlParams = new URLSearchParams(window.location.search);
+                let gameId = urlParams.get('id');
+                
+                if (!gameId) {
+                    // 尝试从 localStorage 获取当前编辑的游戏
+                    const currentGame = localStorage.getItem('dahuang_current_game');
+                    if (currentGame) {
+                        const game = JSON.parse(currentGame);
+                        gameId = game._id || game.id;
+                    }
+                }
+
+                if (!gameId) {
+                    showStatus('❌ 未找到游戏ID，请从设置页面进入', true);
+                    return;
+                }
+
+                console.log('[Migrate] 迁移到游戏ID:', gameId);
+
+                // 2. 初始化世界书管理器
+                const worldbookManager = new WorldbookManager({ gameId });
+
+                // 3. 迁移世界书条目
+                let migratedWbCount = 0;
+                for (const entry of oldWorldbookData) {
+                    const newEntry = {
+                        name: entry.name,
+                        keys: entry.keys,
+                        content: entry.content,
+                        group: entry.group,
+                        priority: entry.priority,
+                        matchType: entry.matchType,
+                        insertPosition: entry.insertPosition,
+                        enabled: true,
+                        constant: false,
+                        caseSensitive: false,
+                        excludeKeys: []
+                    };
+                    
+                    worldbookManager.addGlobalEntry(newEntry);
+                    migratedWbCount++;
+                }
+
+                // 4. 迁移角色数据到 localStorage
+                // 新系统的角色格式
+                const newCharacters = oldCharacterData.map(char => ({
+                    id: 'char_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+                    name: char.name,
+                    color: char.color,
+                    avatar: char.avatar,
+                    prompt: char.prompt,
+                    personality: '',
+                    background: '',
+                    appearance: '',
+                    physique: '',
+                    keys: char.keys,
+                    priority: char.priority,
+                    enabled: true,
+                    createdAt: new Date().toISOString()
+                }));
+
+                // 保存角色数据
+                const existingChars = JSON.parse(localStorage.getItem(`game_${gameId}_characters`) || '[]');
+                const allCharacters = [...existingChars, ...newCharacters];
+                localStorage.setItem(`game_${gameId}_characters`, JSON.stringify(allCharacters));
+
+                showStatus(`✅ 迁移完成！已导入 ${migratedWbCount} 条世界书条目和 ${newCharacters.length} 个角色。`);
+                
+                console.log('[Migrate] 迁移结果:', {
+                    worldbook: migratedWbCount,
+                    characters: newCharacters.length
+                });
+
+            } catch (error) {
+                console.error('[Migrate] 迁移失败:', error);
+                showStatus('❌ 迁移失败: ' + error.message, true);
+            }
+        }
+
+        function goToSettings() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const gameId = urlParams.get('id');
+            
+            if (gameId) {
+                window.location.href = `settings.html?id=${gameId}`;
+            } else {
+                window.location.href = 'settings.html';
+            }
+        }
+
+        // 页面加载时自动加载数据
+        window.addEventListener('DOMContentLoaded', () => {
+            loadData();
+        });
+    </script>
+</body>
+</html>

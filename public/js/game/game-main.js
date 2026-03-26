@@ -2587,18 +2587,66 @@
             updateChatDisplay('旁白', 'AI正在思考，请稍候...');
             console.log('开始生成AI回复:', userMessage);
             try {
-                // 收集用户个人设置
+                // ========== 新世界书系统 ==========
+                let worldbookEntries = [];
+                if (worldbookManager) {
+                    // 使用新的世界书引擎检测触发
+                    const context = {
+                        userName: window.currentUserCharacter?.name || '用户',
+                        characterName: currentCharacter?.name,
+                        recentMessages: chatHistory.slice(-5).map(h => h.text)
+                    };
+                    worldbookEntries = worldbookManager.detectTriggers(userMessage, context);
+                    console.log('[Worldbook] 触发的条目:', worldbookEntries.length);
+                }
+                
+                // 收集用户个人设置（旧系统兼容）
                 const userPromptAddon = getUserPromptAddon();
                 const userEntries = userSettings.worldbook.entries
                     .filter(e => userMessage.includes(e.keyword))
                     .map(e => `[${e.keyword}] ${e.content}`)
                     .join('\n');
                 
-                // 准复情感系统提示词
+                // 情感系统提示词
                 const emotionPrompt = getEmotionSystemPrompt();
-                const fullSystemPrompt = aiApiSettings.systemPrompt 
-                    ? aiApiSettings.systemPrompt + '\n' + emotionPrompt 
-                    : emotionPrompt;
+                
+                // ========== 使用 PromptBuilder 构建提示词 ==========
+                const gameConfig = {
+                    userName: window.currentUserCharacter?.name || '用户',
+                    characterName: currentCharacter?.name || '角色',
+                    worldName: currentWorld?.title || '世界'
+                };
+                
+                const builder = new PromptBuilder(gameConfig);
+                
+                // System 层：基础设定
+                if (aiApiSettings.systemPrompt) {
+                    builder.setSystem(aiApiSettings.systemPrompt);
+                }
+                
+                // Character 层：角色定义
+                if (currentCharacter?.prompt) {
+                    builder.setCharacter(currentCharacter.prompt, currentCharacter.name);
+                }
+                
+                // Worldbook 层：动态知识
+                if (worldbookEntries.length > 0) {
+                    builder.addWorldbook(worldbookEntries);
+                }
+                
+                // User 层：用户自定义
+                if (userPromptAddon) {
+                    builder.setUserPrompt(userPromptAddon);
+                }
+                if (userEntries) {
+                    builder.setUserPrompt(userEntries);
+                }
+                
+                // 构建最终提示词
+                const promptResult = builder.build({ format: 'openai' });
+                const fullSystemPrompt = promptResult.system + '\n' + emotionPrompt;
+                
+                console.log('[PromptBuilder] Token 统计:', promptResult.stats);
                 
                 // 调用后端 API
                 console.log('发送请求到后端API...');
@@ -3137,6 +3185,9 @@
             initGameWithCharacter(selectedUserCharacter);
         };
 
+        // 世界书管理器实例
+        let worldbookManager = null;
+        
         async function initGameWithCharacter(userCharacter) {
             // 初始化世界角色
             await initCharacters(currentWorld?._id);
@@ -3158,6 +3209,9 @@
             // 加载记忆库
             loadMemoryFromStorage();
             
+            // 初始化世界书系统
+            await initWorldbookSystem();
+            
             // 开始预加载资源
             preloadResources().then(() => {
                 setTimeout(() => {
@@ -3170,6 +3224,39 @@
                     }, 500);
                 }, 500);
             });
+        }
+
+        // 初始化世界书系统
+        async function initWorldbookSystem() {
+            console.log('[Worldbook] 初始化世界书系统...');
+            
+            try {
+                // 获取当前游戏ID
+                const gameId = currentWorld?._id || currentWorld?.id;
+                if (!gameId) {
+                    console.warn('[Worldbook] 未找到游戏ID，跳过世界书初始化');
+                    return;
+                }
+                
+                // 创建世界书管理器
+                worldbookManager = new WorldbookManager({ gameId });
+                
+                // 加载全局世界书
+                await worldbookManager.loadGlobalWorldbook();
+                
+                // 如果有当前存档，设置存档
+                const currentSaveId = localStorage.getItem(`galgame_current_save_${gameId}`);
+                if (currentSaveId) {
+                    worldbookManager.setCurrentSave(currentSaveId);
+                }
+                
+                const stats = worldbookManager.getStats();
+                console.log('[Worldbook] 世界书系统初始化完成:', stats);
+                
+            } catch (error) {
+                console.error('[Worldbook] 初始化失败:', error);
+                // 失败不影响游戏继续进行
+            }
         }
 
         // 检查用户是否是书本作者

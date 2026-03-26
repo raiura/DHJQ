@@ -321,15 +321,63 @@
                 <div class="page-header">
                     <h1 class="page-title">📚 世界书清单（知识库）</h1>
                     <div class="page-actions">
-                        <button class="btn btn-secondary" onclick="exportWorldbookOnly()">导出</button>
-                        <button class="btn btn-secondary" onclick="importWorldbookEntries()">导入</button>
+                        <div class="btn-group" style="position: relative;">
+                            <button class="btn btn-secondary" onclick="exportWorldbookOnly('json')">📤 导出 JSON</button>
+                            <button class="btn btn-secondary" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='block'?'none':'block'" style="padding-left: 8px; padding-right: 8px;">▼</button>
+                            <div style="display: none; position: absolute; top: 100%; right: 0; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; margin-top: 5px; min-width: 150px; z-index: 100;">
+                                <button class="btn btn-text" onclick="exportWorldbookOnly('json'); this.parentElement.style.display='none'" style="width: 100%; text-align: left; padding: 10px 15px;">导出 JSON</button>
+                                <button class="btn btn-text" onclick="exportWorldbookOnly('csv'); this.parentElement.style.display='none'" style="width: 100%; text-align: left; padding: 10px 15px;">导出 CSV</button>
+                                <button class="btn btn-text" onclick="exportWorldbookOnly('lorebook'); this.parentElement.style.display='none'" style="width: 100%; text-align: left; padding: 10px 15px;">导出 Lorebook</button>
+                            </div>
+                        </div>
+                        <button class="btn btn-secondary" onclick="importWorldbookEntries()">📥 导入</button>
+                        <button class="btn btn-danger admin-only" onclick="resetWorldbook()" title="清空全局世界书">🗑️ 重置</button>
                         <button class="btn btn-primary" onclick="openWorldbookModal()">+ 新建条目</button>
                     </div>
                 </div>
+                
+                <!-- 筛选和搜索工具栏 -->
+                <div class="card" style="margin-bottom: 20px;">
+                    <div class="card-body" style="display: flex; gap: 15px; flex-wrap: wrap; align-items: center;">
+                        <div style="flex: 1; min-width: 200px;">
+                            <input type="text" class="form-input" id="wbSearchInput" placeholder="🔍 搜索条目..." oninput="filterWorldbookList()">
+                        </div>
+                        <div>
+                            <select class="form-select" id="wbGroupFilter" onchange="filterWorldbookList()">
+                                <option value="">所有分组</option>
+                                <option value="地理">地理</option>
+                                <option value="人物">人物</option>
+                                <option value="组织">组织</option>
+                                <option value="历史">历史</option>
+                                <option value="物品">物品</option>
+                                <option value="事件">事件</option>
+                            </select>
+                        </div>
+                        <div>
+                            <select class="form-select" id="wbSortBy" onchange="sortAndRenderWorldbook()">
+                                <option value="priority-desc">优先级 ↓</option>
+                                <option value="priority-asc">优先级 ↑</option>
+                                <option value="name-asc">名称 A-Z</option>
+                                <option value="name-desc">名称 Z-A</option>
+                                <option value="group">分组</option>
+                            </select>
+                        </div>
+                        <label class="form-check" style="display: flex; align-items: center; gap: 8px; cursor: pointer; margin: 0;">
+                            <input type="checkbox" id="wbShowUserOnly" onchange="filterWorldbookList()">
+                            <span>仅显示我的</span>
+                        </label>
+                    </div>
+                </div>
+                
                 <div class="card">
                     <div class="card-body">
-                        <div class="entries-stats" style="margin-bottom: 20px;">
+                        <div class="entries-stats" style="margin-bottom: 20px; display: flex; gap: 20px; flex-wrap: wrap;">
                             <span>总条目数: <strong id="originalWbTotalEntries">0</strong></span>
+                            <span>全局条目: <strong id="globalWbCount">0</strong></span>
+                            <span>我的条目: <strong id="userWbCount">0</strong></span>
+                            <span style="margin-left: auto; color: var(--text-secondary);">
+                                💡 支持变量: {{user}} {{char}} {{world}} {{time}}
+                            </span>
                         </div>
                         <div class="entries-list" id="originalWorldbookList">
                             <!-- 动态生成 -->
@@ -560,11 +608,9 @@
         </main>
     </div>
 
-    <!-- 模态框容器 -->
-    <div class="modal-overlay" id="modalOverlay" onclick="closeAllModals()" style="display: none;"></div>
-    
     <!-- 世界书条目模态框（新版）-->
-    <div class="modal" id="worldbookModal" style="display: none;">
+    <div class="modal-overlay" id="worldbookModalOverlay" onclick="closeWorldbookModal()" style="display: none;">
+        <div class="modal modal-lg" id="worldbookModal" onclick="event.stopPropagation()">
         <div class="modal-header">
             <h3 class="modal-title" id="wbModalTitle">编辑世界书条目</h3>
             <button class="modal-close" onclick="closeModal('worldbookModal')">&times;</button>
@@ -669,58 +715,63 @@
             </div>
         </div>
         <div class="modal-footer">
-            <button class="btn btn-secondary" onclick="closeModal('worldbookModal')">取消</button>
+            <button class="btn btn-secondary" onclick="closeWorldbookModal()">取消</button>
             <button class="btn btn-primary" onclick="saveWorldbookEntry()">保存</button>
+        </div>
         </div>
     </div>
 
     <!-- 角色模态框 -->
-    <div class="modal" id="characterModal" style="display: none;">
-        <div class="modal-header">
-            <h3 class="modal-title">编辑角色</h3>
-            <button class="modal-close" onclick="closeModal('characterModal')">&times;</button>
-        </div>
-        <div class="modal-body">
-            <div class="form-group">
-                <label class="form-label">角色名称 *</label>
-                <input type="text" class="form-input" id="charName" placeholder="角色名称">
+    <div class="modal-overlay" id="characterModalOverlay" onclick="closeCharacterModal()" style="display: none;">
+        <div class="modal" id="characterModal" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h3 class="modal-title">编辑角色</h3>
+                <button class="modal-close" onclick="closeCharacterModal()">&times;</button>
             </div>
-            <div class="form-group">
-                <label class="form-label">头像 URL</label>
-                <input type="text" class="form-input" id="charAvatar" placeholder="https://example.com/avatar.jpg">
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">角色名称 *</label>
+                    <input type="text" class="form-input" id="charName" placeholder="角色名称">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">头像 URL</label>
+                    <input type="text" class="form-input" id="charAvatar" placeholder="https://example.com/avatar.jpg">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">性格描述</label>
+                    <textarea class="form-textarea" id="charPersonality" rows="3" placeholder="描述角色的性格特点..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">背景故事</label>
+                    <textarea class="form-textarea" id="charBackground" rows="4" placeholder="角色的背景故事..."></textarea>
+                </div>
             </div>
-            <div class="form-group">
-                <label class="form-label">性格描述</label>
-                <textarea class="form-textarea" id="charPersonality" rows="3" placeholder="描述角色的性格特点..."></textarea>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeCharacterModal()">取消</button>
+                <button class="btn btn-primary" onclick="saveCharacter()">保存</button>
             </div>
-            <div class="form-group">
-                <label class="form-label">背景故事</label>
-                <textarea class="form-textarea" id="charBackground" rows="4" placeholder="角色的背景故事..."></textarea>
-            </div>
-        </div>
-        <div class="modal-footer">
-            <button class="btn btn-secondary" onclick="closeModal('characterModal')">取消</button>
-            <button class="btn btn-primary" onclick="saveCharacter()">保存</button>
         </div>
     </div>
 
     <!-- 图库图片模态框 -->
-    <div class="modal" id="galleryModal" style="display: none;">
-        <div class="modal-header">
-            <h3 class="modal-title">图片详情</h3>
-            <button class="modal-close" onclick="closeModal('galleryModal')">&times;</button>
-        </div>
-        <div class="modal-body">
-            <img id="galleryPreview" style="width: 100%; border-radius: 8px; margin-bottom: 15px;">
-            <div class="form-group">
-                <label class="form-label">图片 URL</label>
-                <input type="text" class="form-input" id="galleryImageUrl" readonly>
+    <div class="modal-overlay" id="galleryModalOverlay" onclick="closeGalleryModal()" style="display: none;">
+        <div class="modal" id="galleryModal" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h3 class="modal-title">图片详情</h3>
+                <button class="modal-close" onclick="closeGalleryModal()">&times;</button>
             </div>
-        </div>
-        <div class="modal-footer">
-            <button class="btn btn-secondary" onclick="copyGalleryImageUrl()">复制链接</button>
-            <button class="btn btn-danger" onclick="deleteGalleryImage()">删除</button>
-            <button class="btn btn-secondary" onclick="closeModal('galleryModal')">关闭</button>
+            <div class="modal-body">
+                <img id="galleryPreview" style="width: 100%; border-radius: 8px; margin-bottom: 15px;">
+                <div class="form-group">
+                    <label class="form-label">图片 URL</label>
+                    <input type="text" class="form-input" id="galleryImageUrl" readonly>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="copyGalleryImageUrl()">复制链接</button>
+                <button class="btn btn-danger" onclick="deleteGalleryImage()">删除</button>
+                <button class="btn btn-secondary" onclick="closeGalleryModal()">关闭</button>
+            </div>
         </div>
     </div>
 

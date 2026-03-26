@@ -118,12 +118,16 @@ class WorldbookManager {
                     this._saveToStorage();
                     return this.globalWorldbook;
                 }
+            } else if (response.status === 404) {
+                // API 不存在，使用本地存储（这是正常的）
+                console.log('[Worldbook] Backend API not available, using local storage');
             }
         } catch (error) {
-            console.error('加载全局世界书失败:', error);
+            // 网络错误，使用本地存储
+            console.log('[Worldbook] Network error, using local storage');
         }
         
-        // 如果后端加载失败，使用本地缓存
+        // 使用本地缓存
         return this.globalWorldbook;
     }
 
@@ -339,10 +343,20 @@ class WorldbookManager {
 
     _loadFromStorage() {
         try {
-            // 加载全局世界书
-            const globalData = localStorage.getItem('wb_global_' + this.gameId);
+            // 加载全局世界书（尝试 gameId 和 'default'）
+            const globalKey = 'wb_global_' + (this.gameId || 'default');
+            let globalData = localStorage.getItem(globalKey);
+            
+            // 兼容旧数据：如果没有 gameId 特定的数据，尝试 'default'
+            if (!globalData && this.gameId) {
+                globalData = localStorage.getItem('wb_global_default');
+            }
+            
             if (globalData) {
                 this.globalWorldbook = JSON.parse(globalData);
+                console.log('[WorldbookManager] Loaded global from', globalKey, 'entries:', this.globalWorldbook.entries.length);
+            } else {
+                console.log('[WorldbookManager] No global data found for', globalKey);
             }
             
             // 加载用户世界书
@@ -350,24 +364,28 @@ class WorldbookManager {
             if (userData) {
                 const parsed = JSON.parse(userData);
                 this.userWorldbooks = new Map(Object.entries(parsed));
+                console.log('[WorldbookManager] Loaded user data, saves:', this.userWorldbooks.size);
+            } else {
+                console.log('[WorldbookManager] No user data found');
             }
         } catch (error) {
-            console.error('加载世界书数据失败:', error);
+            console.error('[WorldbookManager] 加载世界书数据失败:', error);
         }
     }
 
     _saveToStorage() {
         try {
-            // 保存全局世界书
-            if (this.gameId) {
-                localStorage.setItem('wb_global_' + this.gameId, JSON.stringify(this.globalWorldbook));
-            }
+            // 保存全局世界书（使用 gameId 或 'default'）
+            const globalKey = 'wb_global_' + (this.gameId || 'default');
+            localStorage.setItem(globalKey, JSON.stringify(this.globalWorldbook));
+            console.log('[WorldbookManager] Saved global to', globalKey, 'entries:', this.globalWorldbook.entries.length);
             
             // 保存用户世界书
             const userData = Object.fromEntries(this.userWorldbooks);
             localStorage.setItem('wb_user_data', JSON.stringify(userData));
+            console.log('[WorldbookManager] Saved user data, saves:', this.userWorldbooks.size);
         } catch (error) {
-            console.error('保存世界书数据失败:', error);
+            console.error('[WorldbookManager] 保存世界书数据失败:', error);
         }
     }
 

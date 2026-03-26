@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数据诊断工具 - 大荒九丘</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: "Microsoft YaHei", sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+            color: #f5f2eb;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #8a6d3b;
+            margin-bottom: 30px;
+        }
+        .card {
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(138, 109, 59, 0.3);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+        .card h2 {
+            color: #8a6d3b;
+            margin-bottom: 16px;
+            font-size: 18px;
+        }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 24px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #8a6d3b 0%, #6b5a3e 100%);
+            color: white;
+        }
+        .btn-success {
+            background: linear-gradient(135deg, #4caf50 0%, #388e3c 100%);
+            color: white;
+        }
+        .btn-danger {
+            background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
+            color: white;
+        }
+        .status {
+            padding: 12px;
+            border-radius: 8px;
+            margin: 10px 0;
+            font-family: monospace;
+            font-size: 13px;
+        }
+        .status.success {
+            background: rgba(76, 175, 80, 0.2);
+            border: 1px solid #4caf50;
+            color: #4caf50;
+        }
+        .status.error {
+            background: rgba(244, 67, 54, 0.2);
+            border: 1px solid #f44336;
+            color: #f44336;
+        }
+        .status.info {
+            background: rgba(138, 109, 59, 0.2);
+            border: 1px solid #8a6d3b;
+            color: #b89b6c;
+        }
+        .data-preview {
+            background: rgba(0,0,0,0.2);
+            border-radius: 8px;
+            padding: 16px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        .entry-item {
+            background: rgba(138, 109, 59, 0.1);
+            border-left: 3px solid #8a6d3b;
+            padding: 12px;
+            margin-bottom: 10px;
+            border-radius: 0 8px 8px 0;
+        }
+        .entry-item h4 {
+            color: #8a6d3b;
+            margin-bottom: 5px;
+        }
+        .entry-item .meta {
+            font-size: 12px;
+            color: #888;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid rgba(138, 109, 59, 0.3);
+            background: rgba(0,0,0,0.2);
+            color: #f5f2eb;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 数据诊断工具</h1>
+        <p class="subtitle">检查 localStorage 中的世界书和角色数据</p>
+
+        <div class="card">
+            <h2>🎮 游戏ID设置</h2>
+            <input type="text" id="gameIdInput" value="mem_1773324176145_1" placeholder="输入游戏ID">
+            <div class="actions">
+                <button class="btn btn-primary" onclick="checkData()">🔍 检查数据</button>
+                <button class="btn btn-success" onclick="injectData()">💉 注入测试数据</button>
+                <button class="btn btn-danger" onclick="clearData()">🗑️ 清空数据</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>📊 检查结果</h2>
+            <div id="results"></div>
+        </div>
+
+        <div class="card">
+            <h2>⚡ 快捷操作</h2>
+            <div class="actions">
+                <a href="settings.html?id=mem_1773324176145_1" class="btn btn-primary">⚙️ 前往设置页</a>
+                <a href="auto-migrate.html" class="btn btn-success">🚀 重新迁移</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const gameId = 'mem_1773324176145_1';
+
+        // 测试数据
+        const testCharacters = [
+            {
+                id: 'char_' + Date.now() + '_1',
+                name: '林婉',
+                color: '#ff69b4',
+                avatar: 'https://origin.picgo.net/2026/01/31/LinWan85351d4173bd3ae6.png',
+                prompt: '林婉是一个温柔、细腻、关心他人的女孩，说话轻声细语，总是为他人着想。',
+                personality: '温柔细腻',
+                background: '修仙世界向导',
+                keys: ['林婉', '婉儿'],
+                priority: 100,
+                enabled: true
+            },
+            {
+                id: 'char_' + Date.now() + '_2',
+                name: '陆苍雪',
+                color: '#87cefa',
+                avatar: 'https://origin.picgo.net/2026/01/31/LuCangXued0d1fd51b000d674.png',
+                prompt: '陆苍雪是一个冷静、智慧、神秘的男孩，擅长冰系法术。',
+                personality: '冷静智慧神秘',
+                background: '北寒落星丘落星剑宗掌门',
+                keys: ['陆苍雪', '雪儿', '寒雪剑仙'],
+                priority: 100,
+                enabled: true
+            },
+            {
+                id: 'char_' + Date.now() + '_3',
+                name: '轩辕霓裳',
+                color: '#ff4500',
+                avatar: 'https://origin.picgo.net/2026/01/31/XuanYuanNiChang934310ad29aa54d8.png',
+                prompt: '轩辕霓裳是一个活泼、热情、豪爽的女孩。',
+                personality: '活泼热情豪爽',
+                background: '中天轩辕丘长公主',
+                keys: ['轩辕霓裳', '霓裳', '长公主殿下'],
+                priority: 100,
+                enabled: true
+            }
+        ];
+
+        function log(message, type = 'info') {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = 'status ' + type;
+            div.innerHTML = message;
+            results.appendChild(div);
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+
+        function checkData() {
+            clearResults();
+            const inputGameId = document.getElementById('gameIdInput').value || gameId;
+            
+            log('🔍 检查游戏ID: ' + inputGameId, 'info');
+            
+            // 检查世界书
+            const wbKey = 'wb_global_' + inputGameId;
+            const wbData = localStorage.getItem(wbKey);
+            if (wbData) {
+                const wb = JSON.parse(wbData);
+                log('✅ 世界书数据存在: ' + wbKey, 'success');
+                log('   条目数: ' + (wb.entries?.length || 0), 'info');
+                if (wb.entries) {
+                    wb.entries.forEach(e => {
+                        log('   • ' + e.name + ' [' + e.group + ']', 'info');
+                    });
+                }
+            } else {
+                log('❌ 世界书数据不存在: ' + wbKey, 'error');
+            }
+            
+            // 检查角色
+            const charKey = 'game_' + inputGameId + '_characters';
+            const charData = localStorage.getItem(charKey);
+            if (charData) {
+                const chars = JSON.parse(charData);
+                log('✅ 角色数据存在: ' + charKey, 'success');
+                log('   角色数: ' + chars.length, 'info');
+                chars.forEach(c => {
+                    log('   • ' + c.name + ' (颜色: ' + c.color + ')', 'info');
+                });
+            } else {
+                log('❌ 角色数据不存在: ' + charKey, 'error');
+            }
+            
+            // 列出所有相关的 localStorage 键
+            log('<br>📋 所有相关键:', 'info');
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key.includes(inputGameId) || key.includes('wb_global')) {
+                    log('   ' + key, 'info');
+                }
+            }
+        }
+
+        function injectData() {
+            clearResults();
+            const inputGameId = document.getElementById('gameIdInput').value || gameId;
+            
+            // 注入角色数据
+            const charKey = 'game_' + inputGameId + '_characters';
+            localStorage.setItem(charKey, JSON.stringify(testCharacters));
+            log('✅ 已注入 ' + testCharacters.length + ' 个角色到: ' + charKey, 'success');
+            
+            // 重新检查
+            checkData();
+        }
+
+        function clearData() {
+            clearResults();
+            const inputGameId = document.getElementById('gameIdInput').value || gameId;
+            
+            if (!confirm('确定要清空游戏 ' + inputGameId + ' 的所有数据吗？')) {
+                return;
+            }
+            
+            const wbKey = 'wb_global_' + inputGameId;
+            const charKey = 'game_' + inputGameId + '_characters';
+            
+            localStorage.removeItem(wbKey);
+            localStorage.removeItem(charKey);
+            
+            log('🗑️ 已清空数据', 'info');
+            checkData();
+        }
+
+        // 页面加载时自动检查
+        window.addEventListener('DOMContentLoaded', checkData);
+    </script>
+</body>
+</html>
