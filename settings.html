@@ -7,6 +7,45 @@
     <link rel="stylesheet" href="public/css/settings.css">
     <link rel="stylesheet" href="public/css/settings-world-guide.css">
     <link rel="stylesheet" href="public/css/settings-character-editor.css">
+    <style>
+        /* 记忆管理样式 */
+        .memory-stat-card {
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .memory-stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(138, 109, 59, 0.2);
+        }
+        .memory-stat-card.active {
+            border-color: rgba(138, 109, 59, 0.8);
+            box-shadow: 0 0 20px rgba(138, 109, 59, 0.3);
+        }
+        .memory-filter-btn {
+            transition: all 0.2s;
+        }
+        .memory-filter-btn.active {
+            background: linear-gradient(135deg, #8a6d3b 0%, #6b5637 100%);
+            border-color: #8a6d3b;
+        }
+        .memory-item {
+            transition: all 0.2s ease;
+        }
+        .memory-item:hover {
+            background: rgba(138, 109, 59, 0.1) !important;
+            transform: translateX(4px);
+        }
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-secondary);
+        }
+        .empty-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+    </style>
 </head>
 <body>
     <!-- 背景动画 -->
@@ -482,19 +521,109 @@
             <!-- ==================== 记忆管理 ==================== -->
             <section class="page-section" id="page-memories">
                 <div class="page-header">
-                    <h1 class="page-title">🧠 记忆管理</h1>
+                    <h1 class="page-title">🧠 三层记忆管理</h1>
                     <div class="page-actions">
-                        <button class="btn btn-secondary" onclick="loadMemories()">刷新</button>
-                        <button class="btn btn-warning" onclick="solidifyTimeline()" title="将当前核心记忆写入世界书存档">固化时间线</button>
-                        <button class="btn btn-secondary" onclick="exportAllMemories()">导出</button>
-                        <button class="btn btn-secondary" onclick="importMemories()">导入</button>
-                        <button class="btn btn-danger" onclick="clearMemories()">清空</button>
+                        <button class="btn btn-secondary" onclick="loadMemories()">🔄 刷新</button>
+                        <button class="btn btn-primary" onclick="openMemoryModal()">+ 添加记忆</button>
+                        <button class="btn btn-warning" onclick="solidifyTimeline()" title="将当前核心记忆写入世界书存档">💾 固化时间线</button>
+                        <button class="btn btn-secondary" onclick="exportAllMemories()">📤 导出</button>
+                        <button class="btn btn-secondary" onclick="importMemories()">📥 导入</button>
+                        <button class="btn btn-danger" onclick="clearMemories()">🗑️ 清空</button>
                     </div>
                 </div>
+
+                <!-- 记忆统计卡片 -->
+                <div class="content-grid" style="margin-bottom: 20px;">
+                    <div class="card memory-stat-card" data-type="short">
+                        <div class="card-body" style="display: flex; align-items: center; gap: 15px;">
+                            <div class="memory-icon" style="width: 50px; height: 50px; border-radius: 12px; background: rgba(74, 158, 255, 0.2); display: flex; align-items: center; justify-content: center; font-size: 24px;">⚡</div>
+                            <div>
+                                <div class="memory-count" style="font-size: 28px; font-weight: 700; color: #4a9eff;" id="statShortCount">0</div>
+                                <div class="memory-label" style="color: var(--text-secondary); font-size: 14px;">短期记忆</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card memory-stat-card" data-type="long">
+                        <div class="card-body" style="display: flex; align-items: center; gap: 15px;">
+                            <div class="memory-icon" style="width: 50px; height: 50px; border-radius: 12px; background: rgba(155, 89, 182, 0.2); display: flex; align-items: center; justify-content: center; font-size: 24px;">📚</div>
+                            <div>
+                                <div class="memory-count" style="font-size: 28px; font-weight: 700; color: #9b59b6;" id="statLongCount">0</div>
+                                <div class="memory-label" style="color: var(--text-secondary); font-size: 14px;">长期记忆</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card memory-stat-card" data-type="core">
+                        <div class="card-body" style="display: flex; align-items: center; gap: 15px;">
+                            <div class="memory-icon" style="width: 50px; height: 50px; border-radius: 12px; background: rgba(231, 76, 60, 0.2); display: flex; align-items: center; justify-content: center; font-size: 24px;">💎</div>
+                            <div>
+                                <div class="memory-count" style="font-size: 28px; font-weight: 700; color: #e74c3c;" id="statCoreCount">0</div>
+                                <div class="memory-label" style="color: var(--text-secondary); font-size: 14px;">核心记忆</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card" style="border-color: rgba(138, 109, 59, 0.5);">
+                        <div class="card-body" style="display: flex; align-items: center; gap: 15px;">
+                            <div class="memory-icon" style="width: 50px; height: 50px; border-radius: 12px; background: rgba(138, 109, 59, 0.2); display: flex; align-items: center; justify-content: center; font-size: 24px;">📦</div>
+                            <div>
+                                <div class="memory-count" style="font-size: 28px; font-weight: 700; color: var(--primary-light);" id="statTotalCount">0</div>
+                                <div class="memory-label" style="color: var(--text-secondary); font-size: 14px;">总计</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 时间线存档状态 -->
+                <div class="card" style="margin-bottom: 20px; display: none;" id="timelineArchiveCard">
+                    <div class="card-body" style="display: flex; justify-content: space-between; align-items: center;">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <span style="font-size: 24px;">📜</span>
+                            <div>
+                                <div style="font-weight: 600;">时间线已存档</div>
+                                <div style="font-size: 13px; color: var(--text-secondary);" id="timelineArchiveTime">--</div>
+                            </div>
+                        </div>
+                        <button class="btn btn-sm btn-secondary" onclick="viewTimelineArchive()">查看存档</button>
+                    </div>
+                </div>
+
+                <!-- 筛选工具栏 -->
+                <div class="card" style="margin-bottom: 20px;">
+                    <div class="card-body" style="display: flex; gap: 15px; flex-wrap: wrap; align-items: center;">
+                        <div style="display: flex; gap: 8px;">
+                            <button class="btn btn-sm btn-primary memory-filter-btn active" data-filter="all" onclick="filterMemories('all')">全部</button>
+                            <button class="btn btn-sm btn-secondary memory-filter-btn" data-filter="short" onclick="filterMemories('short')">短期</button>
+                            <button class="btn btn-sm btn-secondary memory-filter-btn" data-filter="long" onclick="filterMemories('long')">长期</button>
+                            <button class="btn btn-sm btn-secondary memory-filter-btn" data-filter="core" onclick="filterMemories('core')">核心</button>
+                        </div>
+                        <div style="flex: 1; min-width: 200px;">
+                            <input type="text" class="form-input" id="memorySearchInput" placeholder="🔍 搜索记忆内容..." oninput="searchMemories()">
+                        </div>
+                        <div>
+                            <select class="form-select" id="memorySortBy" onchange="sortMemories()">
+                                <option value="time-desc">时间 ↓</option>
+                                <option value="time-asc">时间 ↑</option>
+                                <option value="importance">重要性</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 记忆流转说明 -->
+                <div class="card" style="margin-bottom: 20px; background: rgba(138, 109, 59, 0.1);">
+                    <div class="card-body" style="font-size: 13px; color: var(--text-secondary);">
+                        <strong>💡 记忆流转机制：</strong>短期记忆 (6条) → 自动合并为长期记忆 → 长期记忆 (12条) → 自动合并为核心记忆 → 手动固化到世界书存档
+                    </div>
+                </div>
+                
                 <div class="card">
                     <div class="card-body">
                         <div class="memories-list" id="memoriesList">
                             <!-- 动态生成 -->
+                            <div class="empty-state">
+                                <div class="empty-icon">🧠</div>
+                                <div class="empty-text">暂无记忆</div>
+                                <div class="empty-hint">游戏对话将自动生成短期记忆</div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -928,6 +1057,62 @@
         </div>
     </div>
 
+    <!-- 记忆管理模态框 -->
+    <div class="modal-overlay" id="memoryModalOverlay" onclick="closeMemoryModal()" style="display: none;">
+        <div class="modal" id="memoryModal" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h3 class="modal-title" id="memoryModalTitle">添加记忆</h3>
+                <button class="modal-close" onclick="closeMemoryModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">记忆内容 <span style="color: var(--primary-light);">*</span></label>
+                    <textarea class="form-textarea" id="memoryContent" rows="4" placeholder="输入记忆内容..."></textarea>
+                </div>
+                <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div class="form-group">
+                        <label class="form-label">记忆类型</label>
+                        <select class="form-select" id="memoryType">
+                            <option value="short">短期记忆</option>
+                            <option value="long">长期记忆</option>
+                            <option value="core">核心记忆</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">重要性 (0-100)</label>
+                        <input type="number" class="form-input" id="memoryImportance" min="0" max="100" value="50">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">标签（用逗号分隔）</label>
+                    <input type="text" class="form-input" id="memoryTags" placeholder="例如：重要,剧情,角色">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeMemoryModal()">取消</button>
+                <button class="btn btn-primary" onclick="saveMemory()">💾 保存记忆</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 时间线存档查看模态框 -->
+    <div class="modal-overlay" id="timelineArchiveModalOverlay" onclick="closeTimelineArchiveModal()" style="display: none;">
+        <div class="modal modal-lg" id="timelineArchiveModal" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h3 class="modal-title">📜 时间线存档</h3>
+                <button class="modal-close" onclick="closeTimelineArchiveModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="timelineArchiveContent" style="background: rgba(0,0,0,0.3); padding: 20px; border-radius: 8px; max-height: 400px; overflow-y: auto; font-family: monospace; font-size: 13px; white-space: pre-wrap;">
+                    <!-- 动态生成 -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeTimelineArchiveModal()">关闭</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Toast 容器 -->
     <div class="toast-container" id="toastContainer"></div>
 
@@ -939,6 +1124,7 @@
     <script src="public/js/core/worldBook.js"></script>
     <script src="public/js/core/worldbookLibrary.js"></script>
     <script src="public/js/services/worldbookManager.js"></script>
+    <script src="public/js/services/memoryService.js"></script>
     <script src="public/js/components/worldbookManagerUI.js"></script>
     
     <script src="public/js/settings/settings-main.js"></script>

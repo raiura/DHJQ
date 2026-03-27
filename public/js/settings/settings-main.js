@@ -15,6 +15,17 @@ let worldbookManager = null; // 旧版世界书管理器实例
 let worldbookLibrary = null; // 新世界书图书馆实例
 let worldbookManagerUI = null; // 世界书管理器 UI 实例
 
+// 记忆服务实例
+let memoryService = null;
+
+// 记忆管理状态
+let memoryFilterState = {
+    type: 'all',
+    search: '',
+    sortBy: 'time-desc'
+};
+let allMemoriesCache = [];
+
 // 全局错误处理
 window.onerror = function(msg, url, lineNo, columnNo, error) {
     console.error('[Settings] Error:', msg, 'at', lineNo + ':' + columnNo);
@@ -432,6 +443,11 @@ function switchToPage(pageId) {
         // 如果切换到世界概览页面，刷新数据
         if (pageId === 'world-overview') {
             renderWorldOverview();
+        }
+        
+        // 如果切换到记忆管理页面，加载记忆
+        if (pageId === 'memories') {
+            loadMemories();
         }
     } else {
         console.error('[Settings] Page section not found:', 'page-' + pageId);
@@ -888,6 +904,34 @@ function initWorldbookLibrary() {
     } else {
         console.warn('[WorldbookLibrary] Container or UI class not found');
     }
+    
+    // 初始化记忆服务
+    initMemoryService();
+}
+
+/**
+ * 初始化记忆服务
+ */
+function initMemoryService() {
+    console.log('[MemoryService] Initializing...');
+    
+    if (typeof MemoryService === 'undefined') {
+        console.warn('[MemoryService] MemoryService class not found');
+        return;
+    }
+    
+    memoryService = new MemoryService({
+        apiBase: API_BASE,
+        gameId: gameId
+    });
+    
+    // 如果当前在记忆管理页面，加载记忆
+    const currentPage = document.querySelector('.page-section.active')?.id;
+    if (currentPage === 'page-memories') {
+        loadMemories();
+    }
+    
+    console.log('[MemoryService] Initialized');
 }
 
 /**
@@ -2228,46 +2272,276 @@ async function savePrompts() {
     showToast('提示词已保存', 'success');
 }
 
-// ==================== 记忆管理功能 ====================
+// ==================== 记忆管理功能 2.0 ====================
+
+/**
+ * 加载记忆列表
+ */
 async function loadMemories() {
-    // 从当前存档加载记忆
-    const save = getCurrentSaveData();
-    const memories = save?.memories || { short: [], long: [], core: [] };
-    renderMemoriesList(memories);
+    console.log('[Memory] Loading memories...');
+    
+    if (!memoryService) {
+        console.warn('[Memory] MemoryService not initialized');
+        // 降级到本地存储
+        loadMemoriesFromLocal();
+        return;
+    }
+    
+    try {
+        // 获取统计
+        const stats = await memoryService.getStats();
+        updateMemoryStats(stats);
+        
+        // 更新时间线存档状态
+        updateTimelineArchiveStatus(stats);
+        
+        // 获取记忆列表
+        const types = memoryFilterState.type === 'all' 
+            ? ['short', 'long', 'core'] 
+            : [memoryFilterState.type];
+        
+        const result = await memoryService.getMemories({ types, limit: 100 });
+        allMemoriesCache = result.memories || [];
+        
+        // 应用筛选和排序
+        const filtered = filterAndSortMemories(allMemoriesCache);
+        renderMemoriesList(filtered);
+        
+        console.log('[Memory] Loaded', allMemoriesCache.length, 'memories');
+    } catch (error) {
+        console.error('[Memory] Failed to load:', error);
+        showToast('加载记忆失败，使用本地数据', 'warning');
+        loadMemoriesFromLocal();
+    }
 }
 
-function renderMemoriesList(memories) {
-    const container = document.getElementById('memoriesList');
-    if (!container) return;
+/**
+ * 从本地存储加载记忆（降级方案）
+ */
+function loadMemoriesFromLocal() {
+    const save = getCurrentSaveData();
+    const memories = save?.memories || { short: [], long: [], core: [] };
     
+    // 转换为统一格式
     const allMemories = [
         ...memories.core.map(m => ({ ...m, type: 'core' })),
         ...memories.long.map(m => ({ ...m, type: 'long' })),
         ...memories.short.map(m => ({ ...m, type: 'short' }))
     ];
     
-    if (allMemories.length === 0) {
-        container.innerHTML = '<p style="text-align: center; color: var(--text-secondary); padding: 40px;">暂无记忆</p>';
+    allMemoriesCache = allMemories;
+    
+    // 更新统计
+    updateMemoryStats({
+        short: memories.short?.length || 0,
+        long: memories.long?.length || 0,
+        core: memories.core?.length || 0,
+        total: allMemories.length
+    });
+    
+    const filtered = filterAndSortMemories(allMemories);
+    renderMemoriesList(filtered);
+}
+
+/**
+ * 更新记忆统计显示
+ */
+function updateMemoryStats(stats) {
+    const shortEl = document.getElementById('statShortCount');
+    const longEl = document.getElementById('statLongCount');
+    const coreEl = document.getElementById('statCoreCount');
+    const totalEl = document.getElementById('statTotalCount');
+    
+    if (shortEl) shortEl.textContent = stats.short || 0;
+    if (longEl) longEl.textContent = stats.long || 0;
+    if (coreEl) coreEl.textContent = stats.core || 0;
+    if (totalEl) totalEl.textContent = stats.total || 0;
+}
+
+/**
+ * 更新时间线存档状态
+ */
+function updateTimelineArchiveStatus(stats) {
+    const card = document.getElementById('timelineArchiveCard');
+    const timeEl = document.getElementById('timelineArchiveTime');
+    
+    if (card && timeEl) {
+        if (stats.hasArchive) {
+            card.style.display = 'block';
+            timeEl.textContent = stats.lastArchiveTime 
+                ? new Date(stats.lastArchiveTime).toLocaleString('zh-CN')
+                : '时间未知';
+        } else {
+            card.style.display = 'none';
+        }
+    }
+}
+
+/**
+ * 筛选和排序记忆
+ */
+function filterAndSortMemories(memories) {
+    let result = [...memories];
+    
+    // 搜索筛选
+    if (memoryFilterState.search) {
+        const search = memoryFilterState.search.toLowerCase();
+        result = result.filter(m => 
+            (m.content || '').toLowerCase().includes(search) ||
+            (m.tags || []).some(t => t.toLowerCase().includes(search))
+        );
+    }
+    
+    // 排序
+    result.sort((a, b) => {
+        switch (memoryFilterState.sortBy) {
+            case 'time-desc':
+                return new Date(b.timestamp) - new Date(a.timestamp);
+            case 'time-asc':
+                return new Date(a.timestamp) - new Date(b.timestamp);
+            case 'importance':
+                return (b.importance || 50) - (a.importance || 50);
+            default:
+                return 0;
+        }
+    });
+    
+    return result;
+}
+
+/**
+ * 渲染记忆列表
+ */
+function renderMemoriesList(memories) {
+    const container = document.getElementById('memoriesList');
+    if (!container) return;
+    
+    if (memories.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state" style="text-align: center; padding: 60px 20px;">
+                <div style="font-size: 48px; margin-bottom: 16px;">🧠</div>
+                <div style="color: var(--text-secondary); font-size: 16px; margin-bottom: 8px;">暂无符合条件的记忆</div>
+                <div style="color: var(--text-secondary); opacity: 0.7; font-size: 13px;">
+                    ${memoryFilterState.search ? '尝试其他搜索词' : '游戏对话将自动生成短期记忆'}
+                </div>
+            </div>
+        `;
         return;
     }
     
-    container.innerHTML = allMemories.map(mem => `
-        <div class="memory-item" style="padding: 15px; background: rgba(0,0,0,0.2); border-radius: 8px; margin-bottom: 10px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                <span class="memory-type-${mem.type}">${mem.type === 'core' ? '核心' : mem.type === 'long' ? '长期' : '短期'}</span>
-                <span style="font-size: 12px; color: var(--text-secondary);">${new Date(mem.timestamp).toLocaleString()}</span>
+    const typeColors = {
+        short: '#4a9eff',
+        long: '#9b59b6',
+        core: '#e74c3c'
+    };
+    
+    const typeLabels = {
+        short: '短期',
+        long: '长期',
+        core: '核心'
+    };
+    
+    container.innerHTML = memories.map(mem => `
+        <div class="memory-item" style="padding: 16px; background: rgba(0,0,0,0.2); border-radius: 10px; margin-bottom: 12px; border-left: 4px solid ${typeColors[mem.type] || '#888'};">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="padding: 3px 10px; border-radius: 4px; font-size: 12px; font-weight: 600; background: ${typeColors[mem.type]}20; color: ${typeColors[mem.type]};">
+                        ${typeLabels[mem.type] || mem.type}
+                    </span>
+                    ${(mem.importance || 50) >= 80 ? '<span style="color: #e74c3c; font-size: 12px;">🔥 重要</span>' : ''}
+                    ${mem.isSolidified ? '<span style="color: #27ae60; font-size: 12px;">✓ 已固化</span>' : ''}
+                </div>
+                <div style="display: flex; gap: 8px;">
+                    <button class="btn btn-sm btn-danger" onclick="deleteMemory('${mem._id || mem.id}')" title="删除">🗑️</button>
+                </div>
             </div>
-            <p style="margin: 0;">${mem.content || mem.title || ''}</p>
+            <p style="margin: 0 0 10px 0; line-height: 1.6;">${escapeHtml(mem.content || '')}</p>
+            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--text-secondary);">
+                <div>
+                    ${(mem.tags || []).map(t => `<span style="margin-right: 6px; padding: 2px 6px; background: rgba(138,109,59,0.2); border-radius: 3px;">${escapeHtml(t)}</span>`).join('')}
+                </div>
+                <span>${new Date(mem.timestamp).toLocaleString('zh-CN')}</span>
+            </div>
         </div>
     `).join('');
 }
 
+/**
+ * 筛选记忆
+ */
+function filterMemories(type) {
+    memoryFilterState.type = type;
+    
+    // 更新按钮状态
+    document.querySelectorAll('.memory-filter-btn').forEach(btn => {
+        btn.classList.remove('btn-primary', 'active');
+        btn.classList.add('btn-secondary');
+        if (btn.dataset.filter === type) {
+            btn.classList.remove('btn-secondary');
+            btn.classList.add('btn-primary', 'active');
+        }
+    });
+    
+    // 更新统计卡片高亮
+    document.querySelectorAll('.memory-stat-card').forEach(card => {
+        card.style.opacity = (type === 'all' || card.dataset.type === type) ? '1' : '0.5';
+    });
+    
+    const filtered = filterAndSortMemories(allMemoriesCache);
+    renderMemoriesList(filtered);
+}
+
+/**
+ * 搜索记忆
+ */
+function searchMemories() {
+    const input = document.getElementById('memorySearchInput');
+    memoryFilterState.search = input?.value || '';
+    const filtered = filterAndSortMemories(allMemoriesCache);
+    renderMemoriesList(filtered);
+}
+
+/**
+ * 排序记忆
+ */
+function sortMemories() {
+    const select = document.getElementById('memorySortBy');
+    memoryFilterState.sortBy = select?.value || 'time-desc';
+    const filtered = filterAndSortMemories(allMemoriesCache);
+    renderMemoriesList(filtered);
+}
+
+/**
+ * HTML转义
+ */
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+/**
+ * 固化时间线
+ */
 async function solidifyTimeline() {
-    if (!confirm('确定要固化当前时间线吗？这将把当前核心记忆写入世界书存档。')) return;
+    if (!confirm('确定要固化当前时间线吗？\n这将把当前核心记忆写入世界书存档。')) return;
     
     showToast('正在固化时间线...');
     
-    // 本地实现：将长期记忆移动到核心记忆
+    if (memoryService) {
+        try {
+            const result = await memoryService.solidifyTimeline();
+            showToast(`时间线已固化！共固化 ${result.solidifiedCount || 0} 条核心记忆`, 'success');
+            loadMemories();
+            return;
+        } catch (error) {
+            console.error('[Memory] Solidify failed:', error);
+            showToast('固化失败，尝试本地模式', 'warning');
+        }
+    }
+    
+    // 本地降级方案
     const save = getCurrentSaveData();
     if (save && save.memories) {
         const longMemories = save.memories.long || [];
@@ -2276,63 +2550,227 @@ async function solidifyTimeline() {
             return;
         }
         
-        // 将长期记忆添加到核心记忆
         save.memories.core = save.memories.core || [];
         longMemories.forEach(mem => {
             save.memories.core.push({
                 ...mem,
-                solidifiedAt: new Date().toISOString()
+                solidifiedAt: new Date().toISOString(),
+                isSolidified: true
             });
         });
         
-        // 清空长期记忆
         save.memories.long = [];
-        
-        // 保存
         updateSaveData({ memories: save.memories });
-        renderMemoriesList(save.memories);
-        showToast(`已固化 ${longMemories.length} 条记忆到核心`, 'success');
-        return;
-    }
-    
-    // 如果没有本地存档，尝试调用 API
-    try {
-        const response = await fetch(`${API_BASE}/memories/solidify`, {
-            method: 'POST',
-            headers: getAuthHeaders()
-        });
-        
-        const result = await response.json();
-        if (result.success) {
-            showToast('时间线已固化', 'success');
-            loadMemories();
-        } else {
-            showToast(result.message || '固化失败', 'error');
-        }
-    } catch (error) {
-        showToast('固化失败: ' + error.message, 'error');
+        loadMemoriesFromLocal();
+        showToast(`已固化 ${longMemories.length} 条记忆`, 'success');
     }
 }
 
-function exportAllMemories() {
-    const save = getCurrentSaveData();
-    const memories = save?.memories || { short: [], long: [], core: [] };
+/**
+ * 查看时间线存档
+ */
+async function viewTimelineArchive() {
+    if (!memoryService) {
+        showToast('记忆服务未初始化', 'error');
+        return;
+    }
     
-    const data = {
-        memories: memories,
-        exportTime: new Date().toISOString()
-    };
+    try {
+        const archive = await memoryService.getTimelineArchive();
+        if (!archive.exists) {
+            showToast('暂无时间线存档', 'info');
+            return;
+        }
+        
+        const contentEl = document.getElementById('timelineArchiveContent');
+        if (contentEl) {
+            contentEl.textContent = typeof archive.content === 'string' 
+                ? archive.content 
+                : JSON.stringify(archive.content, null, 2);
+        }
+        
+        const overlay = document.getElementById('timelineArchiveModalOverlay');
+        if (overlay) {
+            overlay.style.display = 'flex';
+            overlay.classList.add('show');
+        }
+    } catch (error) {
+        showToast('获取存档失败: ' + error.message, 'error');
+    }
+}
+
+/**
+ * 关闭时间线存档模态框
+ */
+function closeTimelineArchiveModal() {
+    const overlay = document.getElementById('timelineArchiveModalOverlay');
+    if (overlay) {
+        overlay.classList.remove('show');
+        setTimeout(() => overlay.style.display = 'none', 300);
+    }
+}
+
+/**
+ * 打开添加记忆模态框
+ */
+function openMemoryModal() {
+    const overlay = document.getElementById('memoryModalOverlay');
+    const title = document.getElementById('memoryModalTitle');
+    
+    if (title) title.textContent = '添加记忆';
+    
+    // 重置表单
+    const contentEl = document.getElementById('memoryContent');
+    const typeEl = document.getElementById('memoryType');
+    const importanceEl = document.getElementById('memoryImportance');
+    const tagsEl = document.getElementById('memoryTags');
+    
+    if (contentEl) contentEl.value = '';
+    if (typeEl) typeEl.value = 'short';
+    if (importanceEl) importanceEl.value = '50';
+    if (tagsEl) tagsEl.value = '';
+    
+    if (overlay) {
+        overlay.style.display = 'flex';
+        overlay.classList.add('show');
+    }
+}
+
+/**
+ * 关闭记忆模态框
+ */
+function closeMemoryModal() {
+    const overlay = document.getElementById('memoryModalOverlay');
+    if (overlay) {
+        overlay.classList.remove('show');
+        setTimeout(() => overlay.style.display = 'none', 300);
+    }
+}
+
+/**
+ * 保存记忆
+ */
+async function saveMemory() {
+    const contentEl = document.getElementById('memoryContent');
+    const typeEl = document.getElementById('memoryType');
+    const importanceEl = document.getElementById('memoryImportance');
+    const tagsEl = document.getElementById('memoryTags');
+    
+    const content = contentEl?.value?.trim();
+    if (!content) {
+        showToast('请输入记忆内容', 'error');
+        return;
+    }
+    
+    const type = typeEl?.value || 'short';
+    const importance = parseInt(importanceEl?.value || '50');
+    const tags = tagsEl?.value?.split(/[,，]/).map(t => t.trim()).filter(Boolean) || [];
+    
+    if (memoryService) {
+        try {
+            await memoryService.addMemory(content, { type, tags, importance });
+            showToast('记忆添加成功', 'success');
+            closeMemoryModal();
+            loadMemories();
+        } catch (error) {
+            showToast('添加失败: ' + error.message, 'error');
+        }
+    } else {
+        // 本地降级
+        const save = getCurrentSaveData();
+        if (save) {
+            save.memories = save.memories || { short: [], long: [], core: [] };
+            save.memories[type] = save.memories[type] || [];
+            save.memories[type].push({
+                _id: 'mem_' + Date.now(),
+                content,
+                type,
+                tags,
+                importance,
+                timestamp: new Date().toISOString()
+            });
+            updateSaveData({ memories: save.memories });
+            showToast('记忆添加成功（本地）', 'success');
+            closeMemoryModal();
+            loadMemoriesFromLocal();
+        }
+    }
+}
+
+/**
+ * 删除记忆
+ */
+async function deleteMemory(memoryId) {
+    if (!confirm('确定要删除这条记忆吗？')) return;
+    
+    if (memoryService) {
+        try {
+            await memoryService.deleteMemory(memoryId);
+            showToast('记忆已删除', 'success');
+            loadMemories();
+        } catch (error) {
+            showToast('删除失败: ' + error.message, 'error');
+        }
+    } else {
+        // 本地降级
+        const save = getCurrentSaveData();
+        if (save && save.memories) {
+            ['short', 'long', 'core'].forEach(type => {
+                if (save.memories[type]) {
+                    save.memories[type] = save.memories[type].filter(m => m._id !== memoryId && m.id !== memoryId);
+                }
+            });
+            updateSaveData({ memories: save.memories });
+            showToast('记忆已删除', 'success');
+            loadMemoriesFromLocal();
+        }
+    }
+}
+
+/**
+ * 导出所有记忆
+ */
+async function exportAllMemories() {
+    let data;
+    
+    if (memoryService) {
+        try {
+            data = await memoryService.exportMemories();
+        } catch (error) {
+            console.error('[Memory] Export failed:', error);
+        }
+    }
+    
+    // 降级到本地
+    if (!data) {
+        const save = getCurrentSaveData();
+        const memories = save?.memories || { short: [], long: [], core: [] };
+        const allMemories = [
+            ...memories.short.map(m => ({ ...m, type: 'short' })),
+            ...memories.long.map(m => ({ ...m, type: 'long' })),
+            ...memories.core.map(m => ({ ...m, type: 'core' }))
+        ];
+        data = {
+            version: '1.0',
+            gameId: gameId,
+            exportedAt: new Date().toISOString(),
+            memories: allMemories
+        };
+    }
     
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `memories-export-${Date.now()}.json`;
+    a.download = `memories-export-${gameId || 'backup'}-${Date.now()}.json`;
     a.click();
     URL.revokeObjectURL(url);
-    showToast('记忆已导出');
+    showToast('记忆已导出', 'success');
 }
 
+/**
+ * 导入记忆
+ */
 function importMemories() {
     const input = document.createElement('input');
     input.type = 'file';
@@ -2345,13 +2783,28 @@ function importMemories() {
             const text = await file.text();
             const data = JSON.parse(text);
             
-            if (data.memories) {
-                // 更新当前存档的记忆
-                updateSaveData({ memories: data.memories });
-                renderMemoriesList(data.memories);
-                showToast('记忆已导入', 'success');
-            } else {
+            if (!data.memories || !Array.isArray(data.memories)) {
                 showToast('文件格式不正确', 'error');
+                return;
+            }
+            
+            if (memoryService) {
+                await memoryService.importMemories(data);
+                showToast(`成功导入 ${data.memories.length} 条记忆`, 'success');
+                loadMemories();
+            } else {
+                // 本地降级
+                const save = getCurrentSaveData();
+                if (save) {
+                    save.memories = { short: [], long: [], core: [] };
+                    data.memories.forEach(m => {
+                        const type = m.type || 'short';
+                        save.memories[type].push(m);
+                    });
+                    updateSaveData({ memories: save.memories });
+                    showToast(`成功导入 ${data.memories.length} 条记忆（本地）`, 'success');
+                    loadMemoriesFromLocal();
+                }
             }
         } catch (err) {
             showToast('导入失败: ' + err.message, 'error');
@@ -2360,35 +2813,42 @@ function importMemories() {
     input.click();
 }
 
+/**
+ * 清空记忆
+ */
 async function clearMemories() {
-    if (!confirm('确定要清空所有记忆吗？此操作不可恢复！')) return;
+    const keepCore = confirm('保留核心记忆？\n点击「确定」保留核心记忆，点击「取消」清空所有记忆。');
     
-    // 优先清空本地存档的记忆
-    const save = getCurrentSaveData();
-    if (save) {
-        save.memories = { short: [], long: [], core: [] };
-        updateSaveData({ memories: save.memories });
-        renderMemoriesList(save.memories);
-        showToast('记忆已清空', 'success');
-        return;
+    if (!confirm(`确定要清空${keepCore ? '短期和长期' : '所有'}记忆吗？此操作不可恢复！`)) return;
+    
+    if (memoryService) {
+        try {
+            const result = await memoryService.clearMemories(keepCore);
+            showToast(`已清空 ${result.deletedCount || 0} 条记忆${keepCore ? '，核心记忆已保留' : ''}`, 'success');
+            loadMemories();
+            return;
+        } catch (error) {
+            console.error('[Memory] Clear failed:', error);
+            showToast('清空失败，尝试本地模式', 'warning');
+        }
     }
     
-    // 如果没有选中存档，尝试调用 API
-    try {
-        const response = await fetch(`${API_BASE}/memories`, {
-            method: 'DELETE',
-            headers: getAuthHeaders()
-        });
-        
-        const result = await response.json();
-        if (result.success) {
-            showToast('记忆已清空', 'success');
-            loadMemories();
+    // 本地降级
+    const save = getCurrentSaveData();
+    if (save) {
+        if (keepCore) {
+            const shortCount = save.memories?.short?.length || 0;
+            const longCount = save.memories?.long?.length || 0;
+            save.memories.short = [];
+            save.memories.long = [];
+            updateSaveData({ memories: save.memories });
+            showToast(`已清空 ${shortCount + longCount} 条短期/长期记忆，核心记忆已保留`, 'success');
         } else {
-            showToast(result.message || '清空失败', 'error');
+            save.memories = { short: [], long: [], core: [] };
+            updateSaveData({ memories: save.memories });
+            showToast('所有记忆已清空', 'success');
         }
-    } catch (error) {
-        showToast('清空失败: ' + error.message, 'error');
+        loadMemoriesFromLocal();
     }
 }
 
@@ -2701,6 +3161,16 @@ window.solidifyTimeline = solidifyTimeline;
 window.exportAllMemories = exportAllMemories;
 window.importMemories = importMemories;
 window.clearMemories = clearMemories;
+window.filterMemories = filterMemories;
+window.searchMemories = searchMemories;
+window.sortMemories = sortMemories;
+window.openMemoryModal = openMemoryModal;
+window.closeMemoryModal = closeMemoryModal;
+window.saveMemory = saveMemory;
+window.deleteMemory = deleteMemory;
+window.viewTimelineArchive = viewTimelineArchive;
+window.closeTimelineArchiveModal = closeTimelineArchiveModal;
+window.loadMemoriesFromLocal = loadMemoriesFromLocal;
 window.uploadGalleryImage = uploadGalleryImage;
 window.copyGalleryImageUrl = copyGalleryImageUrl;
 window.deleteGalleryImage = deleteGalleryImage;

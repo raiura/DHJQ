@@ -1,255 +1,397 @@
 /**
- * 记忆服务 - 处理记忆相关业务逻辑
- * @module Services/MemoryService
- * @description 记忆管理、分类、检索
+ * 记忆管理服务 - 与后端三层记忆结构对接
+ * 短期记忆 / 长期记忆 / 核心记忆
  */
 
-/**
- * 记忆服务
- * @class MemoryService
- */
 class MemoryService {
-    /**
-     * 获取角色记忆
-     * @param {string} characterId - 角色ID
-     * @param {Object} [params={}] - 查询参数
-     * @returns {Promise<Object>} {short, long, core, experiences}
-     */
-    static async getCharacterMemories(characterId, params = {}) {
-        try {
-            const [memories, experiences] = await Promise.all([
-                this.getMemories(characterId, params),
-                CharacterService.getExperiences(characterId)
-            ]);
-            
-            // 按类型分类
-            return {
-                short: memories.filter(m => m.type === 'SHORT' || !m.type),
-                long: memories.filter(m => m.type === 'LONG'),
-                core: memories.filter(m => m.type === 'CORE'),
-                experiences: experiences.map(e => ({
-                    ...e,
-                    type: 'EXPERIENCE'
-                }))
-            };
-        } catch (error) {
-            console.error('获取记忆失败:', error);
-            return { short: [], long: [], core: [], experiences: [] };
-        }
+    constructor(options = {}) {
+        this.apiBase = options.apiBase || 'http://localhost:3000/api';
+        this.gameId = options.gameId || null;
+        
+        // 记忆类型
+        this.MemoryType = {
+            SHORT: 'short',
+            LONG: 'long',
+            CORE: 'core'
+        };
+        
+        // 本地缓存
+        this.cache = new Map();
+        this.cacheExpiry = 30000; // 30秒
     }
-    
+
     /**
-     * 获取所有记忆
-     * @param {string} characterId - 角色ID
-     * @param {Object} params - 查询参数
-     * @returns {Promise<Array>}
+     * 设置当前游戏ID
      */
-    static async getMemories(characterId, params = {}) {
-        try {
-            const response = await API.get(`/memories/character/${characterId}`, params);
-            return response.data || response || [];
-        } catch (error) {
-            // 如果API不可用，从本地获取
-            return this.getLocalMemories(characterId);
-        }
+    setGameId(gameId) {
+        this.gameId = gameId;
+        this.clearCache();
     }
-    
+
     /**
-     * 创建记忆
-     * @param {Object} data - 记忆数据
-     * @returns {Promise<Object>}
+     * 获取Token
      */
-    static async create(data) {
+    _getToken() {
+        return localStorage.getItem('galgame_token');
+    }
+
+    /**
+     * API请求封装
+     */
+    async _request(url, options = {}) {
+        const token = this._getToken();
+        const headers = {
+            'Content-Type': 'application/json',
+            ...options.headers
+        };
+        
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+
         try {
-            const response = await API.post('/memories', {
-                ...data,
-                timestamp: new Date().toISOString()
+            const response = await fetch(`${this.apiBase}${url}`, {
+                ...options,
+                headers
             });
-            
-            // 同步到本地
-            this.addLocalMemory(data.characterId, response.data || response);
-            
-            return response.data || response;
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            return await response.json();
         } catch (error) {
-            // 保存到本地作为备份
-            this.addLocalMemory(data.characterId, data);
+            console.error('[MemoryService] Request failed:', error);
             throw error;
         }
     }
-    
+
     /**
-     * 更新记忆重要性
-     * @param {string} id - 记忆ID
-     * @param {number} importance - 重要性 (1-5)
-     * @returns {Promise<Object>}
+     * 获取记忆列表
      */
-    static async updateImportance(id, importance) {
-        return API.put(`/memories/${id}/importance`, { importance });
+    async getMemories(options = {}) {
+        if (!this.gameId) {
+            throw new Error('Game ID not set');
+        }
+
+        const { types = ['short', 'long', 'core'], limit = 50 } = options;
+        const cacheKey = `memories_${this.gameId}_${types.join(',')}_${limit}`;
+        
+        // 检查缓存
+        const cached = this.cache.get(cacheKey);
+        if (cached && Date.now() - cached.time < this.cacheExpiry) {
+            return cached.data;
+        }
+
+        try {
+            const result = await this._request(
+                `/memories/${this.gameId}?types=${types.join(',')}&limit=${limit}`
+            );
+            
+            // 更新缓存
+            this.cache.set(cacheKey, {
+                data: result.data,
+                time: Date.now()
+            });
+            
+            return result.data;
+        } catch (error) {
+            // 如果API失败，尝试从localStorage加载
+            console.warn('[MemoryService] API failed, falling back to localStorage');
+            return this._getMemoriesFromStorage(options);
+        }
     }
-    
+
     /**
-     * 归档记忆（短期→长期）
-     * @param {string} id - 记忆ID
-     * @returns {Promise<Object>}
+     * 从localStorage获取记忆（降级方案）
      */
-    static async archive(id) {
-        return API.post(`/memories/${id}/archive`);
+    _getMemoriesFromStorage(options = {}) {
+        const { types = ['short', 'long', 'core'] } = options;
+        const storageKey = `game_${this.gameId}_memories`;
+        const data = localStorage.getItem(storageKey);
+        
+        if (!data) {
+            return { memories: [], count: 0 };
+        }
+
+        try {
+            const allMemories = JSON.parse(data);
+            const filtered = allMemories.filter(m => types.includes(m.type));
+            return {
+                memories: filtered,
+                count: filtered.length
+            };
+        } catch (e) {
+            return { memories: [], count: 0 };
+        }
     }
-    
+
     /**
-     * 提升为核心记忆
-     * @param {string} id - 记忆ID
-     * @returns {Promise<Object>}
+     * 添加记忆
      */
-    static async promoteToCore(id) {
-        return API.post(`/memories/${id}/promote`);
+    async addMemory(content, options = {}) {
+        if (!this.gameId) {
+            throw new Error('Game ID not set');
+        }
+
+        const { type = 'short', tags = [], importance = 50 } = options;
+
+        try {
+            const result = await this._request(`/memories/${this.gameId}`, {
+                method: 'POST',
+                body: JSON.stringify({ content, type, tags, importance })
+            });
+            
+            this.clearCache();
+            return result.data;
+        } catch (error) {
+            // 降级到localStorage
+            return this._addMemoryToStorage(content, { type, tags, importance });
+        }
     }
-    
+
+    /**
+     * 添加记忆到localStorage
+     */
+    _addMemoryToStorage(content, options = {}) {
+        const storageKey = `game_${this.gameId}_memories`;
+        const memories = JSON.parse(localStorage.getItem(storageKey) || '[]');
+        
+        const newMemory = {
+            _id: 'mem_' + Date.now(),
+            gameId: this.gameId,
+            type: options.type || 'short',
+            content,
+            timestamp: new Date().toISOString(),
+            turn: memories.length + 1,
+            tags: options.tags || [],
+            importance: options.importance || 50,
+            status: 'active',
+            isSolidified: false
+        };
+        
+        memories.push(newMemory);
+        localStorage.setItem(storageKey, JSON.stringify(memories));
+        
+        return newMemory;
+    }
+
     /**
      * 删除记忆
-     * @param {string} id - 记忆ID
-     * @returns {Promise<void>}
      */
-    static async delete(id) {
-        return API.delete(`/memories/${id}`);
-    }
-    
-    /**
-     * 搜索记忆
-     * @param {string} characterId - 角色ID
-     * @param {string} keyword - 关键词
-     * @returns {Promise<Array>}
-     */
-    static async search(characterId, keyword) {
+    async deleteMemory(memoryId) {
         try {
-            const response = await API.get('/memories/search', {
-                characterId,
-                keyword
+            await this._request(`/memories/${memoryId}`, {
+                method: 'DELETE'
             });
-            return response.data || response || [];
+            this.clearCache();
+            return true;
         } catch (error) {
-            // 本地搜索作为降级
-            const all = this.getLocalMemories(characterId);
-            return all.filter(m => 
-                m.content?.includes(keyword) || 
-                m.summary?.includes(keyword)
-            );
+            // 降级到localStorage
+            return this._deleteMemoryFromStorage(memoryId);
         }
     }
-    
+
+    /**
+     * 从localStorage删除记忆
+     */
+    _deleteMemoryFromStorage(memoryId) {
+        const storageKey = `game_${this.gameId}_memories`;
+        const memories = JSON.parse(localStorage.getItem(storageKey) || '[]');
+        const filtered = memories.filter(m => m._id !== memoryId);
+        localStorage.setItem(storageKey, JSON.stringify(filtered));
+        return true;
+    }
+
+    /**
+     * 固化时间线
+     */
+    async solidifyTimeline(customContent = null) {
+        if (!this.gameId) {
+            throw new Error('Game ID not set');
+        }
+
+        try {
+            const result = await this._request(`/memories/${this.gameId}/solidify`, {
+                method: 'POST',
+                body: JSON.stringify({ customContent })
+            });
+            
+            this.clearCache();
+            return result.data;
+        } catch (error) {
+            console.error('[MemoryService] Solidify failed:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * 获取时间线存档
+     */
+    async getTimelineArchive() {
+        if (!this.gameId) {
+            throw new Error('Game ID not set');
+        }
+
+        try {
+            const result = await this._request(`/memories/${this.gameId}/timeline`);
+            return result.data;
+        } catch (error) {
+            console.error('[MemoryService] Get timeline failed:', error);
+            return { exists: false };
+        }
+    }
+
+    /**
+     * 清空记忆
+     */
+    async clearMemories(keepCore = true) {
+        if (!this.gameId) {
+            throw new Error('Game ID not set');
+        }
+
+        try {
+            const result = await this._request(
+                `/memories/${this.gameId}/clear?keepCore=${keepCore}`,
+                { method: 'DELETE' }
+            );
+            
+            this.clearCache();
+            return result.data;
+        } catch (error) {
+            // 降级到localStorage
+            return this._clearMemoriesFromStorage(keepCore);
+        }
+    }
+
+    /**
+     * 从localStorage清空记忆
+     */
+    _clearMemoriesFromStorage(keepCore = true) {
+        const storageKey = `game_${this.gameId}_memories`;
+        
+        if (keepCore) {
+            const memories = JSON.parse(localStorage.getItem(storageKey) || '[]');
+            const coreOnly = memories.filter(m => m.type === 'core');
+            localStorage.setItem(storageKey, JSON.stringify(coreOnly));
+            return { deletedCount: memories.length - coreOnly.length, keepCore: true };
+        } else {
+            localStorage.removeItem(storageKey);
+            return { deletedCount: -1, keepCore: false };
+        }
+    }
+
     /**
      * 获取记忆统计
-     * @param {string} characterId - 角色ID
-     * @returns {Promise<Object>}
      */
-    static async getStats(characterId) {
+    async getStats() {
+        if (!this.gameId) {
+            throw new Error('Game ID not set');
+        }
+
         try {
-            const response = await API.get(`/memories/character/${characterId}/stats`);
-            return response.data || response;
+            const result = await this._request(`/memories/${this.gameId}/stats`);
+            return result.data;
         } catch (error) {
-            const memories = this.getLocalMemories(characterId);
-            return {
-                total: memories.length,
-                byType: Data.groupBy(memories, 'type')
-            };
+            // 从localStorage计算
+            return this._getStatsFromStorage();
         }
     }
-    
-    // ===== 本地记忆管理 =====
-    
+
     /**
-     * 获取本地记忆
-     * @param {string} characterId - 角色ID
-     * @returns {Array}
+     * 从localStorage获取统计
      */
-    static getLocalMemories(characterId) {
-        const key = `memories_${characterId}`;
-        return AppStores.memories.get(key) || [];
-    }
-    
-    /**
-     * 添加本地记忆
-     * @param {string} characterId - 角色ID
-     * @param {Object} memory - 记忆数据
-     */
-    static addLocalMemory(characterId, memory) {
-        const key = `memories_${characterId}`;
-        const memories = this.getLocalMemories(characterId);
+    _getStatsFromStorage() {
+        const storageKey = `game_${this.gameId}_memories`;
+        const memories = JSON.parse(localStorage.getItem(storageKey) || '[]');
         
-        // 限制本地存储数量
-        if (memories.length >= 100) {
-            memories.pop(); // 移除最旧的
+        return {
+            short: memories.filter(m => m.type === 'short').length,
+            long: memories.filter(m => m.type === 'long').length,
+            core: memories.filter(m => m.type === 'core').length,
+            total: memories.length,
+            solidified: memories.filter(m => m.isSolidified).length,
+            hasArchive: false,
+            lastArchiveTime: null
+        };
+    }
+
+    /**
+     * 导出所有记忆
+     */
+    async exportMemories() {
+        const data = await this.getMemories({ types: ['short', 'long', 'core'], limit: 1000 });
+        return {
+            version: '1.0',
+            gameId: this.gameId,
+            exportedAt: new Date().toISOString(),
+            memories: data.memories
+        };
+    }
+
+    /**
+     * 导入记忆
+     */
+    async importMemories(data) {
+        if (!data.memories || !Array.isArray(data.memories)) {
+            throw new Error('Invalid memory data format');
         }
-        
-        memories.unshift({
-            ...memory,
-            _local: true,
-            createdAt: new Date().toISOString()
-        });
-        
-        AppStores.memories.set(key, memories);
-    }
-    
-    /**
-     * 同步本地记忆到服务器
-     * @param {string} characterId - 角色ID
-     * @returns {Promise<void>}
-     */
-    static async syncLocalMemories(characterId) {
-        const local = this.getLocalMemories(characterId);
-        const unsynced = local.filter(m => m._local && !m._synced);
-        
-        for (const memory of unsynced) {
+
+        const results = [];
+        for (const mem of data.memories) {
             try {
-                await this.create({
-                    characterId,
-                    content: memory.content,
-                    type: memory.type,
-                    importance: memory.importance
+                const result = await this.addMemory(mem.content, {
+                    type: mem.type,
+                    tags: mem.tags,
+                    importance: mem.importance
                 });
-                memory._synced = true;
-            } catch (error) {
-                console.warn('同步记忆失败:', error);
-                break;
+                results.push(result);
+            } catch (e) {
+                console.error('[MemoryService] Failed to import memory:', e);
             }
         }
-        
-        // 更新本地存储
-        const key = `memories_${characterId}`;
-        AppStores.memories.set(key, local);
+
+        return results;
     }
-    
+
     /**
-     * 清空本地记忆
-     * @param {string} characterId - 角色ID
+     * 清除缓存
      */
-    static clearLocalMemories(characterId) {
-        const key = `memories_${characterId}`;
-        AppStores.memories.remove(key);
+    clearCache() {
+        this.cache.clear();
     }
-    
+
     /**
-     * 获取所有本地记忆的统计
-     * @returns {Object}
+     * 获取格式化的记忆类型标签
      */
-    static getLocalStats() {
-        const keys = AppStores.memories.keys().filter(k => k.startsWith('memories_'));
-        const stats = {};
-        
-        keys.forEach(key => {
-            const characterId = key.replace('memories_', '');
-            const memories = AppStores.memories.get(key) || [];
-            stats[characterId] = {
-                count: memories.length,
-                unsynced: memories.filter(m => m._local && !m._synced).length
-            };
-        });
-        
-        return stats;
+    getTypeLabel(type) {
+        const labels = {
+            short: '短期记忆',
+            long: '长期记忆',
+            core: '核心记忆'
+        };
+        return labels[type] || type;
+    }
+
+    /**
+     * 获取记忆类型颜色
+     */
+    getTypeColor(type) {
+        const colors = {
+            short: '#4a9eff',  // 蓝色
+            long: '#9b59b6',   // 紫色
+            core: '#e74c3c'    // 红色
+        };
+        return colors[type] || '#888';
     }
 }
 
-// 导出模块
+// 导出
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { MemoryService };
+    module.exports = MemoryService;
+}
+
+// 浏览器全局暴露
+if (typeof window !== 'undefined') {
+    window.MemoryService = MemoryService;
 }
