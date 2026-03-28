@@ -1,0 +1,1511 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>角色卡编辑器 2.0 - 大荒九丘</title>
+    <link rel="stylesheet" href="public/css/settings.css">
+    <style>
+        /* 角色卡编辑器 2.0 专用样式 */
+        
+        /* 标签页导航 */
+        .editor-tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 10px;
+        }
+        
+        .editor-tab {
+            padding: 10px 20px;
+            border: none;
+            background: rgba(138, 109, 59, 0.1);
+            color: var(--text-secondary);
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.3s;
+            font-size: 14px;
+        }
+        
+        .editor-tab:hover {
+            background: rgba(138, 109, 59, 0.2);
+            color: var(--text);
+        }
+        
+        .editor-tab.active {
+            background: var(--primary);
+            color: #fff;
+        }
+        
+        /* 标签页内容 */
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* 角色卡预览卡片 */
+        .character-preview-card {
+            background: linear-gradient(135deg, rgba(138, 109, 59, 0.1), rgba(20, 20, 30, 0.9));
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            position: sticky;
+            top: 20px;
+        }
+        
+        .preview-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+        
+        .preview-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid var(--primary);
+        }
+        
+        .preview-info h3 {
+            color: var(--primary-light);
+            font-size: 24px;
+            margin-bottom: 4px;
+        }
+        
+        .preview-tags {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        
+        .preview-tag {
+            padding: 4px 12px;
+            background: rgba(138, 109, 59, 0.2);
+            border-radius: 12px;
+            font-size: 12px;
+            color: var(--primary-light);
+        }
+        
+        /* 示例对话编辑器 */
+        .example-dialogue-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        
+        .example-item {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+            position: relative;
+        }
+        
+        .example-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        
+        .example-item-number {
+            font-weight: bold;
+            color: var(--primary-light);
+        }
+        
+        .example-item-delete {
+            background: rgba(255, 107, 107, 0.2);
+            border: none;
+            color: #ff6b6b;
+            padding: 4px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        
+        .example-item-content {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .example-message {
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+        }
+        
+        .example-message-label {
+            min-width: 60px;
+            font-weight: bold;
+            color: var(--text-secondary);
+            font-size: 13px;
+        }
+        
+        .example-message-input {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px;
+            color: var(--text);
+            font-family: inherit;
+            resize: vertical;
+            min-height: 60px;
+        }
+        
+        /* 世界书条目编辑器 */
+        .lorebook-entries-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .lorebook-entry-item {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+            transition: all 0.3s;
+        }
+        
+        .lorebook-entry-item:hover {
+            border-color: var(--primary);
+        }
+        
+        .lorebook-entry-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        
+        .lorebook-entry-name {
+            font-weight: bold;
+            color: var(--primary-light);
+        }
+        
+        .lorebook-entry-keys {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        
+        /* 深度注入设置 */
+        .injection-config {
+            background: rgba(138, 109, 59, 0.05);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+        }
+        
+        .injection-help {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-top: 8px;
+            padding: 12px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            line-height: 1.6;
+        }
+        
+        /* 提示词预览 */
+        .prompt-preview-panel {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+        
+        /* 响应式布局 */
+        .editor-layout {
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 24px;
+        }
+        
+        @media (max-width: 1024px) {
+            .editor-layout {
+                grid-template-columns: 1fr;
+            }
+            
+            .character-preview-card {
+                position: static;
+            }
+        }
+        
+        /* 空状态 */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-secondary);
+        }
+        
+        .empty-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+        
+        /* 关系编辑器 */
+        .relationship-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .relationship-item {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr auto;
+            gap: 12px;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 12px;
+            border-radius: 8px;
+        }
+        
+        .relationship-arrow {
+            color: var(--primary-light);
+            font-size: 20px;
+        }
+        
+        /* 世界书关联模式切换 */
+        .link-mode-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: rgba(138, 109, 59, 0.1);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+        
+        .link-mode-btn {
+            flex: 1;
+            padding: 12px 20px;
+            border: 2px solid var(--border);
+            background: rgba(0, 0, 0, 0.2);
+            color: var(--text-secondary);
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.3s;
+            text-align: center;
+        }
+        
+        .link-mode-btn:hover {
+            border-color: var(--primary);
+            color: var(--text);
+        }
+        
+        .link-mode-btn.active {
+            border-color: var(--primary);
+            background: rgba(138, 109, 59, 0.2);
+            color: var(--primary-light);
+        }
+        
+        .link-mode-btn .mode-title {
+            font-weight: bold;
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+        
+        .link-mode-btn .mode-desc {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+        
+        /* 推荐条目列表 */
+        .recommended-entries {
+            margin-top: 20px;
+        }
+        
+        .recommended-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            margin-bottom: 8px;
+            transition: all 0.3s;
+        }
+        
+        .recommended-item:hover {
+            border-color: var(--primary);
+        }
+        
+        .recommended-item.selected {
+            background: rgba(138, 109, 59, 0.2);
+            border-color: var(--primary);
+        }
+        
+        .recommended-score {
+            min-width: 50px;
+            text-align: center;
+            font-weight: bold;
+            color: var(--primary-light);
+        }
+        
+        .recommended-content {
+            flex: 1;
+        }
+        
+        .recommended-name {
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+        
+        .recommended-reason {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        
+        .recommended-checkbox {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <!-- 背景 -->
+    <div class="bg-animation"></div>
+    
+    <!-- 主容器 -->
+    <div class="app-container" style="max-width: 1400px; margin: 0 auto; padding: 20px;">
+        <!-- 头部 -->
+        <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 1px solid var(--border);">
+            <div>
+                <h1 style="color: var(--primary-light); font-size: 28px; margin-bottom: 8px;">🎭 角色卡编辑器 2.0</h1>
+                <p style="color: var(--text-secondary); font-size: 14px;">创建更生动、更智能的角色</p>
+            </div>
+            <div style="display: flex; gap: 12px;">
+                <button class="btn btn-secondary" onclick="importFromV1()">📥 从V1导入</button>
+                <button class="btn btn-secondary" onclick="exportCharacter()">📤 导出</button>
+                <button class="btn btn-primary" onclick="saveCharacterV2()">💾 保存</button>
+            </div>
+        </header>
+        
+        <!-- 编辑器主体 -->
+        <div class="editor-layout">
+            <!-- 左侧：编辑区 -->
+            <div class="editor-main">
+                <!-- 标签页导航 -->
+                <div class="editor-tabs">
+                    <button class="editor-tab active" onclick="switchTab('basic')">📋 基础信息</button>
+                    <button class="editor-tab" onclick="switchTab('core')">🎨 核心设定</button>
+                    <button class="editor-tab" onclick="switchTab('examples')">💬 示例对话</button>
+                    <button class="editor-tab" onclick="switchTab('lorebook')">📚 专属世界书</button>
+                    <button class="editor-tab" onclick="switchTab('injection')">💉 深度注入</button>
+                    <button class="editor-tab" onclick="switchTab('preview')">👁️ 预览</button>
+                </div>
+                
+                <!-- 标签页内容 -->
+                <div class="tab-contents">
+                    <!-- 基础信息 -->
+                    <div class="tab-content active" id="tab-basic">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">基础信息</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label class="form-label">角色名称 *</label>
+                                        <input type="text" class="form-input" id="v2_charName" placeholder="例如：陆苍雪">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">版本</label>
+                                        <input type="text" class="form-input" id="v2_charVersion" value="2.0.0" readonly>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label class="form-label">头像 URL</label>
+                                        <input type="text" class="form-input" id="v2_charAvatar" placeholder="https://...">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">封面 URL</label>
+                                        <input type="text" class="form-input" id="v2_charCover" placeholder="https://...">
+                                    </div>
+                                </div>
+                                
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label class="form-label">主题色</label>
+                                        <div style="display: flex; gap: 10px; align-items: center;">
+                                            <input type="color" id="v2_charColorPicker" value="#8a6d3b" style="width: 50px; height: 40px;">
+                                            <input type="text" class="form-input" id="v2_charColor" value="#8a6d3b" placeholder="#8a6d3b">
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">标签（逗号分隔）</label>
+                                        <input type="text" class="form-input" id="v2_charTags" placeholder="修仙, 剑修, 冰山美人">
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="form-label">创作者备注</label>
+                                    <textarea class="form-textarea" id="v2_charMetaDesc" rows="2" placeholder="关于这个角色的创作笔记..."></textarea>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 情感立绘 -->
+                        <div class="card" style="margin-top: 20px;">
+                            <div class="card-header">
+                                <h3 class="card-title">🎭 情感立绘</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label class="form-label">平静 (calm)</label>
+                                        <input type="text" class="form-input" id="v2_emotion_calm" placeholder="图片URL">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">开心 (happy)</label>
+                                        <input type="text" class="form-input" id="v2_emotion_happy" placeholder="图片URL">
+                                    </div>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label class="form-label">生气 (angry)</label>
+                                        <input type="text" class="form-input" id="v2_emotion_angry" placeholder="图片URL">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">悲伤 (sad)</label>
+                                        <input type="text" class="form-input" id="v2_emotion_sad" placeholder="图片URL">
+                                    </div>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label class="form-label">害羞 (shy)</label>
+                                        <input type="text" class="form-input" id="v2_emotion_shy" placeholder="图片URL">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">惊讶 (surprise)</label>
+                                        <input type="text" class="form-input" id="v2_emotion_surprise" placeholder="图片URL">
+                                    </div>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label class="form-label">严肃 (serious)</label>
+                                        <input type="text" class="form-input" id="v2_emotion_serious" placeholder="图片URL">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">受伤 (hurt)</label>
+                                        <input type="text" class="form-input" id="v2_emotion_hurt" placeholder="图片URL">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 核心设定 -->
+                    <div class="tab-content" id="tab-core">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">角色主描述</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="form-group">
+                                    <textarea class="form-textarea" id="v2_coreDescription" rows="6" placeholder="角色的外貌、身份、背景等核心信息..."></textarea>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card" style="margin-top: 20px;">
+                            <div class="card-header">
+                                <h3 class="card-title">性格特点</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="form-group">
+                                    <textarea class="form-textarea" id="v2_corePersonality" rows="4" placeholder="角色的性格、行为习惯、说话方式..."></textarea>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card" style="margin-top: 20px;">
+                            <div class="card-header">
+                                <h3 class="card-title">场景/处境</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="form-group">
+                                    <textarea class="form-textarea" id="v2_coreScenario" rows="4" placeholder="角色当前所处的场景和处境..."></textarea>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card" style="margin-top: 20px;">
+                            <div class="card-header">
+                                <h3 class="card-title">开场白</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="form-group">
+                                    <textarea class="form-textarea" id="v2_firstMessage" rows="3" placeholder="角色首次登场时的开场白..."></textarea>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card" style="margin-top: 20px;">
+                            <div class="card-header">
+                                <h3 class="card-title">🌍 与世界的关联</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label class="form-label">所属势力</label>
+                                        <input type="text" class="form-input" id="v2_worldFaction" placeholder="例如：落星剑宗">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">常驻地点</label>
+                                        <input type="text" class="form-input" id="v2_worldLocation" placeholder="例如：北寒落星丘">
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="form-label">触发关键词</label>
+                                    <input type="text" class="form-input" id="v2_activationKeys" placeholder="用逗号分隔，如：陆苍雪,大师姐,苍雪">
+                                    <p class="form-hint">AI识别角色时会用到的关键词</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 示例对话 -->
+                    <div class="tab-content" id="tab-examples">
+                        <div class="card">
+                            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+                                <h3 class="card-title">💬 示例对话 (Few-shot)</h3>
+                                <button class="btn btn-sm btn-primary" onclick="addExampleDialogue()">+ 添加示例</button>
+                            </div>
+                            <div class="card-body">
+                                <div class="form-group">
+                                    <label class="form-label">语气风格说明</label>
+                                    <input type="text" class="form-input" id="v2_examplesStyle" placeholder="例如：说话优雅，常用古诗词，偶尔会结巴...">
+                                </div>
+                                
+                                <div class="example-dialogue-list" id="v2_examplesList">
+                                    <!-- 动态生成 -->
+                                    <div class="empty-state">
+                                        <div class="empty-icon">💬</div>
+                                        <p>暂无示例对话</p>
+                                        <p style="font-size: 13px; margin-top: 8px;">添加示例对话帮助AI学习角色的说话方式</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 专属世界书 -->
+                    <div class="tab-content" id="tab-lorebook">
+                        <div class="card">
+                            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+                                <h3 class="card-title">📚 角色专属世界书</h3>
+                                <button class="btn btn-sm btn-primary" onclick="addLorebookEntry()">+ 添加条目</button>
+                            </div>
+                            <div class="card-body">
+                                <div class="lorebook-entries-list" id="v2_lorebookList">
+                                    <!-- 动态生成 -->
+                                    <div class="empty-state">
+                                        <div class="empty-icon">📚</div>
+                                        <p>暂无专属条目</p>
+                                        <p style="font-size: 13px; margin-top: 8px;">添加角色专属的世界书条目，如特殊物品、独门功法等</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 世界书关联模式选择 -->
+                        <div class="card" style="margin-top: 20px;">
+                            <div class="card-header">
+                                <h3 class="card-title">🔗 关联的全局世界书</h3>
+                            </div>
+                            <div class="card-body">
+                                <!-- 关联模式切换 -->
+                                <div style="margin-bottom: 20px;">
+                                    <label class="form-label" style="margin-bottom: 10px; display: block;">关联模式</label>
+                                    <div class="link-mode-selector">
+                                        <div class="link-mode-btn active" id="mode-manual" onclick="setLinkMode('manual')">
+                                            <div class="mode-title">🎮 手动模式</div>
+                                            <div class="mode-desc">自行选择要关联的世界书条目</div>
+                                        </div>
+                                        <div class="link-mode-btn" id="mode-auto" onclick="setLinkMode('auto')">
+                                            <div class="mode-title">🤖 自动模式</div>
+                                            <div class="mode-desc">系统自动分析并推荐关联条目</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- 手动模式：已关联条目列表 -->
+                                <div id="manual-link-section">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                                        <span style="color: var(--text-secondary);">已手动关联的条目</span>
+                                        <button class="btn btn-sm btn-secondary" onclick="openGlobalWorldbookSelector()">
+                                            + 添加关联
+                                        </button>
+                                    </div>
+                                    <div id="v2_linkedEntriesList">
+                                        <p style="color: var(--text-secondary); text-align: center; padding: 20px;">
+                                            暂无关联条目，点击上方按钮手动添加
+                                        </p>
+                                    </div>
+                                </div>
+                                
+                                <!-- 自动模式：推荐条目 -->
+                                <div id="auto-link-section" style="display: none;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                                        <span style="color: var(--text-secondary);">系统推荐的关联条目</span>
+                                        <button class="btn btn-sm btn-secondary" onclick="refreshRecommendedEntries()">
+                                            🔄 刷新推荐
+                                        </button>
+                                    </div>
+                                    <div class="recommended-entries" id="v2_recommendedEntries">
+                                        <p style="color: var(--text-secondary); text-align: center; padding: 20px;">
+                                            点击刷新获取推荐条目
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 深度注入 -->
+                    <div class="tab-content" id="tab-injection">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">💉 Character's Note</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="injection-config">
+                                    <div class="form-group">
+                                        <label class="form-label">注入内容</label>
+                                        <textarea class="form-textarea" id="v2_charNoteContent" rows="4" placeholder="例如：【状态提醒】{{char}}当前身受重伤，行动受限..."></textarea>
+                                    </div>
+                                    
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label class="form-label">注入深度</label>
+                                            <select class="form-select" id="v2_charNoteDepth">
+                                                <option value="0">0 - 始终在最后（最强影响）</option>
+                                                <option value="1">1 - 倒数第1条消息前</option>
+                                                <option value="2">2 - 倒数第2条消息前</option>
+                                                <option value="4">4 - 倒数第4条消息前</option>
+                                                <option value="8">8 - 倒数第8条消息前</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">注入频率</label>
+                                            <select class="form-select" id="v2_charNoteFrequency">
+                                                <option value="1">每条消息</option>
+                                                <option value="2">每2条消息</option>
+                                                <option value="3">每3条消息</option>
+                                                <option value="5">每5条消息</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <label class="form-label">消息角色</label>
+                                        <select class="form-select" id="v2_charNoteRole">
+                                            <option value="system">System（系统）</option>
+                                            <option value="user">User（用户）</option>
+                                            <option value="assistant">Assistant（助手）</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div class="injection-help">
+                                        <strong>💡 使用说明：</strong><br>
+                                        Character's Note 会在对话过程中定期注入，用于强化角色的特定状态或性格。<br>
+                                        - 深度0：始终在最后，对AI影响最大<br>
+                                        - 深度越大：越往历史消息中插入，影响逐渐减弱<br>
+                                        - 适合使用场景：角色受伤状态、特殊情绪、临时任务目标等
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card" style="margin-top: 20px;">
+                            <div class="card-header">
+                                <h3 class="card-title">📝 Post-History Instructions</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="form-group">
+                                    <label class="form-label">历史后指令</label>
+                                    <textarea class="form-textarea" id="v2_postHistory" rows="4" placeholder="在对话历史之后注入的指令，用于引导AI下一步如何回应..."></textarea>
+                                </div>
+                                <div class="injection-help">
+                                    <strong>💡 使用说明：</strong><br>
+                                    Post-History Instructions 放在所有对话历史之后，用于指导AI如何生成下一条回复。<br>
+                                    - 适合用于：引导AI主动行动、控制回复长度、强调特定风格等<br>
+                                    - 示例："请记住：{{char}}会主动提出建议，不会只是被动回答"
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 预览 -->
+                    <div class="tab-content" id="tab-preview">
+                        <div class="card">
+                            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+                                <h3 class="card-title">👁️ 提示词预览</h3>
+                                <button class="btn btn-secondary" onclick="generatePreview()">🔄 生成预览</button>
+                            </div>
+                            <div class="card-body">
+                                <div class="prompt-preview-panel" id="v2_promptPreview">
+                                    点击「生成预览」查看最终提示词...
+                                </div>
+                                
+                                <div style="margin-top: 16px; display: flex; gap: 16px; flex-wrap: wrap;" id="v2_previewStats">
+                                    <!-- 统计信息 -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 右侧：预览卡片 -->
+            <div class="editor-sidebar">
+                <div class="character-preview-card">
+                    <div class="preview-header">
+                        <img class="preview-avatar" id="previewAvatar" src="" alt="头像" style="display: none;">
+                        <div class="preview-info">
+                            <h3 id="previewName">未命名角色</h3>
+                            <div class="preview-tags" id="previewTags">
+                                <!-- 动态生成 -->
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-bottom: 16px;">
+                        <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 8px;">好感度</div>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <div style="flex: 1; height: 8px; background: rgba(138, 109, 59, 0.2); border-radius: 4px; overflow: hidden;">
+                                <div style="width: 50%; height: 100%; background: linear-gradient(90deg, var(--primary), var(--primary-light)); border-radius: 4px;"></div>
+                            </div>
+                            <span style="font-size: 14px; color: var(--text);">50</span>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-bottom: 16px;">
+                        <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 8px;">当前状态</div>
+                        <div style="display: flex; gap: 8px; flex-wrap: wrap;" id="previewStatus">
+                            <span style="padding: 4px 12px; background: rgba(138, 109, 59, 0.2); border-radius: 12px; font-size: 12px;">平静</span>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 8px;">预览</div>
+                        <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.6;" id="previewDesc">
+                            暂无描述
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 脚本 -->
+    <script src="public/js/loader.js"></script>
+    <script src="public/js/core/characterCardV2.js"></script>
+    <script src="public/js/core/enhancedPromptBuilder.js"></script>
+    <script src="public/js/services/characterWorldbookBridge.js"></script>
+    
+    <script>
+        // ==================== 全局状态 ====================
+        let currentCharacter = null;
+        let exampleDialogues = [];
+        let lorebookEntries = [];
+        
+        // ==================== 初始化 ====================
+        document.addEventListener('DOMContentLoaded', () => {
+            // 从URL参数获取角色ID
+            const params = new URLSearchParams(window.location.search);
+            const charId = params.get('id');
+            
+            if (charId) {
+                loadCharacter(charId);
+            } else {
+                // 创建新角色
+                currentCharacter = createCharacterCardV2();
+                updatePreview();
+            }
+            
+            // 绑定颜色选择器
+            document.getElementById('v2_charColorPicker').addEventListener('input', (e) => {
+                document.getElementById('v2_charColor').value = e.target.value;
+            });
+            
+            // 实时更新预览
+            bindRealtimePreview();
+        });
+        
+        // ==================== 标签页切换 ====================
+        function switchTab(tabName) {
+            // 切换标签按钮
+            document.querySelectorAll('.editor-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // 切换内容
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(`tab-${tabName}`).classList.add('active');
+        }
+        
+        // ==================== 角色加载与保存 ====================
+        async function loadCharacter(charId) {
+            try {
+                const adapter = new CharacterCardAdapter();
+                currentCharacter = await adapter.getCharacter(charId);
+                
+                // 填充表单
+                populateForm(currentCharacter);
+                updatePreview();
+            } catch (error) {
+                console.error('加载角色失败:', error);
+                alert('加载角色失败');
+            }
+        }
+        
+        async function saveCharacterV2() {
+            try {
+                // 收集表单数据
+                collectFormData();
+                
+                // 保存
+                const adapter = new CharacterCardAdapter();
+                await adapter.saveCharacter(currentCharacter);
+                
+                alert('保存成功！');
+            } catch (error) {
+                console.error('保存角色失败:', error);
+                alert('保存失败: ' + error.message);
+            }
+        }
+        
+        // ==================== 表单操作 ====================
+        function populateForm(character) {
+            // 基础信息
+            document.getElementById('v2_charName').value = character.name || '';
+            document.getElementById('v2_charVersion').value = character.version || '2.0.0';
+            document.getElementById('v2_charAvatar').value = character.visual?.avatar || '';
+            document.getElementById('v2_charCover').value = character.visual?.cover || '';
+            document.getElementById('v2_charColor').value = character.visual?.color || '#8a6d3b';
+            document.getElementById('v2_charColorPicker').value = character.visual?.color || '#8a6d3b';
+            document.getElementById('v2_charMetaDesc').value = character.meta?.description || '';
+            document.getElementById('v2_charTags').value = (character.meta?.tags || []).join(', ');
+            
+            // 情感立绘
+            const emotions = character.visual?.emotionCGs || {};
+            Object.keys(emotions).forEach(emo => {
+                const input = document.getElementById(`v2_emotion_${emo}`);
+                if (input) input.value = emotions[emo] || '';
+            });
+            
+            // 核心设定
+            document.getElementById('v2_coreDescription').value = character.core?.description || '';
+            document.getElementById('v2_corePersonality').value = character.core?.personality || '';
+            document.getElementById('v2_coreScenario').value = character.core?.scenario || '';
+            document.getElementById('v2_firstMessage').value = character.core?.firstMessage || '';
+            document.getElementById('v2_worldFaction').value = character.core?.worldConnection?.faction || '';
+            document.getElementById('v2_worldLocation').value = character.core?.worldConnection?.location || '';
+            document.getElementById('v2_activationKeys').value = (character.activation?.keys || []).join(',');
+            
+            // 示例对话
+            exampleDialogues = character.examples?.dialogues || [];
+            document.getElementById('v2_examplesStyle').value = character.examples?.style || '';
+            renderExampleDialogues();
+            
+            // 专属世界书
+            lorebookEntries = character.lorebook?.entries || [];
+            const linkMode = character.lorebook?._linkMode || 'MANUAL';
+            const linkSelect = document.getElementById('v2_autoLinkMode');
+            if (linkSelect) {
+                linkSelect.value = linkMode;
+                updateLinkModeUI();
+            }
+            renderLorebookEntries();
+            
+            // 深度注入
+            const charNote = character.injection?.characterNote || {};
+            document.getElementById('v2_charNoteContent').value = charNote.content || '';
+            document.getElementById('v2_charNoteDepth').value = charNote.depth || '0';
+            document.getElementById('v2_charNoteFrequency').value = charNote.frequency || '1';
+            document.getElementById('v2_charNoteRole').value = charNote.role || 'system';
+            document.getElementById('v2_postHistory').value = character.injection?.postHistory || '';
+        }
+        
+        function collectFormData() {
+            if (!currentCharacter) {
+                currentCharacter = createCharacterCardV2();
+            }
+            
+            // 基础信息
+            currentCharacter.name = document.getElementById('v2_charName').value;
+            currentCharacter.visual.avatar = document.getElementById('v2_charAvatar').value;
+            currentCharacter.visual.cover = document.getElementById('v2_charCover').value;
+            currentCharacter.visual.color = document.getElementById('v2_charColor').value;
+            currentCharacter.meta.description = document.getElementById('v2_charMetaDesc').value;
+            currentCharacter.meta.tags = document.getElementById('v2_charTags').value.split(',').map(s => s.trim()).filter(Boolean);
+            
+            // 情感立绘
+            const emotions = {};
+            ['calm', 'happy', 'angry', 'sad', 'shy', 'surprise', 'serious', 'hurt'].forEach(emo => {
+                const value = document.getElementById(`v2_emotion_${emo}`)?.value;
+                if (value) emotions[emo] = value;
+            });
+            currentCharacter.visual.emotionCGs = emotions;
+            
+            // 核心设定
+            currentCharacter.core.description = document.getElementById('v2_coreDescription').value;
+            currentCharacter.core.personality = document.getElementById('v2_corePersonality').value;
+            currentCharacter.core.scenario = document.getElementById('v2_coreScenario').value;
+            currentCharacter.core.firstMessage = document.getElementById('v2_firstMessage').value;
+            currentCharacter.core.worldConnection.faction = document.getElementById('v2_worldFaction').value;
+            currentCharacter.core.worldConnection.location = document.getElementById('v2_worldLocation').value;
+            currentCharacter.activation.keys = document.getElementById('v2_activationKeys').value.split(',').map(s => s.trim()).filter(Boolean);
+            
+            // 示例对话
+            currentCharacter.examples.dialogues = exampleDialogues;
+            currentCharacter.examples.style = document.getElementById('v2_examplesStyle').value;
+            
+            // 专属世界书
+            currentCharacter.lorebook.entries = lorebookEntries;
+            currentCharacter.lorebook._linkMode = document.getElementById('v2_autoLinkMode')?.value || 'MANUAL';
+            
+            // 深度注入
+            currentCharacter.injection.characterNote = {
+                content: document.getElementById('v2_charNoteContent').value,
+                depth: parseInt(document.getElementById('v2_charNoteDepth').value),
+                frequency: parseInt(document.getElementById('v2_charNoteFrequency').value),
+                role: document.getElementById('v2_charNoteRole').value
+            };
+            currentCharacter.injection.postHistory = document.getElementById('v2_postHistory').value;
+        }
+        
+        // ==================== 示例对话管理 ====================
+        function addExampleDialogue() {
+            exampleDialogues.push({
+                user: '',
+                character: '',
+                annotation: ''
+            });
+            renderExampleDialogues();
+        }
+        
+        function removeExampleDialogue(index) {
+            exampleDialogues.splice(index, 1);
+            renderExampleDialogues();
+        }
+        
+        function updateExampleDialogue(index, field, value) {
+            exampleDialogues[index][field] = value;
+        }
+        
+        function renderExampleDialogues() {
+            const container = document.getElementById('v2_examplesList');
+            
+            if (exampleDialogues.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">💬</div>
+                        <p>暂无示例对话</p>
+                        <p style="font-size: 13px; margin-top: 8px;">添加示例对话帮助AI学习角色的说话方式</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = exampleDialogues.map((ex, index) => `
+                <div class="example-item">
+                    <div class="example-item-header">
+                        <span class="example-item-number">示例 ${index + 1}</span>
+                        <button class="example-item-delete" onclick="removeExampleDialogue(${index})">删除</button>
+                    </div>
+                    <div class="example-item-content">
+                        <div class="example-message">
+                            <span class="example-message-label">玩家</span>
+                            <textarea class="example-message-input" 
+                                onchange="updateExampleDialogue(${index}, 'user', this.value)"
+                                placeholder="玩家说的话...">${ex.user}</textarea>
+                        </div>
+                        <div class="example-message">
+                            <span class="example-message-label">角色</span>
+                            <textarea class="example-message-input" 
+                                onchange="updateExampleDialogue(${index}, 'character', this.value)"
+                                placeholder="角色的回应...">${ex.character}</textarea>
+                        </div>
+                        <div class="example-message">
+                            <span class="example-message-label">标注</span>
+                            <input type="text" class="form-input" 
+                                onchange="updateExampleDialogue(${index}, 'annotation', this.value)"
+                                placeholder="说明这段示例的用途（可选）..." value="${ex.annotation || ''}">
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        // ==================== 世界书条目管理 ====================
+        function addLorebookEntry() {
+            const name = prompt('条目名称：');
+            if (!name) return;
+            
+            lorebookEntries.push({
+                id: `char_lore_${Date.now()}`,
+                name: name,
+                keys: [],
+                content: '',
+                priority: 100,
+                insertPosition: 'character'
+            });
+            renderLorebookEntries();
+        }
+        
+        function removeLorebookEntry(index) {
+            lorebookEntries.splice(index, 1);
+            renderLorebookEntries();
+        }
+        
+        function updateLorebookEntry(index, field, value) {
+            lorebookEntries[index][field] = value;
+        }
+        
+        function renderLorebookEntries() {
+            const container = document.getElementById('v2_lorebookList');
+            
+            if (lorebookEntries.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">📚</div>
+                        <p>暂无专属条目</p>
+                        <p style="font-size: 13px; margin-top: 8px;">添加角色专属的世界书条目，如特殊物品、独门功法等</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = lorebookEntries.map((entry, index) => `
+                <div class="lorebook-entry-item">
+                    <div class="lorebook-entry-header">
+                        <span class="lorebook-entry-name">${entry.name}</span>
+                        <button class="example-item-delete" onclick="removeLorebookEntry(${index})">删除</button>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">触发关键词（逗号分隔）</label>
+                        <input type="text" class="form-input" 
+                            onchange="updateLorebookEntry(${index}, 'keys', this.value.split(',').map(s => s.trim()))"
+                            value="${(entry.keys || []).join(', ')}" placeholder="如：寒霜剑,佩剑">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">内容</label>
+                        <textarea class="form-textarea" rows="3"
+                            onchange="updateLorebookEntry(${index}, 'content', this.value)"
+                            placeholder="条目内容...">${entry.content}</textarea>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">优先级</label>
+                            <input type="number" class="form-input" 
+                                onchange="updateLorebookEntry(${index}, 'priority', parseInt(this.value))"
+                                value="${entry.priority || 100}">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">插入位置</label>
+                            <select class="form-select" 
+                                onchange="updateLorebookEntry(${index}, 'insertPosition', this.value)">
+                                <option value="system" ${entry.insertPosition === 'system' ? 'selected' : ''}>System</option>
+                                <option value="character" ${entry.insertPosition === 'character' ? 'selected' : ''}>Character</option>
+                                <option value="user" ${entry.insertPosition === 'user' ? 'selected' : ''}>User</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        // ==================== 预览 ====================
+        function bindRealtimePreview() {
+            const inputs = document.querySelectorAll('input, textarea');
+            inputs.forEach(input => {
+                input.addEventListener('input', () => {
+                    updatePreview();
+                });
+            });
+        }
+        
+        function updatePreview() {
+            const name = document.getElementById('v2_charName').value || '未命名角色';
+            const avatar = document.getElementById('v2_charAvatar').value;
+            const color = document.getElementById('v2_charColor').value;
+            const tags = document.getElementById('v2_charTags').value.split(',').filter(Boolean);
+            const desc = document.getElementById('v2_coreDescription').value;
+            
+            document.getElementById('previewName').textContent = name;
+            document.getElementById('previewName').style.color = color;
+            
+            const avatarImg = document.getElementById('previewAvatar');
+            if (avatar) {
+                avatarImg.src = avatar;
+                avatarImg.style.display = 'block';
+            } else {
+                avatarImg.style.display = 'none';
+            }
+            
+            document.getElementById('previewTags').innerHTML = tags.map(t => 
+                `<span class="preview-tag">${t.trim()}</span>`
+            ).join('');
+            
+            document.getElementById('previewDesc').textContent = desc || '暂无描述';
+        }
+        
+        async function generatePreview() {
+            collectFormData();
+            
+            try {
+                const builder = new EnhancedPromptBuilder({
+                    characterName: currentCharacter.name
+                });
+                
+                const result = builder.buildForCharacter(currentCharacter);
+                
+                // 显示预览
+                let preview = '';
+                
+                // System
+                preview += `========== SYSTEM ==========\n${result.system}\n\n`;
+                
+                // Messages (Examples)
+                if (result.messages.length > 0) {
+                    preview += `========== EXAMPLES ==========\n`;
+                    result.messages.forEach(msg => {
+                        preview += `[${msg.role.toUpperCase()}]\n${msg.content}\n\n`;
+                    });
+                }
+                
+                // Injections
+                if (result.injections.length > 0) {
+                    preview += `========== INJECTIONS ==========\n`;
+                    result.injections.forEach(inj => {
+                        preview += `[${inj.type}] depth=${inj.depth}, freq=${inj.frequency}\n${inj.content}\n\n`;
+                    });
+                }
+                
+                // Post History
+                if (result.postHistory) {
+                    preview += `========== POST-HISTORY ==========\n${result.postHistory}\n`;
+                }
+                
+                document.getElementById('v2_promptPreview').textContent = preview;
+                
+                // 统计
+                document.getElementById('v2_previewStats').innerHTML = `
+                    <span style="padding: 8px 16px; background: rgba(138, 109, 59, 0.2); border-radius: 8px; font-size: 13px;">
+                        估算Token: ${result.stats.totalTokens}
+                    </span>
+                    <span style="padding: 8px 16px; background: rgba(138, 109, 59, 0.2); border-radius: 8px; font-size: 13px;">
+                        注入项: ${result.stats.injections}
+                    </span>
+                    <span style="padding: 8px 16px; background: rgba(138, 109, 59, 0.2); border-radius: 8px; font-size: 13px;">
+                        示例数: ${result.stats.examples}
+                    </span>
+                    ${result.stats.truncated ? '<span style="padding: 8px 16px; background: rgba(255, 107, 107, 0.2); color: #ff6b6b; border-radius: 8px; font-size: 13px;">⚠️ 已截断</span>' : ''}
+                `;
+            } catch (error) {
+                console.error('生成预览失败:', error);
+                document.getElementById('v2_promptPreview').textContent = '生成预览失败: ' + error.message;
+            }
+        }
+        
+        // ==================== 导入导出 ====================
+        async function importFromV1() {
+            const charId = prompt('请输入要导入的V1角色ID：');
+            if (!charId) return;
+            
+            try {
+                // 从V1 API获取
+                const response = await fetch(`${API_BASE}/characters/${charId}`, {
+                    headers: getAuthHeaders()
+                });
+                
+                if (!response.ok) {
+                    throw new Error('获取角色失败');
+                }
+                
+                const data = await response.json();
+                const v1Data = data.data || data;
+                
+                // 迁移到V2
+                currentCharacter = CharacterMigrationTool.migrateV1ToV2(v1Data);
+                
+                // 填充表单
+                populateForm(currentCharacter);
+                updatePreview();
+                
+                alert('导入成功！请检查并完善V2特有字段。');
+            } catch (error) {
+                console.error('导入失败:', error);
+                alert('导入失败: ' + error.message);
+            }
+        }
+        
+        function exportCharacter() {
+            collectFormData();
+            
+            const dataStr = JSON.stringify(currentCharacter, null, 2);
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `character_${currentCharacter.name || 'unnamed'}_v2.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+        
+        // ==================== 世界书关联管理 ====================
+        
+        let currentLinkMode = 'manual'; // 'manual' 或 'auto'
+        let recommendedEntries = []; // 缓存推荐的条目
+        
+        /**
+         * 设置关联模式
+         */
+        function setLinkMode(mode) {
+            currentLinkMode = mode;
+            
+            // 更新UI
+            document.querySelectorAll('.link-mode-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.getElementById(`mode-${mode}`).classList.add('active');
+            
+            // 显示/隐藏对应区域
+            if (mode === 'manual') {
+                document.getElementById('manual-link-section').style.display = 'block';
+                document.getElementById('auto-link-section').style.display = 'none';
+            } else {
+                document.getElementById('manual-link-section').style.display = 'none';
+                document.getElementById('auto-link-section').style.display = 'block';
+                // 自动刷新推荐
+                refreshRecommendedEntries();
+            }
+            
+            // 保存到角色数据
+            if (currentCharacter) {
+                if (!currentCharacter.lorebook) {
+                    currentCharacter.lorebook = { entries: [], linkedGlobalEntries: [] };
+                }
+                currentCharacter.lorebook._linkMode = mode;
+            }
+            
+            console.log('[LinkMode] 切换到:', mode);
+        }
+        
+        /**
+         * 刷新推荐条目
+         */
+        async function refreshRecommendedEntries() {
+            if (!currentCharacter) return;
+            
+            const container = document.getElementById('v2_recommendedEntries');
+            container.innerHTML = '<p style="text-align: center; padding: 20px;">分析中...</p>';
+            
+            try {
+                // 初始化桥接器
+                const bridge = new CharacterWorldbookBridge({
+                    worldbookEngine: window.worldbookEngine,
+                    linkMode: 'auto',
+                    debug: true
+                });
+                
+                // 获取推荐
+                recommendedEntries = await bridge.getRecommendedGlobalEntries(currentCharacter);
+                
+                // 获取已关联的条目ID
+                const linkedIds = new Set(currentCharacter.lorebook?.linkedGlobalEntries || []);
+                
+                // 渲染推荐列表
+                if (recommendedEntries.length === 0) {
+                    container.innerHTML = `
+                        <p style="color: var(--text-secondary); text-align: center; padding: 20px;">
+                            暂无推荐条目<br>
+                            <small>尝试完善角色的关键词、所属势力或常驻地点</small>
+                        </p>
+                    `;
+                    return;
+                }
+                
+                container.innerHTML = recommendedEntries.map((rec, index) => {
+                    const isLinked = linkedIds.has(rec.entry.id);
+                    return `
+                        <div class="recommended-item ${isLinked ? 'selected' : ''}" data-index="${index}" data-id="${rec.entry.id}">
+                            <input type="checkbox" class="recommended-checkbox" 
+                                ${isLinked ? 'checked' : ''} 
+                                onchange="toggleRecommendedEntry('${rec.entry.id}', this.checked)">
+                            <div class="recommended-score">${(rec.score * 100).toFixed(0)}%</div>
+                            <div class="recommended-content">
+                                <div class="recommended-name">${rec.entry.name}</div>
+                                <div class="recommended-reason">${rec.reason}</div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+                
+            } catch (error) {
+                console.error('获取推荐失败:', error);
+                container.innerHTML = `
+                    <p style="color: #ff6b6b; text-align: center; padding: 20px;">
+                        获取推荐失败: ${error.message}
+                    </p>
+                `;
+            }
+        }
+        
+        /**
+         * 切换推荐条目的关联状态
+         */
+        function toggleRecommendedEntry(entryId, isChecked) {
+            if (!currentCharacter.lorebook) {
+                currentCharacter.lorebook = { entries: [], linkedGlobalEntries: [] };
+            }
+            
+            if (isChecked) {
+                // 添加到关联列表
+                if (!currentCharacter.lorebook.linkedGlobalEntries.includes(entryId)) {
+                    currentCharacter.lorebook.linkedGlobalEntries.push(entryId);
+                }
+            } else {
+                // 从关联列表移除
+                currentCharacter.lorebook.linkedGlobalEntries = 
+                    currentCharacter.lorebook.linkedGlobalEntries.filter(id => id !== entryId);
+            }
+            
+            // 更新UI
+            const item = document.querySelector(`.recommended-item[data-id="${entryId}"]`);
+            if (item) {
+                item.classList.toggle('selected', isChecked);
+            }
+            
+            console.log('[LinkMode] 关联状态变更:', entryId, isChecked);
+        }
+        
+        /**
+         * 打开全局世界书选择器（手动模式）
+         */
+        function openGlobalWorldbookSelector() {
+            // 这里可以实现一个弹窗选择器
+            // 暂时使用prompt简化
+            const entryId = prompt('请输入要关联的世界书条目ID:');
+            if (entryId) {
+                manualLinkEntry(entryId);
+            }
+        }
+        
+        /**
+         * 手动关联条目
+         */
+        function manualLinkEntry(entryId) {
+            if (!currentCharacter.lorebook) {
+                currentCharacter.lorebook = { entries: [], linkedGlobalEntries: [] };
+            }
+            
+            if (!currentCharacter.lorebook.linkedGlobalEntries.includes(entryId)) {
+                currentCharacter.lorebook.linkedGlobalEntries.push(entryId);
+                showToast('已添加关联', 'success');
+                renderLinkedEntries();
+            } else {
+                showToast('该条目已关联', 'warning');
+            }
+        }
+        
+        /**
+         * 渲染已关联条目列表
+         */
+        function renderLinkedEntries() {
+            const container = document.getElementById('v2_linkedEntriesList');
+            const linkedIds = currentCharacter.lorebook?.linkedGlobalEntries || [];
+            
+            if (linkedIds.length === 0) {
+                container.innerHTML = `
+                    <p style="color: var(--text-secondary); text-align: center; padding: 20px;">
+                        暂无关联条目
+                    </p>
+                `;
+                return;
+            }
+            
+            // 这里需要获取全局世界书条目的详细信息
+            // 暂时只显示ID
+            container.innerHTML = `
+                <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                    ${linkedIds.map(id => `
+                        <span style="padding: 6px 12px; background: rgba(138, 109, 59, 0.2); 
+                                     border-radius: 6px; font-size: 13px; display: flex; align-items: center; gap: 8px;">
+                            ${id}
+                            <button onclick="manualUnlinkEntry('${id}')" style="background: none; border: none; 
+                                    color: #ff6b6b; cursor: pointer; font-size: 16px; line-height: 1;">&times;</button>
+                        </span>
+                    `).join('')}
+                </div>
+            `;
+        }
+        
+        /**
+         * 手动取消关联
+         */
+        function manualUnlinkEntry(entryId) {
+            if (!currentCharacter.lorebook?.linkedGlobalEntries) return;
+            
+            currentCharacter.lorebook.linkedGlobalEntries = 
+                currentCharacter.lorebook.linkedGlobalEntries.filter(id => id !== entryId);
+            
+            showToast('已取消关联', 'success');
+            renderLinkedEntries();
+            
+            // 如果在自动模式，也更新推荐列表的勾选状态
+            if (currentLinkMode === 'auto') {
+                const checkbox = document.querySelector(`.recommended-item[data-id="${entryId}"] .recommended-checkbox`);
+                if (checkbox) {
+                    checkbox.checked = false;
+                    checkbox.closest('.recommended-item').classList.remove('selected');
+                }
+            }
+        }
+        
+        // ==================== 工具函数 ====================
+        function getAuthHeaders() {
+            const token = localStorage.getItem('galgame_token');
+            return {
+                'Content-Type': 'application/json',
+                'Authorization': token ? `Bearer ${token}` : ''
+            };
+        }
+    </script>
+</body>
+</html>

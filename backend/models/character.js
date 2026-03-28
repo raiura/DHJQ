@@ -70,7 +70,46 @@ const characterSchemaDefinition = {
   createdAt: {
     type: Date,
     default: Date.now
-  }
+  },
+  // ========== 角色卡 V2.0 字段 ==========
+  format: {
+    type: String,
+    default: 'v1',
+    enum: ['v1', 'v2']  // 标记角色卡版本格式
+  },
+  version: {
+    type: String,
+    default: '1.0'
+  },
+  // V2嵌套数据结构（存储完整的V2角色卡数据）
+  v2Data: {
+    type: mongoose.Schema.Types.Mixed,
+    default: null
+  },
+  // 世界书关联字段（V2使用）
+  linkedWorldbookEntries: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Worldbook'
+  }],
+  worldbookLinkMode: {
+    type: String,
+    default: 'manual',
+    enum: ['manual', 'auto', 'disabled']
+  },
+  // 角色专属提示词配置（V2使用）
+  characterNote: {
+    type: String,
+    default: ''
+  },
+  characterNoteDepth: {
+    type: Number,
+    default: 0
+  },
+  postHistoryInstructions: {
+    type: String,
+    default: ''
+  },
+  // ========== V2字段结束 ==========
 };
 
 // 如果 MongoDB 已连接，使用 Mongoose 模型
