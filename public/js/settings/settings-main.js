@@ -8,6 +8,20 @@ let characters = [];
 let editingCharacterId = null;
 let gallery = [];
 
+// 暴露到全局供V2编辑器使用
+Object.defineProperty(window, 'gameId', {
+    get: () => gameId,
+    set: (val) => { gameId = val; }
+});
+Object.defineProperty(window, 'characters', {
+    get: () => characters,
+    set: (val) => { characters = val; }
+});
+Object.defineProperty(window, 'editingCharacterId', {
+    get: () => editingCharacterId,
+    set: (val) => { editingCharacterId = val; }
+});
+
 // 世界书相关变量
 let editingWorldbookId = null;
 let editingWorldbookIsUser = false;
@@ -180,8 +194,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (previewBtn) previewBtn.style.display = 'none';
             if (deleteBtn) deleteBtn.style.display = 'none';
             
-            // 尝试加载迁移的角色数据
-            const migratedChars = JSON.parse(localStorage.getItem(`game_${gameId}_characters`) || '[]');
+            // 尝试加载迁移的角色数据（创建模式使用 'draft' 作为临时ID）
+            const tempGameId = gameId || 'draft';
+            const migratedChars = JSON.parse(localStorage.getItem(`game_${tempGameId}_characters`) || '[]');
             if (migratedChars.length > 0) {
                 characters = migratedChars;
                 console.log('[Settings] 加载迁移角色:', characters.length);
@@ -209,16 +224,25 @@ async function loadGameData() {
         
         if (result.success) {
             currentGame = result.data.game;
-            characters = result.data.characters || [];
+            const backendChars = result.data.characters || [];
             
             // 合并从迁移工具导入的角色（localStorage）
-            const migratedChars = JSON.parse(localStorage.getItem(`game_${gameId}_characters`) || '[]');
-            if (migratedChars.length > 0) {
-                // 去重：根据名称合并
-                const existingNames = new Set(characters.map(c => c.name));
-                const newChars = migratedChars.filter(c => !existingNames.has(c.name));
-                characters = [...characters, ...newChars];
-                console.log('[Settings] 合并迁移角色:', newChars.length);
+            // 策略：以 localStorage 为准（因为它包含最新编辑），后端数据作为后备
+            const localChars = JSON.parse(localStorage.getItem(`game_${gameId}_characters`) || '[]');
+            
+            console.log('[Settings] Load characters - Backend:', backendChars.length, 'LocalStorage:', localChars.length);
+            
+            if (localChars.length > 0) {
+                // 使用 localStorage 的数据为主
+                // 对于本地没有的角色，从后端补充
+                const localIds = new Set(localChars.map(c => c._id || c.id));
+                const backendOnlyChars = backendChars.filter(c => !localIds.has(c._id || c.id));
+                characters = [...localChars, ...backendOnlyChars];
+                console.log('[Settings] >>> 使用本地角色:', localChars.length, '后端补充:', backendOnlyChars.length, '总计:', characters.length);
+            } else {
+                // 本地没有，使用后端数据
+                characters = backendChars;
+                console.log('[Settings] >>> 从后端加载角色:', characters.length);
             }
             
             fillGameInfo(currentGame);
@@ -619,29 +643,41 @@ function renderCharacterList() {
         return;
     }
     
-    // 使用 world-guide.html 风格的角色卡片设计
+    // 使用 world-guide.html 风格的角色卡片设计 (支持V2格式)
     container.innerHTML = characters.map((char, index) => {
         const charId = char._id || char.id || index;
-        const traits = char.keys || [];
+        
+        // V2格式兼容处理
+        const avatar = char.visual?.avatar || char.avatar || char.image || '';
+        const color = char.visual?.color || char.color || '#8a6d3b';
+        const traits = char.activation?.keys || char.keys || [];
+        const personality = char.core?.personality || char.personality || '';
+        const scenario = char.core?.scenario || char.background || char._legacy?.background || '';
+        const description = char.core?.description || char._legacy?.appearance || '';
+        
+        // 判断是否为V2角色（显示标识）
+        const isV2 = char.core && char.visual;
+        const v2Badge = isV2 ? `<span style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-left: 8px;">V2</span>` : '';
+        
         return `
-        <div class="character-showcase-card" style="--char-color: ${char.color || '#8a6d3b'}" data-id="${charId}">
+        <div class="character-showcase-card" style="--char-color: ${color}" data-id="${charId}">
             <div class="character-showcase-image">
-                ${char.avatar ? 
-                    `<img src="${char.avatar}" alt="${char.name}" onerror="this.parentElement.innerHTML='<div class=\'character-showcase-placeholder\'>${char.name.charAt(0)}</div>'">` : 
+                ${avatar ? 
+                    `<img src="${avatar}" alt="${char.name}" onerror="this.parentElement.innerHTML='<div class=\'character-showcase-placeholder\'>${char.name.charAt(0)}</div>'">` : 
                     `<div class="character-showcase-placeholder">${(char.name || '?').charAt(0)}</div>`
                 }
             </div>
             <div class="character-showcase-info">
                 <div class="character-showcase-header">
                     <div>
-                        <div class="character-showcase-name">${char.name || '未命名'}</div>
-                        <div class="character-showcase-title">${char.background || char.title || '修仙者'}</div>
+                        <div class="character-showcase-name">${char.name || '未命名'}${v2Badge}</div>
+                        <div class="character-showcase-title">${scenario.substring(0, 20) || '修仙者'}${scenario.length > 20 ? '...' : ''}</div>
                     </div>
-                    <span class="character-showcase-type" style="background: ${char.color || '#8a6d3b'}">
-                        ${char.personality ? char.personality.split(/[，,、]/)[0] : '角色'}
+                    <span class="character-showcase-type" style="background: ${color}">
+                        ${personality ? personality.split(/[，,、]/)[0] : '角色'}
                     </span>
                 </div>
-                <div class="character-showcase-desc">${char.prompt || char.personality || ''}</div>
+                <div class="character-showcase-desc">${description.substring(0, 60) || personality.substring(0, 60) || ''}${(description.length > 60 || personality.length > 60) ? '...' : ''}</div>
                 <div class="character-showcase-traits">
                     ${traits.slice(0, 4).map(t => `<span class="trait-tag">${t}</span>`).join('')}
                 </div>
@@ -654,47 +690,10 @@ function renderCharacterList() {
     `}).join('');
 }
 
-function openCharacterModal() {
-    editingCharacterId = null;
-    
-    // 重置所有字段
-    const fields = {
-        'charName': '',
-        'charColor': '#8a6d3b',
-        'charColorPicker': '#8a6d3b',
-        'charAvatar': '',
-        'charImageFit': 'cover',
-        'charKeys': '',
-        'charPriority': '100',
-        'charFavor': '50',
-        'charTrust': '50',
-        'charMood': '平静',
-        'charAppearance': '',
-        'charPersonality': '',
-        'charBackground': '',
-        'charPhysique': '',
-        'charSpecial': ''
-    };
-    
-    for (const [id, value] of Object.entries(fields)) {
-        const el = document.getElementById(id);
-        if (el) el.value = value;
-    }
-    
-    // 隐藏头像预览
-    const previewEl = document.getElementById('charAvatarPreview');
-    if (previewEl) previewEl.style.display = 'none';
-    
-    // 重置预览
-    const promptPreview = document.getElementById('charPromptPreview');
-    if (promptPreview) promptPreview.textContent = '点击「生成预览」查看AI提示词...';
-    
-    // 初始化好感度/信任度显示
-    updateFavorLevel(50);
-    updateTrustLevel(50);
-    
-    const modalTitle = document.querySelector('#characterModal .modal-title');
-    if (modalTitle) modalTitle.textContent = '🎭 新建角色';
+// 基础openCharacterModal函数，会被V2编辑器覆盖
+function openCharacterModal(id = null) {
+    console.log('[Settings] Base openCharacterModal called, waiting for V2 override...');
+    editingCharacterId = id;
     
     const overlay = document.getElementById('characterModalOverlay');
     if (overlay) {
@@ -2006,8 +2005,28 @@ async function saveGame() {
         
         const result = await response.json();
         if (result.success) {
+            const currentGameId = gameId || result.data?._id;
+            
+            // 保存角色到后端
+            if (currentGameId && characters.length > 0) {
+                try {
+                    await saveCharactersToBackend(currentGameId, characters);
+                    console.log('[Settings] Characters saved to backend:', characters.length);
+                } catch (err) {
+                    console.error('[Settings] Failed to save characters:', err);
+                }
+            }
+            
             showToast(gameId ? '保存成功' : '创建成功', 'success');
+            
             if (!gameId && result.data?._id) {
+                // 迁移 draft 中的角色到新游戏
+                const draftChars = localStorage.getItem('game_draft_characters');
+                if (draftChars) {
+                    localStorage.setItem(`game_${result.data._id}_characters`, draftChars);
+                    localStorage.removeItem('game_draft_characters');
+                    console.log('[Settings] Migrated draft characters to new game:', result.data._id);
+                }
                 window.location.href = `settings.html?id=${result.data._id}`;
             }
         } else {
@@ -2016,6 +2035,61 @@ async function saveGame() {
     } catch (error) {
         showToast('保存失败: ' + error.message, 'error');
     }
+}
+
+/**
+ * 保存角色到后端
+ */
+async function saveCharactersToBackend(gameId, chars) {
+    // 批量保存角色
+    const results = [];
+    
+    for (const char of chars) {
+        const charData = {
+            ...char,
+            gameId: gameId
+        };
+        
+        // 如果有 _id 且不是临时 ID，则更新；否则创建
+        const charId = char._id || char.id;
+        const isTempId = charId && charId.toString().startsWith('char_');
+        
+        try {
+            let response;
+            if (charId && !isTempId) {
+                // 更新现有角色
+                response = await fetch(`${API_BASE}/characters/${charId}`, {
+                    method: 'PUT',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify(charData)
+                });
+            } else {
+                // 创建新角色
+                response = await fetch(`${API_BASE}/characters`, {
+                    method: 'POST',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify(charData)
+                });
+            }
+            
+            const result = await response.json();
+            if (result.success && result.data) {
+                results.push(result.data);
+                // 更新本地角色的 _id（如果是新创建的）
+                if (isTempId && result.data._id) {
+                    char._id = result.data._id;
+                    char.id = result.data._id;
+                }
+            }
+        } catch (err) {
+            console.error('[Settings] Failed to save character:', char.name, err);
+        }
+    }
+    
+    // 更新 localStorage 中的角色 ID
+    localStorage.setItem(`game_${gameId}_characters`, JSON.stringify(chars));
+    
+    return results;
 }
 
 async function publishGame() {
@@ -2994,59 +3068,10 @@ function editCharacter(id) {
         return;
     }
     
-    editingCharacterId = id;
+    console.log('[Settings] Editing character:', char.name, 'ID:', id);
     
-    // 加载所有字段
-    const fields = {
-        'charName': char.name || '',
-        'charColor': char.color || '#8a6d3b',
-        'charColorPicker': char.color || '#8a6d3b',
-        'charAvatar': char.image || char.avatar || '',
-        'charImageFit': char.imageFit || 'cover',
-        'charKeys': (char.keys || []).join(', '),
-        'charPriority': char.priority || '100',
-        'charFavor': char.favor ?? 50,
-        'charTrust': char.trust ?? 50,
-        'charMood': char.stats?.mood || char.mood || '平静',
-        'charAppearance': char.appearance || '',
-        'charPersonality': char.personality || '',
-        'charBackground': char.background || '',
-        'charPhysique': char.physique || '',
-        'charSpecial': char.special || ''
-    };
-    
-    for (const [fieldId, value] of Object.entries(fields)) {
-        const el = document.getElementById(fieldId);
-        if (el) el.value = value;
-    }
-    
-    // 更新头像预览
-    const avatarPreview = document.getElementById('charAvatarPreview');
-    const avatarImg = avatarPreview?.querySelector('img');
-    if (avatarPreview && avatarImg) {
-        if (char.image || char.avatar) {
-            avatarImg.src = char.image || char.avatar;
-            avatarPreview.style.display = 'block';
-        } else {
-            avatarPreview.style.display = 'none';
-        }
-    }
-    
-    // 更新好感度/信任度显示
-    updateFavorLevel(char.favor ?? 50);
-    updateTrustLevel(char.trust ?? 50);
-    
-    // 更新预览
-    generateCharacterPromptPreview();
-    
-    const modalTitle = document.querySelector('#characterModal .modal-title');
-    if (modalTitle) modalTitle.textContent = '🎭 编辑角色';
-    
-    const overlay = document.getElementById('characterModalOverlay');
-    if (overlay) {
-        overlay.style.display = 'flex';
-        overlay.classList.add('show');
-    }
+    // 使用V2编辑器打开
+    openCharacterModal(id);
 }
 
 // ==================== 角色导入/导出/重置（补充）====================

@@ -1,254 +1,539 @@
+/**
+ * 角色管理路由 - Character Card V2.0
+ * 统一使用V2格式，完全替代V1
+ */
+
 const express = require('express');
 const router = express.Router();
-const ResponseUtil = require('../utils/response');
-const Logger = require('../utils/logger');
-const config = require('../config');
+const mongoose = require('mongoose');
 
-// 使用统一的模型加载
-const { Character, Experience, useMemoryStore } = require('../models');
-if (useMemoryStore) {
-  Logger.warn('角色模块使用内存存储模式');
-}
-
-/**
- * @GET /api/characters
- * 获取所有角色
- * Query: gameId - 指定游戏ID，返回该游戏的角色+全局角色
- */
-router.get('/', async (req, res) => {
-  try {
-    const { gameId } = req.query;
-    let query = {};
-    
-    if (gameId) {
-      // 返回指定游戏的角色 + 全局角色
-      query = { $or: [{ gameId }, { gameId: null }] };
-    }
-    
-    let characters = await Character.find(query, { sort: { createdAt: -1 } });
-    
-    // 如果没有角色且没有指定gameId，初始化全局默认角色
-    if ((!characters || characters.length === 0) && !gameId) {
-      Logger.info('数据库中没有角色，初始化默认角色...');
-      
-      const defaultCharacters = config.defaults.characters.map(char => ({
-        ...char,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      }));
-      
-      await Character.insertMany(defaultCharacters);
-      characters = await Character.find(query, { sort: { createdAt: -1 } });
-      
-      return ResponseUtil.success(res, characters, '获取成功（已初始化默认角色）');
-    }
-    
-    ResponseUtil.success(res, characters);
-  } catch (error) {
-    Logger.error('获取角色失败:', error);
-    // 降级返回默认角色
-    ResponseUtil.success(res, config.defaults.characters, '获取成功（使用默认数据）');
-  }
-});
-
-/**
- * @GET /api/characters/:id/experiences
- * 获取角色经历（必须在 /:id 之前定义）
- */
-router.get('/:id/experiences', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { limit = 10, revealed } = req.query;
-    
-    // 检查角色是否存在
-    const character = await Character.findById(id);
-    if (!character) {
-      return ResponseUtil.error(res, '角色不存在', 404);
-    }
-    
-    // 构建查询条件
-    let query = { characterId: id };
-    if (revealed !== undefined) {
-      query.revealed = revealed === 'true';
-    }
-    
-    // 获取经历，按重要性和创建时间排序
-    const experiences = await Experience.find(query, {
-      sort: { importance: -1, createdAt: -1 },
-      limit: parseInt(limit)
+// 检查MongoDB连接状态
+const checkMongoDB = (req, res, next) => {
+  if (mongoose.connection.readyState !== 1) {
+    return res.status(503).json({ 
+      success: false, 
+      message: '数据库未连接',
+      useLocalStorage: true 
     });
-    
-    Logger.info(`获取角色 ${character.name} 的经历: ${experiences.length} 条`);
-    
-    ResponseUtil.success(res, experiences);
-  } catch (error) {
-    Logger.error('获取角色经历失败:', error);
-    ResponseUtil.error(res, '获取角色经历失败', 500);
   }
-});
+  next();
+};
 
-/**
- * @GET /api/characters/:id
- * 获取单个角色
- */
-router.get('/:id', async (req, res) => {
+// 获取Character模型
+const getCharacterModel = () => {
   try {
-    const character = await Character.findById(req.params.id);
-    if (!character) {
-      return ResponseUtil.error(res, '角色不存在', 404);
+    return mongoose.model('Character');
+  } catch (e) {
+    return require('../models/character');
+  }
+};
+
+// ========== CRUD接口 ==========
+
+/**
+ * GET /api/characters
+ * 获取角色列表
+ */
+router.get('/', checkMongoDB, async (req, res) => {
+  try {
+    const Character = getCharacterModel();
+    const { gameId, search } = req.query;
+    
+    let query = {};
+    if (gameId) query.gameId = gameId;
+    if (search) {
+      query.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { 'core.description': { $regex: search, $options: 'i' } },
+        { 'activation.keys': { $in: [new RegExp(search, 'i')] } }
+      ];
     }
-    ResponseUtil.success(res, character);
+    
+    const characters = await Character.find(query).sort({ 'meta.updatedAt': -1 });
+    
+    res.json({
+      success: true,
+      data: characters,
+      count: characters.length
+    });
   } catch (error) {
-    Logger.error('获取角色详情失败:', error);
-    ResponseUtil.error(res, '获取角色详情失败', 500);
+    console.error('获取角色列表失败:', error);
+    res.status(500).json({ success: false, message: error.message });
   }
 });
 
 /**
- * @POST /api/characters
+ * GET /api/characters/:id
+ * 获取单个角色详情
+ */
+router.get('/:id', checkMongoDB, async (req, res) => {
+  try {
+    const Character = getCharacterModel();
+    const character = await Character.findById(req.params.id);
+    
+    if (!character) {
+      return res.status(404).json({ success: false, message: '角色不存在' });
+    }
+    
+    res.json({ success: true, data: character });
+  } catch (error) {
+    console.error('获取角色详情失败:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+/**
+ * POST /api/characters
  * 创建新角色
  */
-router.post('/', async (req, res) => {
+router.post('/', checkMongoDB, async (req, res) => {
   try {
-    const { name, color, image, imageFit, prompt, gameId, appearance, personality, physique, background, special, enabled, keys, priority, favor, trust, stats } = req.body;
+    const Character = getCharacterModel();
+    const data = req.body;
     
-    if (!name || !prompt) {
-      return ResponseUtil.error(res, '角色名称和提示词不能为空', 400);
+    // 验证必填字段
+    if (!data.name) {
+      return res.status(400).json({ success: false, message: '角色名称不能为空' });
     }
     
-    const character = await Character.create({
-      name,
-      color: color || '#999999',
-      image: image || '',
-      imageFit: imageFit || 'cover',
-      prompt,
-      appearance: appearance || '',
-      personality: personality || '',
-      physique: physique || '',
-      background: background || '',
-      special: special || '',
-      enabled: enabled !== undefined ? enabled : true,  // 默认启用
-      keys: keys || [],
-      priority: priority || 100,
-      favor: favor !== undefined ? favor : 50,  // 默认50
-      trust: trust !== undefined ? trust : 50,  // 默认50
-      stats: stats || { mood: '平静', encounters: 0, dialogueTurns: 0 },
-      gameId: gameId || null,
-      createdAt: new Date(),
-      updatedAt: new Date()
+    // 确保符合V2结构
+    const characterData = ensureV2Structure(data);
+    
+    const character = new Character(characterData);
+    await character.save();
+    
+    res.json({
+      success: true,
+      message: '角色创建成功',
+      data: { id: character._id, name: character.name }
     });
-    
-    Logger.info(`创建新角色: ${name}${gameId ? ` (游戏ID: ${gameId})` : ''}, 好感度: ${favor}, 信任度: ${trust}`);
-    
-    ResponseUtil.success(res, character, '角色创建成功', 201);
   } catch (error) {
-    Logger.error('创建角色失败:', error);
-    ResponseUtil.error(res, '创建角色失败', 500);
+    console.error('创建角色失败:', error);
+    res.status(500).json({ success: false, message: error.message });
   }
 });
 
 /**
- * @PUT /api/characters/:id
+ * PUT /api/characters/:id
  * 更新角色
  */
-router.put('/:id', async (req, res) => {
+router.put('/:id', checkMongoDB, async (req, res) => {
   try {
-    const { name, color, image, imageFit, prompt, appearance, personality, physique, background, special, enabled, priority, keys, favor, trust, stats } = req.body;
+    const Character = getCharacterModel();
+    const data = req.body;
     
-    const updateData = { 
-      name, 
-      color, 
-      image,
-      imageFit,
-      prompt,
-      appearance,
-      personality,
-      physique,
-      background,
-      special,
-      enabled,
-      priority,
-      keys,
-      updatedAt: new Date()
-    };
-    
-    // 只有当值存在时才更新这些字段
-    if (favor !== undefined) updateData.favor = favor;
-    if (trust !== undefined) updateData.trust = trust;
-    if (stats !== undefined) updateData.stats = stats;
+    // 确保符合V2结构
+    const characterData = ensureV2Structure(data);
     
     const character = await Character.findByIdAndUpdate(
       req.params.id,
-      updateData,
+      characterData,
       { new: true }
     );
     
     if (!character) {
-      return ResponseUtil.error(res, '角色不存在', 404);
+      return res.status(404).json({ success: false, message: '角色不存在' });
     }
     
-    Logger.info(`更新角色: ${character.name}, enabled: ${character.enabled}, favor: ${favor}, trust: ${trust}`);
-    ResponseUtil.success(res, character, '角色更新成功');
+    res.json({
+      success: true,
+      message: '角色更新成功',
+      data: character
+    });
   } catch (error) {
-    Logger.error('更新角色失败:', error);
-    ResponseUtil.error(res, '更新角色失败', 500);
+    console.error('更新角色失败:', error);
+    res.status(500).json({ success: false, message: error.message });
   }
 });
 
 /**
- * @DELETE /api/characters/:id
+ * DELETE /api/characters/:id
  * 删除角色
  */
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', checkMongoDB, async (req, res) => {
   try {
-    const character = await Character.findByIdAndDelete(req.params.id);
+    const Character = getCharacterModel();
+    const result = await Character.findByIdAndDelete(req.params.id);
     
-    if (!character) {
-      return ResponseUtil.error(res, '角色不存在', 404);
+    if (!result) {
+      return res.status(404).json({ success: false, message: '角色不存在' });
     }
     
-    Logger.info(`删除角色: ${character.name}`);
-    ResponseUtil.success(res, null, '角色删除成功');
+    res.json({ success: true, message: '角色已删除' });
   } catch (error) {
-    Logger.error('删除角色失败:', error);
-    ResponseUtil.error(res, '删除角色失败', 500);
+    console.error('删除角色失败:', error);
+    res.status(500).json({ success: false, message: error.message });
   }
 });
 
+// ========== 批量操作 ==========
+
 /**
- * @POST /api/characters/fix-images
- * 修复角色图片地址（将失效的外部图片替换为SVG占位图）
+ * POST /api/characters/batch
+ * 批量创建/更新角色
  */
-router.post('/fix-images', async (req, res) => {
+router.post('/batch', checkMongoDB, async (req, res) => {
   try {
-    const characters = await Character.find({});
-    const fixedChars = [];
+    const Character = getCharacterModel();
+    const { characters, gameId } = req.body;
     
-    for (const char of characters) {
-      // 检查图片地址是否失效（非data:开头且非空）
-      if (char.image && !char.image.startsWith('data:')) {
-        // 生成默认SVG占位图
-        const defaultSvg = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='400'%3E%3Crect fill='${char.color || '%23999'}' width='300' height='400'/%3E%3Ctext x='50%25' y='50%25' fill='%23fff' font-family='Microsoft YaHei' font-size='20' text-anchor='middle'%3E${encodeURIComponent(char.name)}%3C/text%3E%3C/svg%3E`;
+    if (!Array.isArray(characters)) {
+      return res.status(400).json({ success: false, message: 'characters必须是数组' });
+    }
+    
+    const results = [];
+    for (const charData of characters) {
+      try {
+        const v2Data = ensureV2Structure({ ...charData, gameId });
         
-        await Character.findByIdAndUpdate(char._id, {
-          ...char,
-          image: defaultSvg,
-          updatedAt: new Date()
-        });
-        
-        fixedChars.push({ id: char._id, name: char.name, oldImage: char.image.substring(0, 50) + '...' });
-        Logger.info(`修复角色图片: ${char.name}`);
+        if (v2Data._id) {
+          // 更新
+          const updated = await Character.findByIdAndUpdate(v2Data._id, v2Data, { new: true });
+          results.push({ success: true, id: updated._id, action: 'update' });
+        } else {
+          // 创建
+          const character = new Character(v2Data);
+          await character.save();
+          results.push({ success: true, id: character._id, action: 'create' });
+        }
+      } catch (err) {
+        results.push({ success: false, error: err.message, name: charData.name });
       }
     }
     
-    ResponseUtil.success(res, { 
-      fixed: fixedChars.length, 
-      characters: fixedChars 
-    }, `已修复 ${fixedChars.length} 个角色的图片地址`);
+    res.json({
+      success: true,
+      data: results,
+      summary: {
+        total: characters.length,
+        success: results.filter(r => r.success).length,
+        failed: results.filter(r => !r.success).length
+      }
+    });
   } catch (error) {
-    Logger.error('修复角色图片失败:', error);
-    ResponseUtil.error(res, '修复失败', 500);
+    console.error('批量操作失败:', error);
+    res.status(500).json({ success: false, message: error.message });
   }
 });
+
+// ========== 导入导出 ==========
+
+/**
+ * POST /api/characters/import
+ * 导入角色（支持SillyTavern格式）
+ */
+router.post('/import', checkMongoDB, async (req, res) => {
+  try {
+    const Character = getCharacterModel();
+    const { data, format, gameId } = req.body;
+    
+    let characterData;
+    
+    if (format === 'sillytavern' || data.name) {
+      // SillyTavern格式或标准格式
+      characterData = importFromSillyTavern(data);
+    } else {
+      return res.status(400).json({ success: false, message: '不支持的导入格式' });
+    }
+    
+    if (gameId) characterData.gameId = gameId;
+    
+    const character = new Character(characterData);
+    await character.save();
+    
+    res.json({
+      success: true,
+      message: '角色导入成功',
+      data: { id: character._id, name: character.name }
+    });
+  } catch (error) {
+    console.error('导入角色失败:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+/**
+ * GET /api/characters/:id/export
+ * 导出角色
+ */
+router.get('/:id/export', checkMongoDB, async (req, res) => {
+  try {
+    const Character = getCharacterModel();
+    const { format } = req.query;
+    
+    const character = await Character.findById(req.params.id);
+    if (!character) {
+      return res.status(404).json({ success: false, message: '角色不存在' });
+    }
+    
+    let exportData;
+    if (format === 'sillytavern') {
+      exportData = character.toSillyTavern ? character.toSillyTavern() : convertToSillyTavern(character);
+    } else {
+      exportData = character.toObject ? character.toObject() : character;
+    }
+    
+    res.json({
+      success: true,
+      format: format || 'native',
+      data: exportData
+    });
+  } catch (error) {
+    console.error('导出角色失败:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// ========== 世界书关联 ==========
+
+/**
+ * POST /api/characters/:id/lorebook/link
+ * 关联世界书条目
+ */
+router.post('/:id/lorebook/link', checkMongoDB, async (req, res) => {
+  try {
+    const Character = getCharacterModel();
+    const { entryIds, mode } = req.body;
+    
+    const character = await Character.findById(req.params.id);
+    if (!character) {
+      return res.status(404).json({ success: false, message: '角色不存在' });
+    }
+    
+    // 更新关联
+    if (entryIds) {
+      character.lorebook.linkedEntryIds = entryIds.map(id => 
+        mongoose.Types.ObjectId.isValid(id) ? new mongoose.Types.ObjectId(id) : id
+      );
+    }
+    if (mode) {
+      character.lorebook.linkMode = mode;
+    }
+    
+    await character.save();
+    
+    res.json({
+      success: true,
+      message: '世界书关联已更新',
+      data: {
+        linkMode: character.lorebook.linkMode,
+        linkedCount: character.lorebook.linkedEntryIds.length
+      }
+    });
+  } catch (error) {
+    console.error('关联世界书失败:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+/**
+ * GET /api/characters/:id/lorebook
+ * 获取角色的世界书内容
+ */
+router.get('/:id/lorebook', checkMongoDB, async (req, res) => {
+  try {
+    const Character = getCharacterModel();
+    const character = await Character.findById(req.params.id);
+    
+    if (!character) {
+      return res.status(404).json({ success: false, message: '角色不存在' });
+    }
+    
+    res.json({
+      success: true,
+      data: {
+        entries: character.lorebook.entries,
+        linkMode: character.lorebook.linkMode,
+        linkedEntryIds: character.lorebook.linkedEntryIds
+      }
+    });
+  } catch (error) {
+    console.error('获取世界书失败:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// ========== 辅助函数 ==========
+
+/**
+ * 确保数据符合V2结构
+ */
+function ensureV2Structure(data) {
+  // 如果已经是V2结构，直接返回
+  if (data.core && data.visual) {
+    return {
+      ...data,
+      meta: {
+        ...data.meta,
+        updatedAt: new Date()
+      }
+    };
+  }
+  
+  // 从V1迁移
+  return migrateV1ToV2(data);
+}
+
+/**
+ * V1到V2迁移
+ */
+function migrateV1ToV2(v1Data) {
+  const now = new Date();
+  
+  return {
+    name: v1Data.name || '未命名角色',
+    visual: {
+      avatar: v1Data.image || v1Data.avatar || '',
+      cover: '',
+      color: v1Data.color || '#8a6d3b',
+      emotionCGs: {}
+    },
+    core: {
+      description: [v1Data.appearance, v1Data.physique, v1Data.special]
+        .filter(Boolean).join('\n\n'),
+      personality: v1Data.personality || '',
+      scenario: v1Data.background || '',
+      firstMessage: v1Data.firstMessage || '',
+      worldConnection: { faction: '', location: '' }
+    },
+    activation: {
+      keys: v1Data.keys || [],
+      priority: v1Data.priority || 100,
+      enabled: v1Data.enabled !== false
+    },
+    examples: { style: '', dialogues: [] },
+    lorebook: { entries: [], linkMode: 'MANUAL', linkedEntryIds: [] },
+    injection: {
+      characterNote: { content: '', depth: 0, frequency: 1, role: 'system' },
+      postHistory: { content: '', enabled: false }
+    },
+    relationship: {
+      favor: v1Data.favor || 50,
+      trust: v1Data.trust || 50,
+      mood: v1Data.mood || '平静'
+    },
+    meta: {
+      description: '',
+      tags: [],
+      creator: '',
+      version: '2.0.0',
+      createdAt: v1Data.createdAt || now,
+      updatedAt: now
+    },
+    gameId: v1Data.gameId || null,
+    _legacy: {
+      appearance: v1Data.appearance || '',
+      personality: v1Data.personality || '',
+      physique: v1Data.physique || '',
+      background: v1Data.background || '',
+      special: v1Data.special || '',
+      prompt: v1Data.prompt || '',
+      image: v1Data.image || '',
+      imageFit: v1Data.imageFit || 'cover',
+      color: v1Data.color || '#999999',
+      keys: v1Data.keys || [],
+      priority: v1Data.priority || 100,
+      enabled: v1Data.enabled !== false
+    }
+  };
+}
+
+/**
+ * 从SillyTavern格式导入
+ */
+function importFromSillyTavern(data) {
+  return {
+    name: data.name,
+    visual: {
+      avatar: '',
+      color: '#8a6d3b',
+      emotionCGs: {}
+    },
+    core: {
+      description: data.description || '',
+      personality: data.personality || '',
+      scenario: data.scenario || '',
+      firstMessage: data.first_mes || '',
+      worldConnection: { faction: '', location: '' }
+    },
+    activation: { keys: [], priority: 100, enabled: true },
+    examples: {
+      style: '',
+      dialogues: parseSillyTavernExamples(data.mes_example)
+    },
+    lorebook: { entries: [], linkMode: 'MANUAL', linkedEntryIds: [] },
+    injection: {
+      characterNote: { 
+        content: data.creatorcomment || '', 
+        depth: 0, 
+        frequency: 1, 
+        role: 'system' 
+      },
+      postHistory: { content: '', enabled: false }
+    },
+    relationship: { favor: 50, trust: 50, mood: '平静' },
+    meta: {
+      description: '',
+      tags: data.tags || [],
+      creator: data.creator || '',
+      version: data.character_version || '2.0.0',
+      createdAt: new Date(),
+      updatedAt: new Date()
+    },
+    gameId: null
+  };
+}
+
+/**
+ * 解析SillyTavern示例对话
+ */
+function parseSillyTavernExamples(exampleText) {
+  if (!exampleText) return [];
+  
+  const dialogues = [];
+  const parts = exampleText.split('<START>');
+  
+  for (const part of parts) {
+    if (!part.trim()) continue;
+    
+    const lines = part.trim().split('\n');
+    let userMsg = '';
+    let charMsg = '';
+    
+    for (const line of lines) {
+      if (line.startsWith('{{user}}:')) {
+        userMsg = line.replace('{{user}}:', '').trim();
+      } else if (line.startsWith('{{char}}:')) {
+        charMsg = line.replace('{{char}}:', '').trim();
+      }
+    }
+    
+    if (userMsg || charMsg) {
+      dialogues.push({ user: userMsg, character: charMsg, annotation: '' });
+    }
+  }
+  
+  return dialogues;
+}
+
+/**
+ * 转换为SillyTavern格式
+ */
+function convertToSillyTavern(character) {
+  return {
+    name: character.name,
+    description: character.core?.description || '',
+    personality: character.core?.personality || '',
+    scenario: character.core?.scenario || '',
+    first_mes: character.core?.firstMessage || '',
+    mes_example: character.examples?.dialogues?.map(d => 
+      `<START>\n{{user}}: ${d.user}\n{{char}}: ${d.character}`
+    ).join('\n') || '',
+    creatorcomment: character.injection?.characterNote?.content || '',
+    tags: character.meta?.tags || [],
+    creator: character.meta?.creator || '',
+    character_version: character.meta?.version || '2.0.0'
+  };
+}
 
 module.exports = router;

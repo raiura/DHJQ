@@ -994,29 +994,146 @@
                     </div>
                 </div>
 
-                <!-- 角色设定 -->
+                <!-- 角色设定 (V2增强) -->
                 <div style="background: rgba(138, 109, 59, 0.1); border-radius: 12px; padding: 20px; margin-bottom: 24px;">
                     <h4 style="color: var(--primary-light); margin-bottom: 16px; font-size: 16px;">🎨 角色设定</h4>
-                    <div class="form-group">
-                        <label class="form-label">外貌特征</label>
-                        <textarea class="form-textarea" id="charAppearance" rows="3" placeholder="一头乌黑的长发，皮肤白皙，身穿青色长袍..."></textarea>
+                    
+                    <!-- 标签页导航 -->
+                    <div style="display: flex; gap: 4px; margin-bottom: 16px; border-bottom: 1px solid var(--border); padding-bottom: 8px;">
+                        <button type="button" class="btn btn-sm char-tab-btn active" data-tab="basic" onclick="switchCharTab('basic')">基础设定</button>
+                        <button type="button" class="btn btn-sm char-tab-btn" data-tab="examples" onclick="switchCharTab('examples')">示例对话</button>
+                        <button type="button" class="btn btn-sm char-tab-btn" data-tab="lorebook" onclick="switchCharTab('lorebook')">世界书</button>
+                        <button type="button" class="btn btn-sm char-tab-btn" data-tab="injection" onclick="switchCharTab('injection')">深度注入</button>
                     </div>
-                    <div class="form-group">
-                        <label class="form-label">性格特点</label>
-                        <textarea class="form-textarea" id="charPersonality" rows="3" placeholder="温柔善良，有耐心，遇事冷静..."></textarea>
+                    
+                    <!-- 基础设定面板 -->
+                    <div id="charTab-basic" class="char-tab-panel">
+                        <div class="form-group">
+                            <label class="form-label">综合描述</label>
+                            <textarea class="form-textarea" id="charDescription" rows="4" placeholder="角色的整体描述，包括外貌、穿着、气质等..."></textarea>
+                            <p class="form-hint">替代原来的外貌/体质/特殊分开填写，更加自由</p>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">性格特点</label>
+                            <textarea class="form-textarea" id="charPersonality" rows="3" placeholder="温柔善良，有耐心，遇事冷静..."></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">身世背景</label>
+                            <textarea class="form-textarea" id="charScenario" rows="3" placeholder="出身于落星谷的剑修，父母早逝..."></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">开场白</label>
+                            <textarea class="form-textarea" id="charFirstMessage" rows="2" placeholder="角色第一次出现时的开场白..."></textarea>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                            <div class="form-group">
+                                <label class="form-label">所属势力</label>
+                                <input type="text" class="form-input" id="charFaction" placeholder="例如：青云宗">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">当前位置</label>
+                                <input type="text" class="form-input" id="charLocation" placeholder="例如：藏经阁">
+                            </div>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label class="form-label">身世背景</label>
-                        <textarea class="form-textarea" id="charBackground" rows="3" placeholder="出身于落星谷的剑修，父母早逝..."></textarea>
+                    
+                    <!-- 示例对话面板 -->
+                    <div id="charTab-examples" class="char-tab-panel" style="display: none;">
+                        <div class="form-group">
+                            <label class="form-label">说话风格描述</label>
+                            <textarea class="form-textarea" id="charExampleStyle" rows="2" placeholder="描述角色的说话风格，如：语气冷淡，用词简洁..."></textarea>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                            <label class="form-label" style="margin: 0;">示例对话</label>
+                            <button type="button" class="btn btn-sm btn-primary" onclick="addExampleDialogue()">+ 添加对话</button>
+                        </div>
+                        <div id="exampleDialoguesList" style="display: flex; flex-direction: column; gap: 12px;">
+                            <div class="empty-state" style="padding: 24px;">
+                                <div class="empty-icon">💬</div>
+                                <p>暂无示例对话</p>
+                                <p style="font-size: 13px; margin-top: 8px;">添加示例帮助AI学习角色说话方式</p>
+                            </div>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label class="form-label">体质/修为</label>
-                        <textarea class="form-textarea" id="charPhysique" rows="3" placeholder="冰系天灵根，金丹期修为..."></textarea>
+                    
+                    <!-- 世界书面板 -->
+                    <div id="charTab-lorebook" class="char-tab-panel" style="display: none;">
+                        <div class="form-group">
+                            <label class="form-label">世界书关联模式</label>
+                            <select class="form-select" id="charLinkMode" onchange="updateLinkModeDisplay()">
+                                <option value="MANUAL">手动 - 完全由你选择关联条目</option>
+                                <option value="SUGGESTED">建议 - 系统推荐，你确认后关联</option>
+                                <option value="AUTO">自动 - 自动关联匹配的条目</option>
+                                <option value="DISABLED">禁用 - 不关联任何条目</option>
+                            </select>
+                            <p class="form-hint" id="linkModeHint">手动模式：完全由你控制关联哪些世界书条目</p>
+                        </div>
+                        
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin: 16px 0 12px;">
+                            <label class="form-label" style="margin: 0;">角色专属知识</label>
+                            <button type="button" class="btn btn-sm btn-primary" onclick="addLorebookEntry()">+ 添加条目</button>
+                        </div>
+                        <div id="charLorebookList" style="display: flex; flex-direction: column; gap: 12px;">
+                            <div class="empty-state" style="padding: 24px;">
+                                <div class="empty-icon">📚</div>
+                                <p>暂无专属知识</p>
+                                <p style="font-size: 13px; margin-top: 8px;">添加只有该角色知道的信息</p>
+                            </div>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label class="form-label">特殊能力/秘密</label>
-                        <textarea class="form-textarea" id="charSpecial" rows="3" placeholder="身上有一块神秘的玉佩，似乎与某个上古传说有关..."></textarea>
+                    
+                    <!-- 深度注入面板 -->
+                    <div id="charTab-injection" class="char-tab-panel" style="display: none;">
+                        <div style="background: linear-gradient(135deg, rgba(79, 70, 229, 0.1), rgba(124, 58, 237, 0.1)); border: 1px solid rgba(79, 70, 229, 0.3); border-radius: 12px; padding: 20px; margin-bottom: 16px;">
+                            <h5 style="color: #818cf8; margin-bottom: 12px; font-size: 14px;">📝 Character Note (角色笔记)</h5>
+                            <div class="form-group">
+                                <label class="form-label">笔记内容</label>
+                                <textarea class="form-textarea" id="charNoteContent" rows="3" placeholder="需要持续提醒AI的角色信息..."></textarea>
+                                <p class="form-hint">这部分内容会以指定频率注入到对话中</p>
+                            </div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
+                                <div class="form-group">
+                                    <label class="form-label">注入深度</label>
+                                    <input type="number" class="form-input" id="charNoteDepth" value="0" min="0" max="10">
+                                    <p class="form-hint">0=最新消息</p>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">触发频率</label>
+                                    <input type="number" class="form-input" id="charNoteFrequency" value="1" min="1" max="10">
+                                    <p class="form-hint">每N轮触发</p>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">角色</label>
+                                    <select class="form-select" id="charNoteRole">
+                                        <option value="system">System</option>
+                                        <option value="user">User</option>
+                                        <option value="assistant">Assistant</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div style="background: rgba(138, 109, 59, 0.05); border: 1px solid var(--border); border-radius: 12px; padding: 20px;">
+                            <h5 style="color: var(--primary-light); margin-bottom: 12px; font-size: 14px;">📌 Post-History Instructions</h5>
+                            <div class="form-group">
+                                <label class="form-label">
+                                    <input type="checkbox" id="charPostHistoryEnabled" style="margin-right: 8px;">
+                                    启用后置指令
+                                </label>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">指令内容</label>
+                                <textarea class="form-textarea" id="charPostHistory" rows="3" placeholder="在对话历史后添加的指令..."></textarea>
+                                <p class="form-hint">通常用于约束AI的输出格式或行为</p>
+                            </div>
+                        </div>
                     </div>
+                    
+                    <!-- 兼容旧字段（隐藏） -->
+                    <input type="hidden" id="charAppearance">
+                    <input type="hidden" id="charPhysique">
+                    <input type="hidden" id="charSpecial">
+                    <input type="hidden" id="charBackground">
                 </div>
 
                 <!-- 预览 -->
@@ -1128,5 +1245,7 @@
     <script src="public/js/components/worldbookManagerUI.js"></script>
     
     <script src="public/js/settings/settings-main.js"></script>
+    <!-- Character Card V2.0 Editor Extension -->
+    <script src="public/js/settings/character-v2-editor.js"></script>
 </body>
 </html>
