@@ -629,15 +629,41 @@
                 </div>
             </section>
 
-            <!-- ==================== 图库管理 ==================== -->
+            <!-- ==================== 图库管理 V2.0 ==================== -->
             <section class="page-section" id="page-gallery">
                 <div class="page-header">
-                    <h1 class="page-title">🖼️ 图库管理</h1>
+                    <h1 class="page-title">🖼️ 图库管理 V2.0</h1>
                     <div class="page-actions">
-                        <button class="btn btn-primary" onclick="uploadGalleryImage()">+ 上传图片</button>
+                        <button class="btn btn-secondary" onclick="uploadGalleryImage()">📤 旧版上传</button>
+                        <button class="btn btn-primary" onclick="openGalleryV2Modal()">+ 添加CG</button>
                     </div>
                 </div>
+                
+                <!-- V2 图库网格 -->
                 <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">🎨 角色CG拓展库</h3>
+                        <p class="form-hint">提示词驱动的智能CG系统，根据场景自动匹配</p>
+                    </div>
+                    <div class="card-body">
+                        <div id="galleryV2List" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px;">
+                            <!-- 动态生成 -->
+                            <div class="empty-state" style="padding: 40px; text-align: center; grid-column: 1/-1;">
+                                <div class="empty-icon" style="font-size: 48px;">🖼️</div>
+                                <p>暂无CG图片</p>
+                                <p style="font-size: 13px; color: var(--text-secondary); margin-top: 8px;">
+                                    点击"添加CG"创建你的第一个角色CG
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 旧版图库 -->
+                <div class="card" style="margin-top: 20px; opacity: 0.7;">
+                    <div class="card-header">
+                        <h3 class="card-title">📁 旧版图库（兼容）</h3>
+                    </div>
                     <div class="card-body">
                         <div class="gallery-grid" id="galleryGrid">
                             <!-- 动态生成 -->
@@ -1152,7 +1178,195 @@
         </div>
     </div>
 
-    <!-- 图库图片模态框 -->
+    <!-- ==================== 图库V2 模态框 ==================== -->
+    <div class="modal-overlay" id="galleryV2Modal" onclick="if(event.target===this)closeGalleryV2Modal()" style="display: none;">
+        <div class="modal modal-lg" onclick="event.stopPropagation()" style="max-width: 900px; max-height: 90vh; overflow-y: auto;">
+            <div class="modal-header">
+                <h3 class="modal-title" id="galleryV2ModalTitle">➕ 添加CG</h3>
+                <button class="modal-close" onclick="closeGalleryV2Modal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="galleryV2Form">
+                    <!-- 基础信息 -->
+                    <div style="background: rgba(138, 109, 59, 0.1); border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+                        <h4 style="color: var(--primary-light); margin-bottom: 16px; font-size: 14px;">📝 基础信息</h4>
+                        <div class="form-group">
+                            <label class="form-label">CG名称 *</label>
+                            <input type="text" class="form-input" id="g2_name" placeholder="例如：雪地战斗-拔剑">
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                            <div class="form-group">
+                                <label class="form-label">图片URL *</label>
+                                <input type="text" class="form-input" id="g2_url" placeholder="https://...">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">缩略图URL（可选）</label>
+                                <input type="text" class="form-input" id="g2_thumbnail" placeholder="https://...">
+                            </div>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px;">
+                            <div class="form-group">
+                                <label class="form-label">CG类型</label>
+                                <select class="form-select" id="g2_type">
+                                    <option value="character_extended">✨ 角色拓展CG</option>
+                                    <option value="background">🌄 背景图</option>
+                                    <option value="character_default">👤 默认立绘</option>
+                                    <option value="scene_event">🎭 场景事件</option>
+                                    <option value="special_action">⚔️ 特殊动作</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">关联角色</label>
+                                <select class="form-select" id="g2_characterId">
+                                    <option value="">🌐 通用CG（不绑定角色）</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group" style="margin-top: 16px;">
+                            <label class="form-label">CG描述（给AI看的）</label>
+                            <textarea class="form-textarea" id="g2_description" rows="2" placeholder="描述这个CG的内容，帮助AI理解何时使用..."></textarea>
+                        </div>
+                    </div>
+
+                    <!-- 触发条件配置 -->
+                    <div style="background: rgba(79, 70, 229, 0.1); border: 1px solid rgba(79, 70, 229, 0.3); border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+                        <h4 style="color: #818cf8; margin-bottom: 16px; font-size: 14px;">🎯 触发条件配置（核心）</h4>
+                        
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                            <div class="form-group">
+                                <label class="form-label">触发模式</label>
+                                <select class="form-select" id="g2_triggerMode">
+                                    <option value="tag_match">🏷️ 标签匹配</option>
+                                    <option value="prompt_similarity">🧠 语义相似度</option>
+                                    <option value="ai_intent_recognition">🤖 AI意图识别</option>
+                                </select>
+                            </div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                                <div class="form-group">
+                                    <label class="form-label">优先级</label>
+                                    <input type="number" class="form-input" id="g2_priority" value="100" min="0" max="1000">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">触发概率</label>
+                                    <input type="number" class="form-input" id="g2_probability" value="1.0" min="0" max="1" step="0.1">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="margin-top: 16px;">
+                            <div class="form-group">
+                                <label class="form-label">场景关键词（逗号分隔）</label>
+                                <input type="text" class="form-input" id="g2_sceneKeywords" placeholder="例如：雪地, 战斗, 剑, 寒冷">
+                            </div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 12px;">
+                                <div class="form-group">
+                                    <label class="form-label">情绪标签</label>
+                                    <input type="text" class="form-input" id="g2_emotions" placeholder="愤怒, 专注, 决绝">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">动作标签</label>
+                                    <input type="text" class="form-input" id="g2_actions" placeholder="拔剑, 攻击, 格挡">
+                                </div>
+                            </div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 12px;">
+                                <div class="form-group">
+                                    <label class="form-label">关系状态</label>
+                                    <input type="text" class="form-input" id="g2_relationshipStates" placeholder="敌对, 竞争, 热恋">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">特殊标记</label>
+                                    <input type="text" class="form-input" id="g2_specialTags" placeholder="R18, 血腥, 浪漫">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 显示设置 -->
+                    <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+                        <h4 style="color: #34d399; margin-bottom: 16px; font-size: 14px;">🎬 显示设置</h4>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;">
+                            <div class="form-group">
+                                <label class="form-label">显示位置</label>
+                                <select class="form-select" id="g2_displayMode">
+                                    <option value="character_center">角色中央</option>
+                                    <option value="character_left">角色左侧</option>
+                                    <option value="character_right">角色右侧</option>
+                                    <option value="fullscreen">全屏</option>
+                                    <option value="overlay">叠加层</option>
+                                    <option value="split_screen">分屏</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">进入动画</label>
+                                <select class="form-select" id="g2_animationEnter">
+                                    <option value="fade">淡入</option>
+                                    <option value="slide">滑动</option>
+                                    <option value="zoom">放大</option>
+                                    <option value="none">无</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">持续时间(ms)</label>
+                                <input type="number" class="form-input" id="g2_duration" value="500" step="100">
+                            </div>
+                        </div>
+                        <div class="form-group" style="margin-top: 12px;">
+                            <label class="form-label">图层顺序</label>
+                            <input type="number" class="form-input" id="g2_zIndex" value="10" style="width: 100px;">
+                        </div>
+                    </div>
+
+                    <!-- 约束条件 -->
+                    <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+                        <h4 style="color: #f87171; margin-bottom: 16px; font-size: 14px;">🔒 约束条件</h4>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                            <div class="form-group">
+                                <label class="form-label">最低好感度</label>
+                                <input type="number" class="form-input" id="g2_minFavor" value="0" min="0" max="100">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">最高好感度</label>
+                                <input type="number" class="form-input" id="g2_maxFavor" value="100" min="0" max="100">
+                            </div>
+                        </div>
+                        <div style="margin-top: 12px;">
+                            <label class="form-label" style="display: flex; align-items: center; gap: 8px;">
+                                <input type="checkbox" id="g2_cooldownEnabled" style="width: auto;">
+                                启用冷却时间
+                            </label>
+                            <input type="number" class="form-input" id="g2_cooldownDuration" value="30" style="width: 150px; margin-top: 8px;" placeholder="秒">
+                        </div>
+                    </div>
+
+                    <!-- 测试区域（核心功能） -->
+                    <div style="background: linear-gradient(135deg, rgba(138, 109, 59, 0.15), rgba(79, 70, 229, 0.15)); border: 2px solid var(--primary); border-radius: 12px; padding: 20px;">
+                        <h4 style="color: var(--primary-light); margin-bottom: 16px; font-size: 14px;">🧪 测试匹配效果（推荐）</h4>
+                        <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 12px;">
+                            输入场景描述，测试这个CG是否能被正确触发。每行一个测试场景。
+                        </p>
+                        <div class="form-group">
+                            <textarea class="form-textarea" id="g2_testScenes" rows="3" placeholder="例如：
+雪地里，她拔出长剑，眼神中充满愤怒
+两人相拥在星空下，气氛浪漫
+战斗进入白热化，她身受重伤"></textarea>
+                        </div>
+                        <button type="button" class="btn btn-secondary" onclick="testGalleryV2Match()" style="width: 100%;">
+                            🧪 测试匹配效果
+                        </button>
+                        <div id="galleryV2TestResults" style="margin-top: 16px; display: none;">
+                            <!-- 测试结果 -->
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeGalleryV2Modal()">取消</button>
+                <button class="btn btn-primary" onclick="saveGalleryV2()">💾 保存CG</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 图库图片模态框（旧版） -->
     <div class="modal-overlay" id="galleryModalOverlay" onclick="closeGalleryModal()" style="display: none;">
         <div class="modal" id="galleryModal" onclick="event.stopPropagation()">
             <div class="modal-header">
@@ -1247,5 +1461,7 @@
     <script src="public/js/settings/settings-main.js"></script>
     <!-- Character Card V2.0 Editor Extension -->
     <script src="public/js/settings/character-v2-editor.js"></script>
+    <!-- Gallery V2.0 Editor -->
+    <script src="public/js/settings/gallery-v2-editor.js"></script>
 </body>
 </html>

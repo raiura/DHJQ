@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <title>Gallery V2 API 测试</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; max-width: 1200px; margin: 0 auto; }
+    h1 { color: #333; }
+    .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 8px; }
+    .test-section h3 { margin-top: 0; color: #666; }
+    button { padding: 10px 20px; margin: 5px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 4px; }
+    button:hover { background: #0056b3; }
+    pre { background: #f5f5f5; padding: 15px; border-radius: 4px; overflow-x: auto; max-height: 400px; }
+    .success { color: green; }
+    .error { color: red; }
+    input, textarea { padding: 8px; margin: 5px; border: 1px solid #ddd; border-radius: 4px; width: 300px; }
+    textarea { height: 80px; }
+  </style>
+</head>
+<body>
+  <h1>🎨 Gallery V2 API 测试面板</h1>
+  
+  <div class="test-section">
+    <h3>1. 获取CG列表</h3>
+    <button onclick="listCGs()">GET /api/gallery/v2</button>
+  </div>
+
+  <div class="test-section">
+    <h3>2. 智能匹配CG</h3>
+    <p>
+      <input id="scene" type="text" placeholder="场景描述" value="雪地里进行激烈的战斗"><br>
+      <input id="emotion" type="text" placeholder="情绪" value="愤怒"><br>
+      <input id="action" type="text" placeholder="动作" value="拔剑"><br>
+      <input id="favor" type="number" placeholder="好感度" value="80"><br>
+    </p>
+    <button onclick="matchCG()">POST /api/gallery/v2/match</button>
+  </div>
+
+  <div class="test-section">
+    <h3>3. 批量测试匹配</h3>
+    <button onclick="batchTest()">POST /api/gallery/v2/test-match</button>
+  </div>
+
+  <div class="test-section">
+    <h3>测试结果</h3>
+    <pre id="result">点击上方按钮进行测试...</pre>
+  </div>
+
+  <script>
+    const API_BASE = 'http://localhost:3000/api';
+    const GAME_ID = 'demo_game_001';
+
+    async function listCGs() {
+      try {
+        const res = await fetch(`${API_BASE}/gallery/v2?gameId=${GAME_ID}`);
+        const data = await res.json();
+        showResult('GET /api/gallery/v2', data);
+      } catch (e) {
+        showError(e);
+      }
+    }
+
+    async function matchCG() {
+      const context = {
+        scene: document.getElementById('scene').value,
+        emotion: document.getElementById('emotion').value,
+        action: document.getElementById('action').value,
+        relationshipState: { favor: parseInt(document.getElementById('favor').value) }
+      };
+      
+      try {
+        const res = await fetch(`${API_BASE}/gallery/v2/match`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ gameId: GAME_ID, context })
+        });
+        const data = await res.json();
+        showResult('POST /api/gallery/v2/match', { context, result: data });
+      } catch (e) {
+        showError(e);
+      }
+    }
+
+    async function batchTest() {
+      const scenes = [
+        { name: '雪地战斗', scene: '雪地里进行激烈的战斗', emotion: '愤怒', action: '拔剑' },
+        { name: '温泉放松', scene: '在温泉中放松身心', emotion: '开心', action: '' },
+        { name: '星空浪漫', scene: '在星空下浪漫约会', emotion: '害羞', action: '' }
+      ];
+      
+      try {
+        const res = await fetch(`${API_BASE}/gallery/v2/test-match`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ gameId: GAME_ID, scenes })
+        });
+        const data = await res.json();
+        showResult('POST /api/gallery/v2/test-match', data);
+      } catch (e) {
+        showError(e);
+      }
+    }
+
+    function showResult(title, data) {
+      document.getElementById('result').innerHTML = 
+        `<strong class="success">✅ ${title}</strong>\n\n` + 
+        JSON.stringify(data, null, 2);
+    }
+
+    function showError(e) {
+      document.getElementById('result').innerHTML = 
+        `<strong class="error">❌ 错误: ${e.message}</strong>`;
+    }
+  </script>
+</body>
+</html>

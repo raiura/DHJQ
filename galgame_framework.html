@@ -3114,6 +3114,37 @@
                         const emotionResult = processAIResponseWithEmotion(characterId, rawContent);
                         // 使用解析后的纯文本更新内容
                         part.content = emotionResult.cleanText;
+                        
+                        // 🖼️ CG系统自动切换（V2.0）
+                        if (window.CGSystem) {
+                            const charData = characterConfig[characterId];
+                            const charId = charData?._id || charData?.id;
+                            
+                            if (charId) {
+                                // 构建场景上下文
+                                const cgContext = {
+                                    scene: part.content.substring(0, 200), // 取前200字
+                                    emotion: emotionResult.detectedEmotion,
+                                    action: extractActionFromText(part.content)
+                                };
+                                
+                                // 获取关系状态
+                                const relationshipState = {
+                                    favor: charData.favor || charData.relationship?.favor || 50,
+                                    trust: charData.trust || charData.relationship?.trust || 50,
+                                    mood: charData.mood || charData.relationship?.mood || '平静'
+                                };
+                                
+                                // 调用CG自动匹配（异步，不阻塞显示）
+                                CGSystem.handleAIResponse(rawContent, charId, cgContext)
+                                    .then(result => {
+                                        if (result?.switched) {
+                                            console.log(`[CG] 已切换到: ${result.cg?.name}`);
+                                        }
+                                    })
+                                    .catch(err => console.error('[CG] 切换失败:', err));
+                            }
+                        }
                     }
                     
                     // 添加到聊天历史
@@ -3188,6 +3219,31 @@
                 return false;
             }
         }
+        
+        // 从文本中提取动作关键词（用于CG匹配）
+        function extractActionFromText(text) {
+            if (!text) return '';
+            
+            // 常见动作关键词库
+            const actionKeywords = [
+                '拔剑', '攻击', '战斗', '格挡', '闪避', '冲锋',
+                '拥抱', '接吻', '亲吻', '牵手', '抚摸', '依偎',
+                '哭泣', '流泪', '微笑', '大笑', '怒视', '瞪眼',
+                '下跪', '鞠躬', '挥手', '点头', '摇头', '转身',
+                '坐下', '站立', '躺', '跑', '走', '跳',
+                '喝酒', '喝茶', '吃饭', '喝茶', '修炼', '打坐'
+            ];
+            
+            const lowerText = text.toLowerCase();
+            for (const action of actionKeywords) {
+                if (lowerText.includes(action)) {
+                    return action;
+                }
+            }
+            
+            return '';
+        }
+        
         // 初始化角色
         async function initCharacters(gameId) {
             console.log('开始初始化角色...', gameId ? `(游戏ID: ${gameId})` : '(无游戏ID，获取全局角色)');
@@ -3641,6 +3697,11 @@
             
             // 初始化世界书系统
             await initWorldbookSystem();
+            
+            // 初始化CG系统V2.0
+            if (window.CGSystem) {
+                await CGSystem.init(currentWorld?._id);
+            }
             
             // 如果用户选择了角色，将其信息添加到开场白
             if (userCharacter) {
@@ -4140,6 +4201,9 @@
     
     <!-- Character Card V2.0 Runtime -->
     <script src="public/js/game/character-v2-runtime.js"></script>
+    
+    <!-- CG System V2.0 -->
+    <script src="public/js/game/cg-system.js"></script>
     
     <!-- 情感提取系统 -->
     <script src="emotion-system.js"></script>

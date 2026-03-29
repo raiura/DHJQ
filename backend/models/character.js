@@ -37,15 +37,10 @@ const characterSchemaDefinition = {
   
   // ===== 核心设定 =====
   core: {
-    // 角色综合描述（原appearance + physique + special的整合）
     description: { type: String, default: '' },
-    // 性格特点
     personality: { type: String, default: '' },
-    // 当前处境/背景
     scenario: { type: String, default: '' },
-    // 开场白
     firstMessage: { type: String, default: '' },
-    // 与世界观的连接
     worldConnection: {
       faction: { type: String, default: '' },
       location: { type: String, default: '' }
@@ -54,19 +49,14 @@ const characterSchemaDefinition = {
   
   // ===== 激活机制 =====
   activation: {
-    // 触发关键词
     keys: { type: [String], default: [] },
-    // 优先级
     priority: { type: Number, default: 100 },
-    // 是否启用
     enabled: { type: Boolean, default: true }
   },
   
   // ===== 示例对话 =====
   examples: {
-    // 对话风格描述
     style: { type: String, default: '' },
-    // 示例对话数组
     dialogues: [{
       user: { type: String, default: '' },
       character: { type: String, default: '' },
@@ -76,7 +66,6 @@ const characterSchemaDefinition = {
   
   // ===== 专属世界书 =====
   lorebook: {
-    // 角色专属世界书条目
     entries: [{
       name: { type: String, required: true },
       keys: { type: [String], default: [] },
@@ -84,22 +73,18 @@ const characterSchemaDefinition = {
       priority: { type: Number, default: 100 },
       enabled: { type: Boolean, default: true }
     }],
-    // 关联模式: MANUAL(手动) / SUGGESTED(建议) / AUTO(自动) / DISABLED(禁用)
     linkMode: { type: String, default: 'MANUAL', enum: ['MANUAL', 'SUGGESTED', 'AUTO', 'DISABLED'] },
-    // 关联的世界书条目ID（全局世界书）
     linkedEntryIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Worldbook' }]
   },
   
   // ===== 深度注入配置 =====
   injection: {
-    // Character Note (角色笔记)
     characterNote: {
       content: { type: String, default: '' },
-      depth: { type: Number, default: 0 },      // 注入深度（消息位置）
-      frequency: { type: Number, default: 1 },  // 触发频率（每N轮）
+      depth: { type: Number, default: 0 },
+      frequency: { type: Number, default: 1 },
       role: { type: String, default: 'system', enum: ['system', 'user', 'assistant'] }
     },
-    // Post-History Instructions
     postHistory: {
       content: { type: String, default: '' },
       enabled: { type: Boolean, default: false }
@@ -126,11 +111,10 @@ const characterSchemaDefinition = {
   // ===== 游戏关联 =====
   gameId: {
     type: String,
-    default: null  // null 表示全局角色
+    default: null
   },
   
-  // ===== 向后兼容字段（只读，用于数据迁移） =====
-  // 这些字段不再使用，保留是为了数据迁移
+  // ===== 向后兼容字段（只读） =====
   _legacy: {
     appearance: { type: String, default: '' },
     personality: { type: String, default: '' },
@@ -147,181 +131,136 @@ const characterSchemaDefinition = {
   }
 };
 
-// ========== 实例方法 ==========
-
-/**
- * 构建用于AI的提示词
- */
-characterSchemaDefinition.methods.buildPrompt = function(userSettings = {}) {
-  const parts = [];
-  
-  // 系统层
-  parts.push(`【角色】${this.name}`);
-  
-  // 核心设定
-  if (this.core.description) {
-    parts.push(`\n【描述】\n${this.core.description}`);
-  }
-  if (this.core.personality) {
-    parts.push(`\n【性格】\n${this.core.personality}`);
-  }
-  if (this.core.scenario) {
-    parts.push(`\n【处境】\n${this.core.scenario}`);
-  }
-  
-  // 世界观连接
-  if (this.core.worldConnection.faction || this.core.worldConnection.location) {
-    parts.push(`\n【所属】${this.core.worldConnection.faction || '无'} | ${this.core.worldConnection.location || '未知地点'}`);
-  }
-  
-  // 关系状态
-  if (this.relationship) {
-    parts.push(`\n【关系】好感度:${this.relationship.favor}/100 | 信任度:${this.relationship.trust}/100 | 心情:${this.relationship.mood}`);
-  }
-  
-  // 示例对话风格
-  if (this.examples.style) {
-    parts.push(`\n【说话风格】\n${this.examples.style}`);
-  }
-  
-  return parts.join('\n');
-};
-
-/**
- * 获取激活的世界书内容
- */
-characterSchemaDefinition.methods.getActiveLorebook = function(context = {}) {
-  const { text, location } = context;
-  const activeEntries = [];
-  
-  // 检查角色专属世界书条目
-  this.lorebook.entries.forEach(entry => {
-    if (!entry.enabled) return;
+// ========== 实例方法定义 ==========
+const instanceMethods = {
+  buildPrompt(userSettings = {}) {
+    const parts = [];
+    parts.push(`【角色】${this.name}`);
     
-    // 检查关键词匹配
-    const isActivated = entry.keys.some(key => {
-      if (!key) return false;
-      return text?.includes(key) || location?.includes(key);
+    if (this.core?.description) {
+      parts.push(`\n【描述】\n${this.core.description}`);
+    }
+    if (this.core?.personality) {
+      parts.push(`\n【性格】\n${this.core.personality}`);
+    }
+    if (this.core?.scenario) {
+      parts.push(`\n【处境】\n${this.core.scenario}`);
+    }
+    if (this.core?.worldConnection?.faction || this.core?.worldConnection?.location) {
+      parts.push(`\n【所属】${this.core.worldConnection.faction || '无'} | ${this.core.worldConnection.location || '未知地点'}`);
+    }
+    if (this.relationship) {
+      parts.push(`\n【关系】好感度:${this.relationship.favor}/100 | 信任度:${this.relationship.trust}/100 | 心情:${this.relationship.mood}`);
+    }
+    if (this.examples?.style) {
+      parts.push(`\n【说话风格】\n${this.examples.style}`);
+    }
+    
+    return parts.join('\n');
+  },
+
+  getActiveLorebook(context = {}) {
+    const { text, location } = context;
+    const entries = [];
+    const checkText = (text || '') + ' ' + (location || '');
+    
+    this.lorebook?.entries?.forEach(entry => {
+      if (!entry.enabled) return;
+      const isMatch = entry.keys.some(key => key && checkText.toLowerCase().includes(key.toLowerCase()));
+      if (isMatch) entries.push(entry);
     });
     
-    if (isActivated) {
-      activeEntries.push(entry);
-    }
-  });
-  
-  // 按优先级排序
-  activeEntries.sort((a, b) => b.priority - a.priority);
-  
-  return activeEntries;
+    return entries.sort((a, b) => (b.priority || 100) - (a.priority || 100));
+  },
+
+  toSillyTavern() {
+    return {
+      name: this.name,
+      description: this.core?.description,
+      personality: this.core?.personality,
+      scenario: this.core?.scenario,
+      first_mes: this.core?.firstMessage,
+      mes_example: this.examples?.dialogues?.map(d => `<START>\n{{user}}: ${d.user}\n{{char}}: ${d.character}`).join('\n'),
+      creatorcomment: this.injection?.characterNote?.content,
+      tags: this.meta?.tags,
+      creator: this.meta?.creator,
+      character_version: this.meta?.version
+    };
+  }
 };
 
-/**
- * 导出为SillyTavern格式
- */
-characterSchemaDefinition.methods.toSillyTavern = function() {
-  return {
-    name: this.name,
-    description: this.core.description,
-    personality: this.core.personality,
-    scenario: this.core.scenario,
-    first_mes: this.core.firstMessage,
-    mes_example: this.examples.dialogues.map(d => 
-      `<START>\n{{user}}: ${d.user}\n{{char}}: ${d.character}`
-    ).join('\n'),
-    creatorcomment: this.injection.characterNote.content,
-    tags: this.meta.tags,
-    creator: this.meta.creator,
-    character_version: this.meta.version
-  };
-};
-
-// ========== 静态方法 ==========
-
-/**
- * 从V1数据迁移
- */
-characterSchemaDefinition.statics.migrateFromV1 = function(v1Data) {
-  const now = new Date();
-  
-  return {
-    name: v1Data.name || '未命名角色',
-    
-    visual: {
-      avatar: v1Data.image || v1Data.avatar || '',
-      color: v1Data.color || '#8a6d3b',
-      emotionCGs: {}
-    },
-    
-    core: {
-      description: [v1Data.appearance, v1Data.physique, v1Data.special]
-        .filter(Boolean).join('\n\n'),
-      personality: v1Data.personality || '',
-      scenario: v1Data.background || '',
-      firstMessage: v1Data.firstMessage || '',
-      worldConnection: { faction: '', location: '' }
-    },
-    
-    activation: {
-      keys: v1Data.keys || [],
-      priority: v1Data.priority || 100,
-      enabled: v1Data.enabled !== false
-    },
-    
-    examples: {
-      style: '',
-      dialogues: []
-    },
-    
-    lorebook: {
-      entries: [],
-      linkMode: 'MANUAL',
-      linkedEntryIds: []
-    },
-    
-    injection: {
-      characterNote: { content: '', depth: 0, frequency: 1, role: 'system' },
-      postHistory: { content: '', enabled: false }
-    },
-    
-    relationship: {
-      favor: v1Data.favor || 50,
-      trust: v1Data.trust || 50,
-      mood: v1Data.mood || '平静'
-    },
-    
-    meta: {
-      description: '',
-      tags: [],
-      creator: '',
-      version: '2.0.0',
-      createdAt: v1Data.createdAt || now,
-      updatedAt: now
-    },
-    
-    gameId: v1Data.gameId || null,
-    
-    // 保留旧数据用于参考
-    _legacy: {
-      appearance: v1Data.appearance || '',
-      personality: v1Data.personality || '',
-      physique: v1Data.physique || '',
-      background: v1Data.background || '',
-      special: v1Data.special || '',
-      prompt: v1Data.prompt || '',
-      image: v1Data.image || '',
-      imageFit: v1Data.imageFit || 'cover',
-      color: v1Data.color || '#999999',
-      keys: v1Data.keys || [],
-      priority: v1Data.priority || 100,
-      enabled: v1Data.enabled !== false
-    }
-  };
+// ========== 静态方法定义 ==========
+const staticMethods = {
+  migrateFromV1(v1Data) {
+    const now = new Date();
+    return {
+      name: v1Data.name || '未命名角色',
+      visual: {
+        avatar: v1Data.image || v1Data.avatar || '',
+        cover: '',
+        color: v1Data.color || '#8a6d3b',
+        emotionCGs: {}
+      },
+      core: {
+        description: [v1Data.appearance, v1Data.physique, v1Data.special].filter(Boolean).join('\n\n'),
+        personality: v1Data.personality || '',
+        scenario: v1Data.background || '',
+        firstMessage: v1Data.firstMessage || '',
+        worldConnection: { faction: '', location: '' }
+      },
+      activation: {
+        keys: v1Data.keys || [],
+        priority: v1Data.priority || 100,
+        enabled: v1Data.enabled !== false
+      },
+      examples: { style: '', dialogues: [] },
+      lorebook: { entries: [], linkMode: 'MANUAL', linkedEntryIds: [] },
+      injection: {
+        characterNote: { content: '', depth: 0, frequency: 1, role: 'system' },
+        postHistory: { content: '', enabled: false }
+      },
+      relationship: {
+        favor: v1Data.favor || 50,
+        trust: v1Data.trust || 50,
+        mood: v1Data.mood || '平静'
+      },
+      meta: {
+        description: '',
+        tags: [],
+        creator: '',
+        version: '2.0.0',
+        createdAt: v1Data.createdAt || now,
+        updatedAt: now
+      },
+      gameId: v1Data.gameId || null,
+      _legacy: {
+        appearance: v1Data.appearance || '',
+        personality: v1Data.personality || '',
+        physique: v1Data.physique || '',
+        background: v1Data.background || '',
+        special: v1Data.special || '',
+        prompt: v1Data.prompt || '',
+        image: v1Data.image || '',
+        imageFit: v1Data.imageFit || 'cover',
+        color: v1Data.color || '#999999',
+        keys: v1Data.keys || [],
+        priority: v1Data.priority || 100,
+        enabled: v1Data.enabled !== false
+      }
+    };
+  }
 };
 
 // ========== MongoDB模型创建 ==========
 
 if (!useMemoryStore) {
   const characterSchema = new mongoose.Schema(characterSchemaDefinition);
+  
+  // 添加实例方法
+  Object.assign(characterSchema.methods, instanceMethods);
+  
+  // 添加静态方法
+  Object.assign(characterSchema.statics, staticMethods);
   
   // 预保存钩子 - 更新updatedAt
   characterSchema.pre('save', function(next) {
@@ -339,8 +278,6 @@ if (!useMemoryStore) {
 
     async find(query = {}, options = {}) {
       let all = memoryStore.findAll(this.collectionName);
-      
-      // 转换查询条件以适应新结构
       const adaptedQuery = this._adaptQuery(query);
       
       if (Object.keys(adaptedQuery).length > 0) {
@@ -368,7 +305,6 @@ if (!useMemoryStore) {
     }
 
     async create(data) {
-      // 确保数据符合V2结构
       const v2Data = this._ensureV2Structure(data);
       return memoryStore.create(this.collectionName, {
         ...v2Data,
@@ -398,11 +334,15 @@ if (!useMemoryStore) {
       return all.length;
     }
     
-    // 辅助方法：转换查询条件
+    // 静态方法
+    static migrateFromV1(v1Data) {
+      return staticMethods.migrateFromV1(v1Data);
+    }
+    
+    // 辅助方法
     _adaptQuery(query) {
       const adapted = {};
       for (const [key, value] of Object.entries(query)) {
-        // 处理旧字段名映射到新结构
         if (key === 'name') adapted[key] = value;
         else if (key === 'gameId') adapted[key] = value;
         else if (key === 'enabled') adapted['activation.enabled'] = value;
@@ -412,7 +352,6 @@ if (!useMemoryStore) {
       return adapted;
     }
     
-    // 辅助方法：匹配查询
     _matchQuery(doc, query) {
       for (const [key, value] of Object.entries(query)) {
         if (key === '$or') {
@@ -429,19 +368,15 @@ if (!useMemoryStore) {
       return true;
     }
     
-    // 辅助方法：获取嵌套字段
     _getField(obj, path) {
       return path.split('.').reduce((o, p) => o && o[p], obj);
     }
     
-    // 辅助方法：确保V2结构
     _ensureV2Structure(data) {
       if (data.core || data.visual) {
-        // 已经是V2结构
         return data;
       }
-      // 需要迁移
-      return this.constructor.migrateFromV1(data);
+      return MemoryCharacterModel.migrateFromV1(data);
     }
   }
 

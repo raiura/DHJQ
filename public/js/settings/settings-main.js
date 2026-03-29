@@ -165,6 +165,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         // 初始化角色编辑器事件
         initCharacterEditorEvents();
         
+        // 初始化图库V2
+        if (typeof initGalleryV2 === 'function') {
+            initGalleryV2();
+        }
+        
         if (isEditMode) {
             loadGameData().then(() => {
                 restoreViewMode();
@@ -688,6 +693,11 @@ function renderCharacterList() {
             </div>
         </div>
     `}).join('');
+    
+    // 初始化角色选择器（用于图库V2）
+    if (typeof initCharacterSelector === 'function') {
+        initCharacterSelector();
+    }
 }
 
 // 基础openCharacterModal函数，会被V2编辑器覆盖

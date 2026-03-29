@@ -81,6 +81,8 @@ app.use('/api/auth', require('./routes/auth'));
 // 这些路由内部根据 req.userId 是否存在来判断用户是否登录
 const gamesRouter = require('./routes/games');
 app.use('/api/games', authMiddleware.optionalAuth, gamesRouter);
+// 注意：V2路由必须在旧版之前加载，否则会被旧版的 /:gameId 模式匹配
+app.use('/api/gallery/v2', authMiddleware.optionalAuth, require('./routes/gallery-v2'));
 app.use('/api/gallery', authMiddleware.optionalAuth, require('./routes/gallery'));
 app.use('/api/characters', authMiddleware.optionalAuth, require('./routes/characters'));
 app.use('/api/worldbook', authMiddleware.optionalAuth, require('./routes/worldbook'));
@@ -106,6 +108,95 @@ setTimeout(async () => {
     await User.initAdminUser();
   }
 }, 1500);
+
+// 初始化Gallery V2测试数据（仅内存模式）
+setTimeout(async () => {
+  const GalleryV2 = require('./models/gallery-v2');
+  const memoryStore = require('./utils/memoryStore');
+  
+  // 检查是否已有数据
+  const existing = await GalleryV2.find({});
+  if (existing.length === 0) {
+    Logger.info('[Gallery V2] 初始化测试数据...');
+    
+    const testGameId = 'demo_game_001';
+    const testCGs = [
+      {
+        gameId: testGameId,
+        name: '雪地战斗-拔剑',
+        url: 'https://images.unsplash.com/photo-1514539079130-25950c84af65?w=800',
+        type: 'character_extended',
+        triggerSystem: {
+          mode: 'tag_match',
+          conditions: {
+            sceneKeywords: ['雪地', '战斗', '剑'],
+            emotions: ['愤怒', '专注'],
+            actions: ['拔剑']
+          },
+          priority: 800,
+          probability: 1.0
+        },
+        display: {
+          mode: 'character_center',
+          animation: { enter: 'zoom', duration: 500 },
+          zIndex: 10
+        }
+      },
+      {
+        gameId: testGameId,
+        name: '温泉放松',
+        url: 'https://images.unsplash.com/photo-1575425186775-b8de9a427e67?w=800',
+        type: 'character_extended',
+        triggerSystem: {
+          mode: 'tag_match',
+          conditions: {
+            sceneKeywords: ['温泉', '放松'],
+            emotions: ['开心', '放松']
+          },
+          priority: 600,
+          probability: 1.0
+        },
+        display: {
+          mode: 'character_center',
+          animation: { enter: 'fade', duration: 800 },
+          zIndex: 10
+        }
+      },
+      {
+        gameId: testGameId,
+        name: '星空浪漫',
+        url: 'https://images.unsplash.com/photo-1518495973542-4542c06a5843?w=800',
+        type: 'character_extended',
+        triggerSystem: {
+          mode: 'tag_match',
+          conditions: {
+            sceneKeywords: ['星空', '浪漫'],
+            emotions: ['害羞', '爱恋'],
+            relationshipStates: ['热恋']
+          },
+          priority: 900,
+          probability: 0.9
+        },
+        constraints: {
+          prerequisites: { minFavor: 70 }
+        },
+        display: {
+          mode: 'character_center',
+          animation: { enter: 'fade', duration: 1000 },
+          zIndex: 10
+        }
+      }
+    ];
+    
+    for (const cg of testCGs) {
+      await GalleryV2.create(cg);
+    }
+    
+    Logger.info(`[Gallery V2] 已创建 ${testCGs.length} 个测试CG，GameId: ${testGameId}`);
+    Logger.info('[Gallery V2] 测试接口: GET /api/gallery/v2?gameId=demo_game_001');
+    Logger.info('[Gallery V2] 测试匹配: POST /api/gallery/v2/match');
+  }
+}, 2000);
 
 // 404 处理
 app.use(errorHandler.notFound);

@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-03-28T15:16:20.271Z",
+  "timestamp": "2026-03-29T14:06:40.124Z",
   "collections": {
     "users": [
       {
@@ -251,6 +251,132 @@
     "gallery": [],
     "user_characters": [],
     "memories": [],
-    "experiences": []
+    "experiences": [],
+    "gallery_v2": [
+      {
+        "_id": "galv2_1774792056946_m69ktb3u8",
+        "gameId": "demo_game_001",
+        "name": "雪地战斗-拔剑",
+        "url": "https://images.unsplash.com/photo-1514539079130-25950c84af65?w=800",
+        "type": "character_extended",
+        "triggerSystem": {
+          "mode": "tag_match",
+          "conditions": {
+            "sceneKeywords": [
+              "雪地",
+              "战斗",
+              "剑"
+            ],
+            "emotions": [
+              "愤怒",
+              "专注"
+            ],
+            "actions": [
+              "拔剑"
+            ]
+          },
+          "priority": 800,
+          "probability": 1
+        },
+        "display": {
+          "mode": "character_center",
+          "animation": {
+            "enter": "zoom",
+            "duration": 500
+          },
+          "zIndex": 10
+        },
+        "meta": {
+          "createdAt": "2026-03-29T13:47:36.946Z",
+          "updatedAt": "2026-03-29T13:47:36.946Z"
+        },
+        "createdAt": "2026-03-29T13:47:36.946Z",
+        "updatedAt": "2026-03-29T14:05:32.423Z",
+        "$inc": {
+          "meta.usageCount": 1
+        },
+        "meta.updatedAt": "2026-03-29T14:05:32.423Z"
+      },
+      {
+        "_id": "galv2_1774792056946_3zu70o9xh",
+        "gameId": "demo_game_001",
+        "name": "温泉放松",
+        "url": "https://images.unsplash.com/photo-1575425186775-b8de9a427e67?w=800",
+        "type": "character_extended",
+        "triggerSystem": {
+          "mode": "tag_match",
+          "conditions": {
+            "sceneKeywords": [
+              "温泉",
+              "放松"
+            ],
+            "emotions": [
+              "开心",
+              "放松"
+            ]
+          },
+          "priority": 600,
+          "probability": 1
+        },
+        "display": {
+          "mode": "character_center",
+          "animation": {
+            "enter": "fade",
+            "duration": 800
+          },
+          "zIndex": 10
+        },
+        "meta": {
+          "createdAt": "2026-03-29T13:47:36.946Z",
+          "updatedAt": "2026-03-29T13:47:36.946Z"
+        },
+        "createdAt": "2026-03-29T13:47:36.946Z",
+        "updatedAt": "2026-03-29T13:47:36.946Z"
+      },
+      {
+        "_id": "galv2_1774792056947_mmjuoft6o",
+        "gameId": "demo_game_001",
+        "name": "星空浪漫",
+        "url": "https://images.unsplash.com/photo-1518495973542-4542c06a5843?w=800",
+        "type": "character_extended",
+        "triggerSystem": {
+          "mode": "tag_match",
+          "conditions": {
+            "sceneKeywords": [
+              "星空",
+              "浪漫"
+            ],
+            "emotions": [
+              "害羞",
+              "爱恋"
+            ],
+            "relationshipStates": [
+              "热恋"
+            ]
+          },
+          "priority": 900,
+          "probability": 0.9
+        },
+        "constraints": {
+          "prerequisites": {
+            "minFavor": 70
+          }
+        },
+        "display": {
+          "mode": "character_center",
+          "animation": {
+            "enter": "fade",
+            "duration": 1000
+          },
+          "zIndex": 10
+        },
+        "meta": {
+          "createdAt": "2026-03-29T13:47:36.947Z",
+          "updatedAt": "2026-03-29T13:47:36.947Z"
+        },
+        "createdAt": "2026-03-29T13:47:36.947Z",
+        "updatedAt": "2026-03-29T13:47:36.947Z"
+      }
+    ]
   }
 }
