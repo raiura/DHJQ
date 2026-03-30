@@ -1,28 +1,44 @@
 // ==================== 配置 ====================
-// 注意：这些变量已在 settings-config.js 中声明
-// 这里不再重复声明，直接使用全局变量
+const API_BASE = 'http://localhost:3000/api';
+let currentUser = null;
+let currentGame = null;
+let gameId = null;
+let isEditMode = false;
+let characters = [];
+let editingCharacterId = null;
+let gallery = [];
 
-// 暴露到全局供V2编辑器使用（如果尚未设置）
-if (typeof window !== 'undefined') {
-    if (!Object.getOwnPropertyDescriptor(window, 'gameId')) {
-        Object.defineProperty(window, 'gameId', {
-            get: () => gameId,
-            set: (val) => { gameId = val; }
-        });
-    }
-    if (!Object.getOwnPropertyDescriptor(window, 'characters')) {
-        Object.defineProperty(window, 'characters', {
-            get: () => characters,
-            set: (val) => { characters = val; }
-        });
-    }
-    if (!Object.getOwnPropertyDescriptor(window, 'editingCharacterId')) {
-        Object.defineProperty(window, 'editingCharacterId', {
-            get: () => editingCharacterId,
-            set: (val) => { editingCharacterId = val; }
-        });
-    }
-}
+// 暴露到全局供V2编辑器使用
+Object.defineProperty(window, 'gameId', {
+    get: () => gameId,
+    set: (val) => { gameId = val; }
+});
+Object.defineProperty(window, 'characters', {
+    get: () => characters,
+    set: (val) => { characters = val; }
+});
+Object.defineProperty(window, 'editingCharacterId', {
+    get: () => editingCharacterId,
+    set: (val) => { editingCharacterId = val; }
+});
+
+// 世界书相关变量
+let editingWorldbookId = null;
+let editingWorldbookIsUser = false;
+let worldbookManager = null; // 旧版世界书管理器实例
+let worldbookLibrary = null; // 新世界书图书馆实例
+let worldbookManagerUI = null; // 世界书管理器 UI 实例
+
+// 记忆服务实例
+let memoryService = null;
+
+// 记忆管理状态
+let memoryFilterState = {
+    type: 'all',
+    search: '',
+    sortBy: 'time-desc'
+};
+let allMemoriesCache = [];
 
 // 全局错误处理
 window.onerror = function(msg, url, lineNo, columnNo, error) {
@@ -30,12 +46,37 @@ window.onerror = function(msg, url, lineNo, columnNo, error) {
     return false;
 };
 
-// 注意：用户个人设置、存档管理相关变量和函数
-// 已在 settings-config.js 中声明，这里不再重复
+// 用户个人设置（仅存储在localStorage中）
+let userPersonalSettings = {
+    worldbook: { background: '', entries: [] },
+    prompts: { prePrompt: '', postPrompt: '', exampleDialogue: '', dialogStyle: '', restrictions: '' },
+    characters: []
+};
 
 // ==================== 存档管理系统 ====================
-// 注意：getSaves, saveSavesList, getCurrentWorld 等函数
-// 已在 settings-config.js 中声明
+const SAVE_KEY = 'galgame_saves';
+const CURRENT_SAVE_KEY = 'galgame_current_save';
+let currentSaveId = localStorage.getItem(CURRENT_SAVE_KEY) || '';
+
+function getCurrentWorld() {
+    return new URLSearchParams(window.location.search).get('world') || 
+           localStorage.getItem('galgame_current_world') || 'dahuang';
+}
+
+function getSaves() {
+    const world = getCurrentWorld();
+    const allSaves = localStorage.getItem(SAVE_KEY);
+    const saves = allSaves ? JSON.parse(allSaves) : {};
+    return saves[world] || [];
+}
+
+function saveSavesList(saves) {
+    const world = getCurrentWorld();
+    const allSaves = localStorage.getItem(SAVE_KEY);
+    const data = allSaves ? JSON.parse(allSaves) : {};
+    data[world] = saves;
+    localStorage.setItem(SAVE_KEY, JSON.stringify(data));
+}
 
 function getCurrentSaveData() {
     if (!currentSaveId) return null;
@@ -344,11 +385,6 @@ function toggleViewMode() {
     
     localStorage.setItem('settings_view_mode', isUserView ? 'user' : 'admin');
     initSaveSelector();
-}
-
-// 立即导出到全局（供HTML按钮调用）
-if (typeof window !== 'undefined') {
-    window.toggleViewMode = toggleViewMode;
 }
 
 function restoreViewMode() {
@@ -910,7 +946,13 @@ function initMemoryService() {
 /**
  * 渲染世界书列表（支持分组显示）
  */
-// 注意：worldbookFilterState 已在 settings-config.js 中声明
+// 世界书筛选状态
+let worldbookFilterState = {
+    search: '',
+    group: '',
+    sortBy: 'priority-desc',
+    userOnly: false
+};
 
 /**
  * 筛选并渲染世界书列表
@@ -2176,13 +2218,6 @@ function importGameData() {
         }
     };
     input.click();
-}
-
-// 立即导出到全局（供HTML按钮调用）
-if (typeof window !== 'undefined') {
-    window.previewGame = previewGame;
-    window.exportGameData = exportGameData;
-    window.importGameData = importGameData;
 }
 
 // ==================== 用户配置 ====================

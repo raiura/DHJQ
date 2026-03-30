@@ -1,413 +1,5 @@
-﻿<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GalGame框架</title>
-    <link rel="stylesheet" href="public/css/base.css">
-    <link rel="stylesheet" href="public/css/game.css">
-</head>
-<body>
-    <!-- 游戏主容器 -->
-    <div id="game-container">
-        <!-- 加载屏幕 -->
-        <div id="loading-screen">
-            <div id="loading-text">正在加载游戏...</div>
-            <div id="loading-bar">
-                <div id="loading-progress"></div>
-            </div>
-        </div>
-        <!-- 背景层 -->
-        <div id="background-layer">
-            <img id="background-image" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1920' height='1080'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%231a1a2e'/%3E%3Cstop offset='50%25' stop-color='%2316213e'/%3E%3Cstop offset='100%25' stop-color='%230f3460'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect fill='url(%23g)' width='1920' height='1080'/%3E%3C/svg%3E" alt="修仙背景">
-        </div>
-        <!-- 角色层 -->
-        <div id="character-layer">
-            <div class="character left" id="character-left">
-                <img class="character-image" src="" alt="左侧角色">
-            </div>
-            <div class="character center" id="character-center">
-                <img class="character-image" src="" alt="中央角色">
-            </div>
-            <div class="character right" id="character-right">
-                <img class="character-image" src="" alt="右侧角色">
-            </div>
-        </div>
-        <!-- 对话层 -->
-        <div id="dialogue-layer">
-            <div id="dialogue-box">
-                <div id="character-name">环境描写</div>
-                <div id="dialogue-text">你来到了一个神秘的修仙世界，周围云雾缭绕，远处有山峰若隐若现。在你面前，三位风格各异的角色正微笑着看着你，等待着你的到来。</div>
-            </div>
-            <!-- AI聊天输入区域 -->
-            <div id="chat-input-area">
-                <input type="text" id="user-input" placeholder="输入你的对话...">
-                <button id="send-btn">发送</button>
-            </div>
-        </div>
-        <!-- AI设置区域 - 作者级别设置（仅作者可见） -->
-        <div id="character-settings" style="display: none;">
-            <h3>🔧 世界设置（作者权限）</h3>
-            <div class="setting-item">
-                <label>AI API密钥:</label>
-                <input type="text" id="api-key" placeholder="输入API密钥...">
-            </div>
-            <div class="setting-item">
-                <label>模型名称:</label>
-                <input type="text" id="model-name" placeholder="输入模型名称...">
-            </div>
-            <button id="save-settings">保存设置</button>
-            <button id="close-settings">关闭</button>
-        </div>
-
-        <!-- 记忆库面板 -->
-        <div id="memory-panel" style="display: none;">
-            <div id="memory-header">
-                <h3>🧠 记忆库</h3>
-                <button id="close-memory">&times;</button>
-            </div>
-            <div id="memory-stats">
-                <div class="memory-stat-item">
-                    <div class="memory-stat-number" id="short-count">0</div>
-                    <div class="memory-stat-label">短期记忆</div>
-                </div>
-                <div class="memory-stat-item">
-                    <div class="memory-stat-number" id="long-count">0</div>
-                    <div class="memory-stat-label">长期记忆</div>
-                </div>
-                <div class="memory-stat-item">
-                    <div class="memory-stat-number" id="core-count">0</div>
-                    <div class="memory-stat-label">核心记忆</div>
-                </div>
-            </div>
-            <div id="memory-tabs">
-                <div class="mem-tab active" data-tab="short">
-                    <span class="mem-tab-icon">⚡</span>
-                    <span class="mem-tab-text">短期记忆</span>
-                    <span class="mem-tab-count" id="tab-short-count">0</span>
-                </div>
-                <div class="mem-tab" data-tab="long">
-                    <span class="mem-tab-icon">📚</span>
-                    <span class="mem-tab-text">长期记忆</span>
-                    <span class="mem-tab-count" id="tab-long-count">0</span>
-                </div>
-                <div class="mem-tab" data-tab="core">
-                    <span class="mem-tab-icon">💎</span>
-                    <span class="mem-tab-text">核心记忆</span>
-                    <span class="mem-tab-count" id="tab-core-count">0</span>
-                </div>
-            </div>
-            <div id="memory-content">
-                <!-- 短期记忆面板 -->
-                <div class="mem-panel active" id="mem-panel-short">
-                    <div class="mem-intro">
-                        <div class="mem-intro-icon">⚡</div>
-                        <div class="mem-intro-text">
-                            <strong>短期记忆</strong> - 每次对话后自动生成的摘要<br>
-                            <small>达到6条后会自动合并成长期记忆</small>
-                        </div>
-                    </div>
-                    <div class="memory-list" id="short-memory-list"></div>
-                </div>
-                <!-- 长期记忆面板 -->
-                <div class="mem-panel" id="mem-panel-long">
-                    <div class="mem-intro">
-                        <div class="mem-intro-icon">📚</div>
-                        <div class="mem-intro-text">
-                            <strong>长期记忆</strong> - 由短期记忆合并而成的重要事件<br>
-                            <small>达到12条后会提醒整理成核心记忆</small>
-                        </div>
-                    </div>
-                    <div class="memory-list" id="long-memory-list"></div>
-                </div>
-                <!-- 核心记忆面板 -->
-                <div class="mem-panel" id="mem-panel-core">
-                    <div class="mem-intro">
-                        <div class="mem-intro-icon">💎</div>
-                        <div class="mem-intro-text">
-                            <strong>核心记忆</strong> - 经过整理的关键信息，可写入世界书<br>
-                            <small>作为常识库供AI参考</small>
-                        </div>
-                    </div>
-                    <div class="memory-list" id="core-memory-list"></div>
-                </div>
-            </div>
-        </div>
-
-        <!-- 记忆合并确认弹窗 -->
-        <div id="memory-merge-modal" style="display: none;">
-            <div class="memory-merge-content">
-                <h4>💡 记忆整理提示</h4>
-                <p id="merge-message"></p>
-                <div class="memory-merge-preview" id="merge-preview"></div>
-                <div class="memory-merge-actions">
-                    <button class="btn btn-secondary" onclick="cancelMerge()">稍后处理</button>
-                    <button class="btn btn-primary" onclick="confirmMerge()">确认合并</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- 核心记忆导入弹窗 -->
-        <div id="memory-import-modal" style="display: none;">
-            <div class="memory-import-content">
-                <h4>📜 导入核心记忆</h4>
-                <p>选择将这条核心记忆导入到：</p>
-                <div class="memory-import-options">
-                    <button class="btn btn-secondary" onclick="importToWorldbook()">📖 个人世界书</button>
-                    <button class="btn btn-secondary" onclick="importToPrompt()">📝 提示词设定</button>
-                </div>
-                <div class="memory-import-actions">
-                    <button class="btn btn-secondary" onclick="closeImportModal()">取消</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- 用户个人设置面板 - 书签笔记式 -->
-        <div id="user-settings-panel" style="display: none;">
-            <div id="user-settings-header">
-                <h3>📖 我的游戏笔记</h3>
-                <button id="close-user-settings">&times;</button>
-            </div>
-            <div id="user-settings-tabs">
-                <div class="uset-tab active" data-tab="worldbook">📖 个人世界书</div>
-                <div class="uset-tab" data-tab="prompt">📝 提示词设定</div>
-                <div class="uset-tab" data-tab="ai">🤖 AI配置</div>
-            </div>
-            <div id="user-settings-content">
-                <!-- 个人世界书 -->
-                <div class="uset-panel active" id="panel-worldbook">
-                    <div class="uset-intro">💡 这里的设定只对你自己有效，不会影响书本的默认设置。可以添加你自己的角色背景、世界规则等。</div>
-                    <div class="setting-item">
-                        <label>📜 个人背景设定:</label>
-                        <textarea id="user-background" placeholder="你的角色在这个世界中的特殊身份、秘密或经历..."></textarea>
-                    </div>
-                    <div class="setting-item">
-                        <label>✨ 个人物定词条:</label>
-                        <div id="user-entries-list"></div>
-                        <button class="btn-add-entry" onclick="addUserWorldbookEntry()">+ 添加条目</button>
-                    </div>
-                </div>
-                <!-- 提示词设定 -->
-                <div class="uset-panel" id="panel-prompt">
-                    <div class="uset-intro">💡 调整AI对你角色的理解，让对话更符合你的期待。</div>
-                    <div class="setting-item">
-                        <label>🎭 角色性格强调:</label>
-                        <textarea id="user-personality" placeholder="例如：更加冷静沉稳、更加活泼开朗..."></textarea>
-                    </div>
-                    <div class="setting-item">
-                        <label>🎭 对话风格偏好:</label>
-                        <textarea id="user-dialog-style" placeholder="例如：希望AI使用更古典的词汇、更详细的描述..."></textarea>
-                    </div>
-                    <div class="setting-item">
-                        <label>🔐 禁忌/限制:</label>
-                        <textarea id="user-restrictions" placeholder="例如：不希望涉及某些主题、特定的行为限制..."></textarea>
-                    </div>
-                </div>
-                <!-- AI配置 -->
-                <div class="uset-panel" id="panel-ai">
-                    <div class="uset-intro">💡 管理你的AI配置预设模板，快速切换不同的API配置。
-                    </div>
-                    
-                    <!-- 预设选择 -->
-                    <div class="setting-item">
-                        <label>📁 配置预设:</label>
-                        <div class="preset-selector">
-                            <select id="ai-preset-select" onchange="loadAIPreset()">
-                                <option value="">选择预设...</option>
-                            </select>
-                            <button class="btn btn-secondary" onclick="saveAsNewPreset()">新建</button>
-                            <button class="btn btn-danger" onclick="deleteCurrentPreset()">删除</button>
-                        </div>
-                    </div>
-                    
-                    <div class="setting-item">
-                        <label>🏷️ 预设名称:</label>
-                        <input type="text" id="preset-name" placeholder="例如：SiliconFlow-DeepSeek">
-                    </div>
-                    
-                    <div class="setting-divider"></div>
-                    
-                    <!-- 基础配置 -->
-                    <div class="setting-group-title">🔐 基础配置</div>
-                    
-                    <div class="setting-item">
-                        <label>API密钥:</label>
-                        <input type="password" id="user-api-key" placeholder="sk-...">
-                    </div>
-                    
-                    <div class="setting-item">
-                        <label>API服务商:</label>
-                        <select id="user-api-provider" onchange="toggleApiUrlInput()">
-                            <option value="siliconflow">SiliconFlow</option>
-                            <option value="openai">OpenAI</option>
-                            <option value="anthropic">Anthropic</option>
-                            <option value="deepseek">DeepSeek</option>
-                            <option value="baidu">百度千尊</option>
-                            <option value="aliyun">阿里通义千问</option>
-                            <option value="custom">自定义</option>
-                        </select>
-                    </div>
-                    
-                    <div class="setting-item" id="custom-api-url-group" style="display: none;">
-                        <label>API地址:</label>
-                        <input type="text" id="user-api-url" placeholder="https://api.example.com/v1/chat/completions">
-                    </div>
-                    
-                    <div class="setting-item">
-                        <label>模型名称:</label>
-                        <input type="text" id="user-model-name" placeholder="Pro/deepseek-ai/DeepSeek-V3.2">
-                    </div>
-                    
-                    <div class="setting-divider"></div>
-                    
-                    <!-- 生成参数 -->
-                    <div class="setting-group-title">⚙️ 生成参数</div>
-                    
-                    <div class="setting-row">
-                        <div class="setting-item" style="flex: 1;">
-                            <label>🌡️ 温度 (Temperature)</label>
-                            <input type="range" id="user-temperature" min="0" max="2" step="0.1" value="0.7" oninput="updateRangeValue('temp-value', this.value)">
-                            <span id="temp-value">0.7</span>
-                        </div>
-                        <div class="setting-item" style="flex: 1;">
-                            <label>Top-P</label>
-                            <input type="range" id="user-top-p" min="0" max="1" step="0.1" value="0.9" oninput="updateRangeValue('top-p-value', this.value)">
-                            <span id="top-p-value">0.9</span>
-                        </div>
-                    </div>
-                    
-                    <div class="setting-row">
-                        <div class="setting-item" style="flex: 1;">
-                            <label>最大生成字数</label>
-                            <input type="number" id="user-max-tokens" value="2000" min="100" max="8000" step="100">
-                        </div>
-                        <div class="setting-item" style="flex: 1;">
-                            <label>Presence Penalty</label>
-                            <input type="range" id="user-presence-penalty" min="-2" max="2" step="0.1" value="0" oninput="updateRangeValue('presence-value', this.value)">
-                            <span id="presence-value">0</span>
-                        </div>
-                    </div>
-                    
-                    <div class="setting-divider"></div>
-                    
-                    <!-- 高级功能 -->
-                    <div class="setting-group-title">🚀 高级功能</div>
-                    
-                    <div class="setting-row">
-                        <label class="checkbox-label">
-                            <input type="checkbox" id="user-streaming" checked>
-                            <span>📤 流式输出</span>
-                        </label>
-                        <label class="checkbox-label">
-                            <input type="checkbox" id="user-think-chain">
-                            <span>🧠 思维链</span>
-                        </label>
-                        <label class="checkbox-label">
-                            <input type="checkbox" id="user-json-mode">
-                            <span>📉 JSON模式</span>
-                        </label>
-                    </div>
-                    
-                    <div class="setting-divider"></div>
-                    
-                    <!-- 系统提示词 -->
-                    <div class="setting-group-title">📝 系统提示词</div>
-                    
-                    <div class="setting-item">
-                        <label>System Prompt:</label>
-                        <textarea id="user-system-prompt" rows="3" placeholder="你是一个专业的角色扮演AI..."></textarea>
-                    </div>
-                    
-                    <div class="uset-notice">⚠️ 配置仅保存在本地浏览器</div>
-                </div>
-            </div>
-            <div id="user-settings-footer">
-                <button id="save-user-settings">💾 保存设置</button>
-            </div>
-        </div>
-        <!-- 游戏控制层 - 简化按钮 -->
-        <div id="game-controls">
-            <button class="control-btn" id="menu-btn" title="菜单">☰</button>
-            <button class="control-btn" id="edit-world-btn" title="编辑设定">✏️</button>
-            <button class="control-btn" id="world-guide-btn" title="世界指南">📖</button>
-            <button class="control-btn" id="characters-panel-btn" title="角色栏">👥</button>
-            <button class="control-btn" id="log-btn" title="对话记录">📋</button>
-            <button class="control-btn" id="back-btn" title="返回书店">📚</button>
-        </div>
-        <!-- 对话log面板 -->
-        <div id="dialogue-log" style="display: none;">
-            <div id="log-header">
-                <h3>对话历史</h3>
-                <button id="close-log">关闭</button>
-            </div>
-            <div id="log-content"></div>
-        </div>
-        <!-- AI回复历史面板 -->
-        <div id="ai-log" style="display: none;">
-            <div id="ai-log-header">
-                <h3>AI回复历史</h3>
-                <button id="close-ai-log">关闭</button>
-            </div>
-            <div id="ai-log-content"></div>
-        </div>
-        
-        <!-- 角色栏面板 -->
-        <div id="characters-panel" style="display: none; position: absolute; top: 60px; right: 20px; width: 380px; max-height: calc(100vh - 100px); background: rgba(20, 20, 30, 0.98); border: 1px solid rgba(138, 109, 59, 0.5); border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.8); z-index: 100; overflow: hidden;">
-            <div id="characters-panel-header" style="display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; background: linear-gradient(135deg, rgba(138, 109, 59, 0.3), rgba(20, 20, 30, 0.9)); border-bottom: 1px solid rgba(138, 109, 59, 0.3);">
-                <h3 style="margin: 0; color: #d4a574; font-size: 18px;">👥 角色栏</h3>
-                <button id="close-characters-panel" style="background: rgba(255, 107, 107, 0.8); color: #fff; border: none; border-radius: 6px; padding: 6px 12px; cursor: pointer; font-size: 12px;">关闭</button>
-            </div>
-            <div id="characters-panel-content" style="padding: 15px; max-height: calc(100vh - 180px); overflow-y: auto;">
-                <div id="characters-list">
-                    <p style="color: rgba(255,255,255,0.5); text-align: center; padding: 30px;">加载中...</p>
-                </div>
-            </div>
-        </div>
-        <!-- 游戏菜单 -->
-        <div id="game-menu">
-            <h2 style="color: #fff; margin-bottom: 30px;">🎮 游戏菜单</h2>
-            <div class="menu-btn" id="continue-btn">▶ 继续游戏</div>
-            <div class="menu-btn" id="memory-btn">🧠 记忆库 <span id="memory-badge" class="menu-badge" style="display: none;"></span></div>
-            <div class="menu-btn" id="world-guide-menu-btn">📖 世界指南</div>
-            <div class="menu-btn" id="switch-game-btn">🔄 切换游戏</div>
-            <div class="menu-btn" id="new-game-btn">🌟 新游戏</div>
-            <div class="menu-btn" id="exit-btn">📖 返回书店</div>
-            <div class="menu-btn" id="logout-menu-btn" style="color: #ff6b6b;">🚪 退出登录</div>
-        </div>
-        
-        <!-- 游戏列表弹窗 -->
-        <div id="game-list-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 2000; justify-content: center; align-items: center;">
-            <div style="background: linear-gradient(135deg, #1a1a2e, #16213e); border: 1px solid rgba(138, 109, 59, 0.3); border-radius: 16px; padding: 30px; max-width: 600px; width: 90%; max-height: 80vh; overflow-y: auto;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                    <h2 style="color: #fff; margin: 0;">🎮 选择游戏</h2>
-                    <button id="close-game-list" style="background: none; border: none; color: #fff; font-size: 24px; cursor: pointer;">&times;</button>
-                </div>
-                <div id="game-list-container" style="display: flex; flex-direction: column; gap: 15px;">
-                    <!-- 游戏列表将动态生成 -->
-                    <p style="color: #888; text-align: center; padding: 40px;">加载中...</p>
-                </div>
-            </div>
-        </div>
-    </div>
-    <!-- 核心模块 -->
-    <script src="public/js/core/worldbookEngine.js"></script>
-    <script src="public/js/core/worldBook.js"></script>
-    <script src="public/js/core/worldbookLibrary.js"></script>
-    <script src="public/js/core/promptBuilder.js"></script>
-    <script src="public/js/services/worldbookManager.js"></script>
-    <script src="public/js/loader.js"></script>
-    
-    <!-- 游戏模块化系统 (新增) -->
-    <script src="public/js/game/modules/game-config.js"></script>
-    <script src="public/js/game/modules/game-api.js"></script>
-    <script src="public/js/game/modules/game-emotion.js"></script>
-    <script src="public/js/game/modules/game-worldbook-integration.js"></script>
-    <script src="public/js/game/modules/game-dialogue.js"></script>
-    
-    <!-- 主游戏逻辑（向后兼容） -->
-    <script src="public/js/game/game-main.js"></script>
-    <!-- 原始脚本已移至外部文件 -->
-    <script style="display:none;">// 认证检查 - 已移至 game-main.js
+﻿
+        // ==================== 认证检查 ====================
         const API_BASE = 'http://localhost:3000/api';
         
         // 当前游戏世界配置
@@ -2995,36 +2587,72 @@
             updateChatDisplay('旁白', 'AI正在思考，请稍候...');
             console.log('开始生成AI回复:', userMessage);
             try {
-                // ========== 新版世界书系统 ==========
+                // ========== 世界书系统 2.0 ==========
                 let worldbookEntries = [];
-                if (worldbookManager) {
-                    // 使用新的世界书引擎检测触发
-                    const context = {
-                        userName: window.currentUserCharacter?.name || '用户',
-                        characterName: currentCharacter?.name,
-                        recentMessages: chatHistory.slice(-5).map(h => h.text)
-                    };
+                const context = {
+                    userName: window.currentUserCharacter?.name || '用户',
+                    characterName: currentCharacter?.name,
+                    recentMessages: chatHistory.slice(-5).map(h => h.text)
+                };
+                
+                // 优先使用新的世界书库系统
+                if (worldbookLibrary) {
+                    worldbookEntries = worldbookLibrary.detectTriggers(userMessage, context);
+                    console.log('[WorldbookLibrary] 触发的条目:', worldbookEntries.length);
+                } 
+                // 向后兼容：使用旧系统
+                else if (worldbookManager) {
                     worldbookEntries = worldbookManager.detectTriggers(userMessage, context);
                     console.log('[Worldbook] 触发的条目:', worldbookEntries.length);
                 }
                 
-                // 旧版用户个人世界书（兼容）
+                // 收集用户个人设置（旧系统兼容）
+                const userPromptAddon = getUserPromptAddon();
                 const userEntries = userSettings.worldbook.entries
                     .filter(e => userMessage.includes(e.keyword))
                     .map(e => `[${e.keyword}] ${e.content}`)
                     .join('\n');
                 
-                // 合并新旧世界书条目
-                const allWorldbookEntries = [
-                    ...worldbookEntries.map(e => `[${e.name}] ${e.content}`),
-                    userEntries
-                ].filter(Boolean).join('\n');
-                
-                // 准复情感系统提示词
+                // 情感系统提示词
                 const emotionPrompt = getEmotionSystemPrompt();
-                const fullSystemPrompt = aiApiSettings.systemPrompt 
-                    ? aiApiSettings.systemPrompt + '\n' + emotionPrompt 
-                    : emotionPrompt;
+                
+                // ========== 使用 PromptBuilder 构建提示词 ==========
+                const gameConfig = {
+                    userName: window.currentUserCharacter?.name || '用户',
+                    characterName: currentCharacter?.name || '角色',
+                    worldName: currentWorld?.title || '世界'
+                };
+                
+                const builder = new PromptBuilder(gameConfig);
+                
+                // System 层：基础设定
+                if (aiApiSettings.systemPrompt) {
+                    builder.setSystem(aiApiSettings.systemPrompt);
+                }
+                
+                // Character 层：角色定义
+                if (currentCharacter?.prompt) {
+                    builder.setCharacter(currentCharacter.prompt, currentCharacter.name);
+                }
+                
+                // Worldbook 层：动态知识
+                if (worldbookEntries.length > 0) {
+                    builder.addWorldbook(worldbookEntries);
+                }
+                
+                // User 层：用户自定义
+                if (userPromptAddon) {
+                    builder.setUserPrompt(userPromptAddon);
+                }
+                if (userEntries) {
+                    builder.setUserPrompt(userEntries);
+                }
+                
+                // 构建最终提示词
+                const promptResult = builder.build({ format: 'openai' });
+                const fullSystemPrompt = promptResult.system + '\n' + emotionPrompt;
+                
+                console.log('[PromptBuilder] Token 统计:', promptResult.stats);
                 
                 // 调用后端 API
                 console.log('发送请求到后端API...');
@@ -3035,8 +2663,8 @@
                         message: userMessage,
                         characterId: '123',
                         userSettings: {
-                            promptAddon: getUserPromptAddon(),
-                            worldbookEntries: allWorldbookEntries,
+                            promptAddon: userPromptAddon,
+                            worldbookEntries: userEntries,
                             temperature: userSettings.ai.temperature,
                             systemPrompt: fullSystemPrompt
                         }
@@ -3123,37 +2751,6 @@
                         const emotionResult = processAIResponseWithEmotion(characterId, rawContent);
                         // 使用解析后的纯文本更新内容
                         part.content = emotionResult.cleanText;
-                        
-                        // 🖼️ CG系统自动切换（V2.0）
-                        if (window.CGSystem) {
-                            const charData = characterConfig[characterId];
-                            const charId = charData?._id || charData?.id;
-                            
-                            if (charId) {
-                                // 构建场景上下文
-                                const cgContext = {
-                                    scene: part.content.substring(0, 200), // 取前200字
-                                    emotion: emotionResult.detectedEmotion,
-                                    action: extractActionFromText(part.content)
-                                };
-                                
-                                // 获取关系状态
-                                const relationshipState = {
-                                    favor: charData.favor || charData.relationship?.favor || 50,
-                                    trust: charData.trust || charData.relationship?.trust || 50,
-                                    mood: charData.mood || charData.relationship?.mood || '平静'
-                                };
-                                
-                                // 调用CG自动匹配（异步，不阻塞显示）
-                                CGSystem.handleAIResponse(rawContent, charId, cgContext)
-                                    .then(result => {
-                                        if (result?.switched) {
-                                            console.log(`[CG] 已切换到: ${result.cg?.name}`);
-                                        }
-                                    })
-                                    .catch(err => console.error('[CG] 切换失败:', err));
-                            }
-                        }
                     }
                     
                     // 添加到聊天历史
@@ -3228,49 +2825,9 @@
                 return false;
             }
         }
-        
-        // 从文本中提取动作关键词（用于CG匹配）
-        function extractActionFromText(text) {
-            if (!text) return '';
-            
-            // 常见动作关键词库
-            const actionKeywords = [
-                '拔剑', '攻击', '战斗', '格挡', '闪避', '冲锋',
-                '拥抱', '接吻', '亲吻', '牵手', '抚摸', '依偎',
-                '哭泣', '流泪', '微笑', '大笑', '怒视', '瞪眼',
-                '下跪', '鞠躬', '挥手', '点头', '摇头', '转身',
-                '坐下', '站立', '躺', '跑', '走', '跳',
-                '喝酒', '喝茶', '吃饭', '喝茶', '修炼', '打坐'
-            ];
-            
-            const lowerText = text.toLowerCase();
-            for (const action of actionKeywords) {
-                if (lowerText.includes(action)) {
-                    return action;
-                }
-            }
-            
-            return '';
-        }
-        
         // 初始化角色
         async function initCharacters(gameId) {
             console.log('开始初始化角色...', gameId ? `(游戏ID: ${gameId})` : '(无游戏ID，获取全局角色)');
-            
-            // 首先尝试从 settings.html 保存的 localStorage 读取
-            let localCharacters = [];
-            if (gameId) {
-                try {
-                    const saved = localStorage.getItem(`game_${gameId}_characters`);
-                    if (saved) {
-                        localCharacters = JSON.parse(saved);
-                        console.log('从 localStorage 读取到角色:', localCharacters.length);
-                    }
-                } catch (e) {
-                    console.warn('读取 localStorage 角色失败:', e);
-                }
-            }
-            
             try {
                 // 调用后端 API 获取角色列表
                 const url = gameId ? `${API_BASE}/characters?gameId=${gameId}` : `${API_BASE}/characters`;
@@ -3288,53 +2845,28 @@
                 console.log('角色响应:', result);
                 
                 // 获取角色数据数组
-                const apiCharacters = result.data || [];
-                console.log('从API获取到的角色数量:', apiCharacters.length);
+                const characters = result.data || [];
+                console.log('获取到的角色数量:', characters.length);
                 
-                // 合并 API 数据和 localStorage 数据（localStorage 优先）
-                const apiCharNames = new Set(apiCharacters.map(c => c.name));
-                const mergedCharacters = [
-                    ...apiCharacters,
-                    ...localCharacters.filter(c => !apiCharNames.has(c.name))
-                ];
-                
-                console.log('合并后角色数量:', mergedCharacters.length);
-                
-                // 使用合并后的数据
-                if (mergedCharacters.length > 0) {
+                // 如果没有角色，创建默认角色
+                if (characters.length === 0) {
+                    console.log('没有角色，创建默认角色...');
+                    await createDefaultCharacters();
+                } else {
+                    // 更新角色配置
                     console.log('更新角色配置...');
-                    mergedCharacters.forEach(character => {
+                    characters.forEach(character => {
                         characterConfig[character.name] = {
                             color: character.color,
-                            image: character.image || character.avatar
+                            image: character.image
                         };
                         characterColors[character.name] = character.color;
                     });
-                    
-                    // 保存到 localStorage 供后续使用
-                    if (gameId) {
-                        localStorage.setItem(`game_${gameId}_characters`, JSON.stringify(mergedCharacters));
-                    }
-                } else {
-                    console.log('没有角色，创建默认角色...');
-                    await createDefaultCharacters();
                 }
             } catch (error) {
                 console.error('初始化角色错误:', error);
-                // 如果后端不可用，使用 localStorage 数据
-                if (localCharacters.length > 0) {
-                    console.log('API失败，使用 localStorage 角色数据');
-                    localCharacters.forEach(character => {
-                        characterConfig[character.name] = {
-                            color: character.color,
-                            image: character.image || character.avatar
-                        };
-                        characterColors[character.name] = character.color;
-                    });
-                } else {
-                    console.log('使用本地默认角色');
-                    await createDefaultCharacters();
-                }
+                // 如果后端不可用，使用本地默认角色
+                console.log('使用本地默认角色');
             }
         }
 
@@ -3662,55 +3194,9 @@
         // 世界书管理器实例
         let worldbookManager = null;
         
-        // 初始化世界书系统
-        async function initWorldbookSystem() {
-            console.log('[Worldbook] 初始化世界书系统...');
-            
-            try {
-                const gameId = currentWorld?._id || currentWorld?.id;
-                if (!gameId) {
-                    console.warn('[Worldbook] 未找到游戏ID');
-                    return;
-                }
-                
-                // 创建世界书管理器
-                worldbookManager = new WorldbookManager({ gameId });
-                
-                // 尝试从 settings 的 localStorage 加载世界书数据
-                const localWbKey = `wb_global_${gameId}`;
-                const localWbData = localStorage.getItem(localWbKey);
-                
-                if (localWbData) {
-                    console.log('[Worldbook] 从 localStorage 加载世界书数据');
-                    const wbData = JSON.parse(localWbData);
-                    worldbookManager.globalWorldbook = wbData;
-                }
-                
-                // 设置当前存档
-                const currentSaveId = localStorage.getItem(`galgame_current_save_${gameId}`);
-                if (currentSaveId) {
-                    worldbookManager.setCurrentSave(currentSaveId);
-                }
-                
-                const stats = worldbookManager.getStats();
-                console.log('[Worldbook] 世界书系统初始化完成:', stats);
-                
-            } catch (error) {
-                console.error('[Worldbook] 初始化失败:', error);
-            }
-        }
-        
         async function initGameWithCharacter(userCharacter) {
             // 初始化世界角色
             await initCharacters(currentWorld?._id);
-            
-            // 初始化世界书系统
-            await initWorldbookSystem();
-            
-            // 初始化CG系统V2.0
-            if (window.CGSystem) {
-                await CGSystem.init(currentWorld?._id);
-            }
             
             // 如果用户选择了角色，将其信息添加到开场白
             if (userCharacter) {
@@ -3729,6 +3215,9 @@
             // 加载记忆库
             loadMemoryFromStorage();
             
+            // 初始化世界书系统
+            await initWorldbookSystem();
+            
             // 开始预加载资源
             preloadResources().then(() => {
                 setTimeout(() => {
@@ -3741,6 +3230,46 @@
                     }, 500);
                 }, 500);
             });
+        }
+
+        // 世界书图书馆实例（2.0 新系统）
+        let worldbookLibrary = null;
+        
+        // 初始化世界书系统
+        async function initWorldbookSystem() {
+            console.log('[Worldbook] 初始化世界书系统...');
+            
+            try {
+                // 获取当前游戏ID
+                const gameId = currentWorld?._id || currentWorld?.id;
+                if (!gameId) {
+                    console.warn('[Worldbook] 未找到游戏ID，跳过世界书初始化');
+                    return;
+                }
+                
+                // 创建世界书管理器（旧系统，向后兼容）
+                worldbookManager = new WorldbookManager({ gameId });
+                await worldbookManager.loadGlobalWorldbook();
+                
+                // 如果有当前存档，设置存档
+                const currentSaveId = localStorage.getItem(`galgame_current_save_${gameId}`);
+                if (currentSaveId) {
+                    worldbookManager.setCurrentSave(currentSaveId);
+                }
+                
+                // 初始化新世界书图书馆 2.0
+                if (typeof WorldbookLibrary !== 'undefined') {
+                    worldbookLibrary = new WorldbookLibrary({ gameId });
+                    console.log('[WorldbookLibrary] 已初始化，激活书本数:', worldbookLibrary.getActiveBooks().length);
+                }
+                
+                const stats = worldbookManager.getStats();
+                console.log('[Worldbook] 世界书系统初始化完成:', stats);
+                
+            } catch (error) {
+                console.error('[Worldbook] 初始化失败:', error);
+                // 失败不影响游戏继续进行
+            }
         }
 
         // 检查用户是否是书本作者
@@ -4206,16 +3735,4 @@
         setTimeout(() => {
             showCharacter('left');
         }, 1000);
-    </script>
     
-    <!-- Character Card V2.0 Runtime -->
-    <script src="public/js/game/character-v2-runtime.js"></script>
-    
-    <!-- CG System V2.0 -->
-    <script src="public/js/game/cg-system.js"></script>
-    
-    <!-- 情感提取系统 -->
-    <script src="emotion-system.js"></script>
-</body>
-</html>
-

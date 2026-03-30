@@ -1,9 +1,13 @@
 ﻿
         // ==================== 认证检查 ====================
-        const API_BASE = 'http://localhost:3000/api';
-        
-        // 当前游戏世界配置
-        let currentWorld = null;
+        // 注意：API_BASE 和 currentWorld 已在 game-config.js 中声明
+        // 这里不再重复声明，直接使用全局变量
+        if (typeof API_BASE === 'undefined') {
+            var API_BASE = 'http://localhost:3000/api';
+        }
+        if (typeof currentWorld === 'undefined') {
+            var currentWorld = null;
+        }
         
         // 从URL获取世界slug
         function getWorldSlugFromUrl() {
