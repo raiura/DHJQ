@@ -8,6 +8,17 @@ let currentExampleDialogues = [];
 let currentLorebookEntries = [];
 let currentCharTab = 'basic';
 
+// ========== 初始化 ==========
+// 从URL参数中获取gameId（如果尚未设置）
+if (!window.gameId) {
+    const urlParams = new URLSearchParams(window.location.search);
+    const gameIdFromUrl = urlParams.get('id');
+    if (gameIdFromUrl) {
+        window.gameId = gameIdFromUrl;
+        console.log('[Character V2] Set gameId from URL:', gameIdFromUrl);
+    }
+}
+
 // ========== 标签页切换 ==========
 function switchCharTab(tabName) {
     currentCharTab = tabName;
@@ -179,10 +190,70 @@ function escapeHtml(text) {
 
 // ========== 集成到原系统 ==========
 
+// 获取当前角色列表（动态获取，解决时序问题）
+function getCurrentCharacters() {
+    // 优先从window.characters获取
+    let chars = window.characters || [];
+    if (chars.length > 0) {
+        return chars;
+    }
+    
+    // 尝试从localStorage加载
+    // 首先尝试从URL获取gameId
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlGameId = urlParams.get('id');
+    
+    // 使用多种可能的gameId
+    const possibleIds = [
+        window.gameId,
+        urlGameId,
+        window.currentGame?._id,
+        window.currentGame?.id
+    ].filter(Boolean);
+    
+    console.log('[Character V2] Trying to load characters with IDs:', possibleIds);
+    
+    for (const gameId of possibleIds) {
+        const saved = localStorage.getItem(`game_${gameId}_characters`);
+        if (saved) {
+            try {
+                chars = JSON.parse(saved);
+                // 同步到全局变量
+                window.characters = chars;
+                window.gameId = gameId; // 确保gameId被设置
+                console.log('[Character V2] Loaded characters from storage:', chars.length, 'for game:', gameId);
+                return chars;
+            } catch (e) {
+                console.error('[Character V2] Failed to load characters for', gameId, e);
+            }
+        }
+    }
+    
+    // 尝试从localStorage查找所有可能的角色数据
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.includes('_characters')) {
+            try {
+                const saved = localStorage.getItem(key);
+                if (saved) {
+                    chars = JSON.parse(saved);
+                    console.log('[Character V2] Found characters in key:', key, 'count:', chars.length);
+                    window.characters = chars;
+                    return chars;
+                }
+            } catch (e) {
+                // 忽略解析错误
+            }
+        }
+    }
+    
+    return chars;
+}
+
 // 重写 openCharacterModal 函数
 window.openCharacterModal = function(characterId = null) {
-    // 获取全局变量
-    const globalCharacters = window.characters || [];
+    // 动态获取角色列表（解决加载时序问题）
+    const globalCharacters = getCurrentCharacters();
     
     console.log('[Character V2] openCharacterModal called, ID:', characterId, 'characters count:', globalCharacters.length);
     

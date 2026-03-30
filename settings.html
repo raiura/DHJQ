@@ -634,7 +634,6 @@
                 <div class="page-header">
                     <h1 class="page-title">🖼️ 图库管理 V2.0</h1>
                     <div class="page-actions">
-                        <button class="btn btn-secondary" onclick="uploadGalleryImage()">📤 旧版上传</button>
                         <button class="btn btn-primary" onclick="openGalleryV2Modal()">+ 添加CG</button>
                     </div>
                 </div>
@@ -643,7 +642,7 @@
                 <div class="card">
                     <div class="card-header">
                         <h3 class="card-title">🎨 角色CG拓展库</h3>
-                        <p class="form-hint">提示词驱动的智能CG系统，根据场景自动匹配</p>
+                        <p class="form-hint">提示词驱动的智能CG系统，支持自定义角色名，根据场景自动匹配</p>
                     </div>
                     <div class="card-body">
                         <div id="galleryV2List" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px;">
@@ -652,21 +651,9 @@
                                 <div class="empty-icon" style="font-size: 48px;">🖼️</div>
                                 <p>暂无CG图片</p>
                                 <p style="font-size: 13px; color: var(--text-secondary); margin-top: 8px;">
-                                    点击"添加CG"创建你的第一个角色CG
+                                    点击"添加CG"创建你的第一个角色CG，支持选择已有角色或自定义角色名
                                 </p>
                             </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 旧版图库 -->
-                <div class="card" style="margin-top: 20px; opacity: 0.7;">
-                    <div class="card-header">
-                        <h3 class="card-title">📁 旧版图库（兼容）</h3>
-                    </div>
-                    <div class="card-body">
-                        <div class="gallery-grid" id="galleryGrid">
-                            <!-- 动态生成 -->
                         </div>
                     </div>
                 </div>
@@ -1217,9 +1204,17 @@
                             </div>
                             <div class="form-group">
                                 <label class="form-label">关联角色</label>
-                                <select class="form-select" id="g2_characterId">
-                                    <option value="">🌐 通用CG（不绑定角色）</option>
-                                </select>
+                                <div style="display: flex; gap: 8px;">
+                                    <select class="form-select" id="g2_characterId" style="flex: 1;" onchange="onCharacterSelectChange()">
+                                        <option value="">🌐 通用CG（不绑定角色）</option>
+                                        <option value="__custom__">✏️ 自定义输入...</option>
+                                    </select>
+                                    <input type="text" class="form-input" id="g2_customCharacterName" 
+                                           placeholder="输入角色名" 
+                                           style="display: none; flex: 1;"
+                                           onblur="onCustomCharacterBlur()">
+                                </div>
+                                <p class="form-hint" id="g2_characterHint">选择角色或自定义输入，用于AI匹配场景</p>
                             </div>
                         </div>
                         <div class="form-group" style="margin-top: 16px;">
@@ -1366,28 +1361,6 @@
         </div>
     </div>
 
-    <!-- 图库图片模态框（旧版） -->
-    <div class="modal-overlay" id="galleryModalOverlay" onclick="closeGalleryModal()" style="display: none;">
-        <div class="modal" id="galleryModal" onclick="event.stopPropagation()">
-            <div class="modal-header">
-                <h3 class="modal-title">图片详情</h3>
-                <button class="modal-close" onclick="closeGalleryModal()">&times;</button>
-            </div>
-            <div class="modal-body">
-                <img id="galleryPreview" style="width: 100%; border-radius: 8px; margin-bottom: 15px;">
-                <div class="form-group">
-                    <label class="form-label">图片 URL</label>
-                    <input type="text" class="form-input" id="galleryImageUrl" readonly>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="copyGalleryImageUrl()">复制链接</button>
-                <button class="btn btn-danger" onclick="deleteGalleryImage()">删除</button>
-                <button class="btn btn-secondary" onclick="closeGalleryModal()">关闭</button>
-            </div>
-        </div>
-    </div>
-
     <!-- 记忆管理模态框 -->
     <div class="modal-overlay" id="memoryModalOverlay" onclick="closeMemoryModal()" style="display: none;">
         <div class="modal" id="memoryModal" onclick="event.stopPropagation()">
@@ -1454,8 +1427,10 @@
     <script src="public/js/core/worldbookEngine.js"></script>
     <script src="public/js/core/worldBook.js"></script>
     <script src="public/js/core/worldbookLibrary.js"></script>
+    <script src="public/js/core/versionManager.js"></script>
     <script src="public/js/services/worldbookManager.js"></script>
     <script src="public/js/services/memoryService.js"></script>
+    <script src="public/js/services/storageService.js"></script>
     <script src="public/js/components/worldbookManagerUI.js"></script>
     
     <!-- 设置页面模块化系统 (新增) -->

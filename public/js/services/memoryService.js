@@ -107,23 +107,40 @@ class MemoryService {
      */
     _getMemoriesFromStorage(options = {}) {
         const { types = ['short', 'long', 'core'] } = options;
-        const storageKey = `game_${this.gameId}_memories`;
-        const data = localStorage.getItem(storageKey);
         
-        if (!data) {
+        // 尝试多种可能的存储key
+        const possibleKeys = [
+            `game_${this.gameId}_memories`,
+            `memories_${this.gameId}`,
+            `galgame_memories_${this.gameId}`
+        ];
+        
+        let allMemories = [];
+        for (const key of possibleKeys) {
+            const data = localStorage.getItem(key);
+            if (data) {
+                try {
+                    const parsed = JSON.parse(data);
+                    if (Array.isArray(parsed)) {
+                        allMemories = parsed;
+                        console.log('[MemoryService] 从本地存储加载记忆列表:', key, allMemories.length);
+                        break;
+                    }
+                } catch (e) {
+                    // 忽略解析错误
+                }
+            }
+        }
+        
+        if (allMemories.length === 0) {
             return { memories: [], count: 0 };
         }
 
-        try {
-            const allMemories = JSON.parse(data);
-            const filtered = allMemories.filter(m => types.includes(m.type));
-            return {
-                memories: filtered,
-                count: filtered.length
-            };
-        } catch (e) {
-            return { memories: [], count: 0 };
-        }
+        const filtered = allMemories.filter(m => types.includes(m.type));
+        return {
+            memories: filtered,
+            count: filtered.length
+        };
     }
 
     /**
@@ -302,8 +319,33 @@ class MemoryService {
      * 从localStorage获取统计
      */
     _getStatsFromStorage() {
-        const storageKey = `game_${this.gameId}_memories`;
-        const memories = JSON.parse(localStorage.getItem(storageKey) || '[]');
+        // 尝试多种可能的存储key
+        const possibleKeys = [
+            `game_${this.gameId}_memories`,
+            `memories_${this.gameId}`,
+            `galgame_memories_${this.gameId}`
+        ];
+        
+        let memories = [];
+        for (const key of possibleKeys) {
+            const data = localStorage.getItem(key);
+            if (data) {
+                try {
+                    memories = JSON.parse(data);
+                    if (Array.isArray(memories) && memories.length > 0) {
+                        console.log('[MemoryService] 从本地存储加载记忆:', key, memories.length);
+                        break;
+                    }
+                } catch (e) {
+                    // 忽略解析错误
+                }
+            }
+        }
+        
+        // 如果不是数组，初始化为空数组
+        if (!Array.isArray(memories)) {
+            memories = [];
+        }
         
         return {
             short: memories.filter(m => m.type === 'short').length,

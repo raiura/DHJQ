@@ -193,11 +193,12 @@ worldbookEntrySchema.methods.getFormattedContent = function() {
  * @returns {Promise<Object>} - 存档条目
  */
 worldbookEntrySchema.statics.getTimelineArchive = async function(gameId) {
-  const entry = await this.findOne({ 
+  // 使用 find() 代替 findOne() 以支持内存存储的链式调用
+  const entries = await this.find({ 
     gameId, 
     entryType: EntryType.TIMELINE 
-  }).sort({ updatedAt: -1 });
-  return entry;
+  }).sort({ updatedAt: -1 }).limit(1);
+  return entries[0] || null;
 };
 
 /**

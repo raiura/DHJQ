@@ -73,8 +73,9 @@ class DialogueService {
       
       // 如果没有激活的角色，返回最近创建的角色
       if (!userChar) {
-        userChar = await UserCharacter.findOne({ userId: userId })
-          .sort({ createdAt: -1 });
+        const chars = await UserCharacter.find({ userId: userId })
+          .sort({ createdAt: -1 }).limit(1);
+        userChar = chars[0] || null;
       }
       
       if (userChar) {

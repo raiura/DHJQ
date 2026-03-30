@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-03-30T12:25:34.039Z",
+  "timestamp": "2026-03-30T17:07:29.428Z",
   "collections": {
     "users": [
       {
@@ -376,6 +376,54 @@
         },
         "createdAt": "2026-03-29T13:47:36.947Z",
         "updatedAt": "2026-03-29T13:47:36.947Z"
+      },
+      {
+        "_id": "galv2_1774884385165_wt47cbyzc",
+        "gameId": "mem_1773324176145_1",
+        "characterId": null,
+        "characterName": "",
+        "name": "星落镇",
+        "url": "https://origin.picgo.net/2026/01/31/LinWan85351d4173bd3ae6.png",
+        "thumbnail": "星落镇",
+        "type": "background",
+        "triggerSystem": {
+          "mode": "tag_match",
+          "conditions": {
+            "sceneKeywords": [
+              "星落镇，繁忙的星落镇集市。"
+            ],
+            "emotions": [],
+            "actions": [],
+            "relationshipStates": [],
+            "specialTags": []
+          },
+          "priority": 100,
+          "probability": 1
+        },
+        "display": {
+          "mode": "character_center",
+          "animation": {
+            "enter": "fade",
+            "duration": 500
+          },
+          "zIndex": 10
+        },
+        "constraints": {
+          "prerequisites": {
+            "minFavor": 0,
+            "maxFavor": 100
+          },
+          "cooldown": {
+            "enabled": false,
+            "duration": 30
+          }
+        },
+        "meta": {
+          "description": "星落镇的背景图片"
+        },
+        "createdAt": "2026-03-30T15:26:25.165Z",
+        "updatedAt": "2026-03-30T17:07:28.925Z",
+        "meta.updatedAt": "2026-03-30T17:07:28.925Z"
       }
     ]
   }

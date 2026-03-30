@@ -459,13 +459,35 @@ function setupTabs() {
 }
 
 // ==================== 世界概览 ====================
-function renderWorldOverview() {
+async function renderWorldOverview() {
+    console.log('[WorldOverview] 渲染世界概览...');
+    
+    // 如果characters为空，尝试从存储加载
+    if (!characters || characters.length === 0) {
+        const saved = localStorage.getItem(`game_${gameId}_characters`);
+        if (saved) {
+            try {
+                characters = JSON.parse(saved);
+                console.log('[WorldOverview] 从存储加载角色:', characters.length);
+            } catch (e) {
+                console.error('[WorldOverview] 加载角色失败:', e);
+            }
+        }
+    }
+    
     // 更新统计数据
     const charCountEl = document.getElementById('statCharacterCount');
     const wbCountEl = document.getElementById('statWorldbookCount');
     
-    if (charCountEl) charCountEl.textContent = characters?.length || 0;
-    if (wbCountEl) wbCountEl.textContent = worldbookManager?.getAllEntriesForDisplay()?.length || 0;
+    if (charCountEl) {
+        charCountEl.textContent = characters?.length || 0;
+        console.log('[WorldOverview] 角色计数:', characters?.length || 0);
+    }
+    if (wbCountEl) {
+        const wbCount = worldbookManager?.getAllEntriesForDisplay()?.length || 
+                       worldbookLibrary?.getAllActiveEntries()?.length || 0;
+        wbCountEl.textContent = wbCount;
+    }
     
     // 渲染角色预览
     const charContainer = document.getElementById('worldOverviewCharacters');
@@ -939,13 +961,20 @@ function sortAndRenderWorldbook() {
 }
 
 function renderWorldbookList() {
+    // 检查是否使用新世界书系统（V2.0）
+    const newContainer = document.getElementById('worldbookManagerContainer');
+    if (newContainer) {
+        // 新世界书系统已接管，跳过旧渲染
+        return;
+    }
+    
+    // 旧版世界书列表渲染（兼容模式）
     const container = document.getElementById('originalWorldbookList');
     const totalStatsEl = document.getElementById('originalWbTotalEntries');
     const globalStatsEl = document.getElementById('globalWbCount');
     const userStatsEl = document.getElementById('userWbCount');
     
     if (!container) {
-        console.error('[Worldbook] Container not found: originalWorldbookList');
         return;
     }
     
@@ -1940,15 +1969,14 @@ function resetWorldbook() {
 
 // ==================== 图库管理 ====================
 async function loadGallery() {
-    // Simplified
-    gallery = [];
-    renderGallery();
-}
-
-function renderGallery() {
-    const container = document.getElementById('galleryList');
-    if (!container) return;
-    container.innerHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 40px;">暂无图片</p>';
+    // V2.0 图库管理，使用新的加载逻辑
+    if (typeof loadGalleryV2Images === 'function') {
+        await loadGalleryV2Images();
+    } else if (typeof initGalleryV2 === 'function') {
+        initGalleryV2();
+    } else {
+        console.log('[Gallery] V2 editor not loaded yet');
+    }
 }
 
 // ==================== 游戏操作 ====================
@@ -2901,55 +2929,6 @@ async function clearMemories() {
     }
 }
 
-// ==================== 图库功能 ====================
-function uploadGalleryImage() {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-    input.onchange = async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        
-        showToast('正在上传...');
-        
-        // 这里应该实现实际上传逻辑
-        // 简化版本：使用 FileReader 读取为 base64
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            const image = {
-                id: 'img_' + Date.now(),
-                url: event.target.result,
-                name: file.name,
-                uploadedAt: new Date().toISOString()
-            };
-            gallery.push(image);
-            renderGallery();
-            showToast('图片已上传', 'success');
-        };
-        reader.readAsDataURL(file);
-    };
-    input.click();
-}
-
-function copyGalleryImageUrl() {
-    const url = document.getElementById('galleryImageUrl')?.value;
-    if (url) {
-        navigator.clipboard.writeText(url).then(() => {
-            showToast('链接已复制', 'success');
-        });
-    }
-}
-
-function deleteGalleryImage() {
-    const url = document.getElementById('galleryImageUrl')?.value;
-    if (!url) return;
-    
-    gallery = gallery.filter(img => img.url !== url);
-    renderGallery();
-    closeModal('galleryModal');
-    showToast('图片已删除');
-}
-
 // ==================== 聊天界面设置 ====================
 function resetChatUISettings() {
     if (!confirm('确定要重置聊天界面设置吗？')) return;
@@ -3037,13 +3016,16 @@ async function clearAllUserMemories() {
 
 // ==================== 角色编辑功能（补充）====================
 function editCharacter(id) {
+    // 确保 characters 数据同步到全局
+    window.characters = characters;
+    
     const char = characters.find(c => (c._id || c.id) === id);
     if (!char) {
         showToast('角色不存在', 'error');
         return;
     }
     
-    console.log('[Settings] Editing character:', char.name, 'ID:', id);
+    console.log('[Settings] Editing character:', char.name, 'ID:', id, 'Total:', characters.length);
     
     // 使用V2编辑器打开
     openCharacterModal(id);
@@ -3171,9 +3153,6 @@ window.deleteMemory = deleteMemory;
 window.viewTimelineArchive = viewTimelineArchive;
 window.closeTimelineArchiveModal = closeTimelineArchiveModal;
 window.loadMemoriesFromLocal = loadMemoriesFromLocal;
-window.uploadGalleryImage = uploadGalleryImage;
-window.copyGalleryImageUrl = copyGalleryImageUrl;
-window.deleteGalleryImage = deleteGalleryImage;
 window.resetChatUISettings = resetChatUISettings;
 window.saveChatUISettings = saveChatUISettings;
 window.saveUserPrompt = saveUserPrompt;

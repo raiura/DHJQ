@@ -34,7 +34,29 @@ async function loadGalleryV2Images() {
             renderGalleryV2List();
         }
     } catch (error) {
-        console.error('[Gallery V2] 加载失败:', error);
+        console.error('[Gallery V2] 加载失败，尝试本地存储:', error);
+        // 降级到本地存储
+        loadGalleryV2FromLocal(gameId);
+    }
+}
+
+// ===== 从本地存储加载 =====
+function loadGalleryV2FromLocal(gameId) {
+    try {
+        const storageKey = `game_${gameId}_gallery_v2`;
+        const saved = localStorage.getItem(storageKey);
+        if (saved) {
+            galleryV2Images = JSON.parse(saved);
+            console.log('[Gallery V2] 从本地存储加载CG:', galleryV2Images.length);
+            renderGalleryV2List();
+        } else {
+            galleryV2Images = [];
+            renderGalleryV2List();
+        }
+    } catch (error) {
+        console.error('[Gallery V2] 本地加载失败:', error);
+        galleryV2Images = [];
+        renderGalleryV2List();
     }
 }
 
@@ -154,8 +176,33 @@ function populateGalleryV2Form(img) {
     document.getElementById('g2_url').value = img.url || '';
     document.getElementById('g2_thumbnail').value = img.thumbnail || '';
     document.getElementById('g2_type').value = img.type || 'character_extended';
-    document.getElementById('g2_characterId').value = img.characterId || '';
     document.getElementById('g2_description').value = img.meta?.description || '';
+    
+    // 处理角色关联 - 支持自定义角色名
+    const characterId = img.characterId || '';
+    const customInput = document.getElementById('g2_customCharacterName');
+    const select = document.getElementById('g2_characterId');
+    const hint = document.getElementById('g2_characterHint');
+    
+    if (characterId === '__custom__') {
+        // 自定义角色
+        select.value = '__custom__';
+        if (customInput) {
+            customInput.value = img.characterName || '';
+            customInput.style.display = 'block';
+            select.style.display = 'none';
+        }
+        hint.textContent = `自定义角色: ${img.characterName || ''}`;
+    } else {
+        // 标准角色或通用
+        select.value = characterId;
+        if (customInput) {
+            customInput.value = '';
+            customInput.style.display = 'none';
+        }
+        select.style.display = 'block';
+        hint.textContent = characterId ? `已选择角色` : '通用CG可用于任何角色场景';
+    }
 
     // 触发系统
     const ts = img.triggerSystem || {};
@@ -184,16 +231,63 @@ function populateGalleryV2Form(img) {
     document.getElementById('g2_cooldownDuration').value = constraints.cooldown?.duration || 30;
 }
 
+// ===== 处理角色选择变化 =====
+function onCharacterSelectChange() {
+    const select = document.getElementById('g2_characterId');
+    const customInput = document.getElementById('g2_customCharacterName');
+    const hint = document.getElementById('g2_characterHint');
+    
+    if (select.value === '__custom__') {
+        // 切换到自定义输入
+        select.style.display = 'none';
+        customInput.style.display = 'block';
+        customInput.focus();
+        hint.textContent = '输入角色名，AI将根据此名称匹配场景';
+    } else {
+        hint.textContent = select.value ? `已选择角色: ${select.selectedOptions[0].text}` : '通用CG可用于任何角色场景';
+    }
+}
+
+// ===== 处理自定义角色输入失去焦点 =====
+function onCustomCharacterBlur() {
+    const select = document.getElementById('g2_characterId');
+    const customInput = document.getElementById('g2_customCharacterName');
+    const hint = document.getElementById('g2_characterHint');
+    
+    if (!customInput.value.trim()) {
+        // 如果没有输入，回到选择框
+        select.style.display = 'block';
+        customInput.style.display = 'none';
+        select.value = '';
+        hint.textContent = '通用CG可用于任何角色场景';
+    } else {
+        hint.textContent = `自定义角色: ${customInput.value}`;
+    }
+}
+
 // ===== 收集表单数据 =====
 function collectGalleryV2FormData() {
     const characterId = document.getElementById('g2_characterId').value;
+    const customInput = document.getElementById('g2_customCharacterName');
     const characterSelect = document.getElementById('g2_characterId');
-    const characterName = characterSelect?.selectedOptions?.[0]?.text || '';
+    
+    // 处理自定义角色名
+    let finalCharacterId = characterId;
+    let finalCharacterName = '';
+    
+    if (characterId === '__custom__' && customInput && customInput.value.trim()) {
+        // 使用自定义输入
+        finalCharacterId = '__custom__';
+        finalCharacterName = customInput.value.trim();
+    } else if (characterId && characterId !== '__custom__') {
+        // 使用选择的角色
+        finalCharacterName = characterSelect?.selectedOptions?.[0]?.text?.replace('👤 ', '') || '';
+    }
 
     return {
         gameId: window.gameId || new URLSearchParams(window.location.search).get('id'),
-        characterId: characterId || null,
-        characterName: characterName !== '通用CG' ? characterName : '',
+        characterId: finalCharacterId || null,
+        characterName: finalCharacterName,
         name: document.getElementById('g2_name').value,
         url: document.getElementById('g2_url').value,
         thumbnail: document.getElementById('g2_thumbnail').value,
@@ -258,6 +352,28 @@ async function saveGalleryV2() {
             body: JSON.stringify(data)
         });
 
+        // 处理404错误（内存存储模式下数据可能丢失）
+        if (response.status === 404 && currentGalleryEditId) {
+            console.warn('[Gallery V2] 编辑的资源不存在（可能是内存存储重启），转为创建新资源');
+            // 转为创建模式
+            const createResponse = await fetch(`${API_BASE}/gallery/v2`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...getAuthHeaders()
+                },
+                body: JSON.stringify(data)
+            });
+            
+            const createResult = await createResponse.json();
+            if (createResult.success) {
+                showToast('CG已添加（资源已重新创建）', 'success');
+                closeGalleryV2Modal();
+                loadGalleryV2Images();
+                return;
+            }
+        }
+
         const result = await response.json();
 
         if (result.success) {
@@ -269,6 +385,43 @@ async function saveGalleryV2() {
         }
     } catch (error) {
         console.error('[Gallery V2] 保存失败:', error);
+        // 降级到本地存储
+        saveGalleryV2ToLocal(data);
+    }
+}
+
+// ===== 本地存储降级方案 =====
+function saveGalleryV2ToLocal(data) {
+    try {
+        const gameId = window.gameId || new URLSearchParams(window.location.search).get('id');
+        if (!gameId) {
+            showToast('无法确定游戏ID', 'error');
+            return;
+        }
+        
+        const storageKey = `game_${gameId}_gallery_v2`;
+        let gallery = JSON.parse(localStorage.getItem(storageKey) || '[]');
+        
+        if (currentGalleryEditId) {
+            // 更新现有CG
+            const index = gallery.findIndex(cg => cg._id === currentGalleryEditId || cg.id === currentGalleryEditId);
+            if (index >= 0) {
+                gallery[index] = { ...gallery[index], ...data, _id: currentGalleryEditId };
+            } else {
+                // 如果找不到，添加为新CG
+                gallery.push({ ...data, _id: 'galv2_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9) });
+            }
+        } else {
+            // 添加新CG
+            gallery.push({ ...data, _id: 'galv2_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9) });
+        }
+        
+        localStorage.setItem(storageKey, JSON.stringify(gallery));
+        showToast('CG已保存到本地（后端不可用）', 'success');
+        closeGalleryV2Modal();
+        loadGalleryV2Images();
+    } catch (error) {
+        console.error('[Gallery V2] 本地保存失败:', error);
         showToast('保存失败', 'error');
     }
 }
@@ -283,6 +436,13 @@ async function deleteGalleryV2(id) {
             headers: getAuthHeaders()
         });
 
+        // 处理404错误（内存存储模式下数据丢失）
+        if (response.status === 404) {
+            console.warn('[Gallery V2] 删除的资源不存在（内存存储可能已重启），从本地存储删除');
+            deleteGalleryV2FromLocal(id);
+            return;
+        }
+
         const result = await response.json();
 
         if (result.success) {
@@ -291,6 +451,37 @@ async function deleteGalleryV2(id) {
         }
     } catch (error) {
         console.error('[Gallery V2] 删除失败:', error);
+        // 降级到本地存储删除
+        deleteGalleryV2FromLocal(id);
+    }
+}
+
+// ===== 本地存储删除降级方案 =====
+function deleteGalleryV2FromLocal(id) {
+    try {
+        const gameId = window.gameId || new URLSearchParams(window.location.search).get('id');
+        if (!gameId) {
+            showToast('无法确定游戏ID', 'error');
+            return;
+        }
+        
+        const storageKey = `game_${gameId}_gallery_v2`;
+        let gallery = JSON.parse(localStorage.getItem(storageKey) || '[]');
+        
+        // 过滤掉要删除的CG
+        const originalLength = gallery.length;
+        gallery = gallery.filter(cg => cg._id !== id && cg.id !== id);
+        
+        if (gallery.length < originalLength) {
+            localStorage.setItem(storageKey, JSON.stringify(gallery));
+            showToast('CG已从本地存储删除', 'success');
+            loadGalleryV2Images();
+        } else {
+            showToast('CG不存在或已删除', 'info');
+            loadGalleryV2Images();
+        }
+    } catch (error) {
+        console.error('[Gallery V2] 本地删除失败:', error);
         showToast('删除失败', 'error');
     }
 }
@@ -387,7 +578,7 @@ function renderTestResults(testScenes) {
 // ===== 初始化角色选择器 =====
 function initCharacterSelector() {
     const select = document.getElementById('g2_characterId');
-    if (!select || !window.characters) return;
+    if (!select) return;
 
     const characters = window.characters || [];
 
@@ -396,7 +587,16 @@ function initCharacterSelector() {
         ${characters.map(char => `
             <option value="${char._id || char.id}">👤 ${char.name}</option>
         `).join('')}
+        <option value="__custom__">✏️ 自定义输入...</option>
     `;
+    
+    // 重置自定义输入框
+    const customInput = document.getElementById('g2_customCharacterName');
+    if (customInput) {
+        customInput.value = '';
+        customInput.style.display = 'none';
+    }
+    select.style.display = 'block';
 }
 
 // ===== 暴露到全局 =====
@@ -408,5 +608,11 @@ window.editGalleryV2 = (id) => openGalleryV2Modal(id);
 window.deleteGalleryV2 = deleteGalleryV2;
 window.testGalleryV2Match = testGalleryV2Match;
 window.initCharacterSelector = initCharacterSelector;
+window.onCharacterSelectChange = onCharacterSelectChange;
+window.onCustomCharacterBlur = onCustomCharacterBlur;
+window.loadGalleryV2Images = loadGalleryV2Images;
+window.loadGalleryV2FromLocal = loadGalleryV2FromLocal;
+window.deleteGalleryV2FromLocal = deleteGalleryV2FromLocal;
+window.saveGalleryV2ToLocal = saveGalleryV2ToLocal;
 
 console.log('[Gallery V2] Editor loaded');
