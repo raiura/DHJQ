@@ -1,0 +1,48 @@
+{
+  "name": "galgame-test",
+  "version": "1.0.0",
+  "description": "测试配置和依赖管理",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest",
+    "test:backend": "jest test/backend",
+    "test:frontend": "jest test/frontend",
+    "test:coverage": "jest --coverage",
+    "test:watch": "jest --watch",
+    "test:e2e": "jest test/frontend/e2e"
+  },
+  "dependencies": {
+    "axios": "^1.6.2",
+    "dotenv": "^16.0.0"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "supertest": "^6.3.3",
+    "nyc": "^15.1.0",
+    "@faker-js/faker": "^8.0.0",
+    "jest-junit": "^16.0.0"
+  },
+  "scripts": {
+    "test": "jest --config jest.config.js",
+    "test:backend": "jest --config jest.config.js test/backend",
+    "test:frontend": "jest --config jest.config.js test/frontend",
+    "test:coverage": "jest --config jest.config.js --coverage",
+    "test:watch": "jest --config jest.config.js --watch"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "testPathIgnorePatterns": [
+      "/node_modules/",
+      "/test/temp/",
+      "/test/reports/"
+    ],
+    "coverageDirectory": "test/reports/coverage",
+    "reporters": [
+      "default",
+      ["jest-junit", {
+        "outputDirectory": "test/reports/junit",
+        "outputName": "results.xml"
+      }]
+    ]
+  }
+}

@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="jest tests" tests="23" failures="9" errors="0" time="25.967">
+  <testsuite name="认证API测试" errors="0" failures="4" skipped="0" timestamp="2026-03-31T09:22:31" time="23.326" tests="9">
+    <testcase classname="认证API测试 POST /api/auth/register 应该成功注册新用户" name="认证API测试 POST /api/auth/register 应该成功注册新用户" time="0.141">
+      <failure>Error: listen EADDRINUSE: address already in use :::3001
+    at Server.setupListenHandle [as _listen2] (node:net:1940:16)
+    at listenInCluster (node:net:1997:12)
+    at Server.listen (node:net:2102:7)
+    at Function.listen (D:\LWL\FengYue\DHJQ\backend\node_modules\express\lib\application.js:635:24)
+    at Object.listen (D:\LWL\FengYue\DHJQ\backend\server.js:209:5)
+    at Runtime._execModule (D:\LWL\FengYue\DHJQ\test\node_modules\jest-runtime\build\index.js:1439:24)
+    at Runtime._loadModule (D:\LWL\FengYue\DHJQ\test\node_modules\jest-runtime\build\index.js:1022:12)
+    at Runtime.requireModule (D:\LWL\FengYue\DHJQ\test\node_modules\jest-runtime\build\index.js:882:12)
+    at Runtime.requireModuleOrMock (D:\LWL\FengYue\DHJQ\test\node_modules\jest-runtime\build\index.js:1048:21)
+    at Object.require (D:\LWL\FengYue\DHJQ\test\backend\api\auth.test.js:2:13)
+    at Runtime._execModule (D:\LWL\FengYue\DHJQ\test\node_modules\jest-runtime\build\index.js:1439:24)
+    at Runtime._loadModule (D:\LWL\FengYue\DHJQ\test\node_modules\jest-runtime\build\index.js:1022:12)
+    at Runtime.requireModule (D:\LWL\FengYue\DHJQ\test\node_modules\jest-runtime\build\index.js:882:12)
+    at jestAdapter (D:\LWL\FengYue\DHJQ\test\node_modules\jest-circus\build\legacy-code-todo-rewrite\jestAdapter.js:77:13)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at runTestInternal (D:\LWL\FengYue\DHJQ\test\node_modules\jest-runner\build\runTest.js:367:16)
+    at runTest (D:\LWL\FengYue\DHJQ\test\node_modules\jest-runner\build\runTest.js:444:34)
+    at Object.worker (D:\LWL\FengYue\DHJQ\test\node_modules\jest-runner\build\testWorker.js:106:12)</failure>
+      <failure>Error: expect(received).toBe(expected) // Object.is equality
+
+Expected: 200
+Received: 400
+    at Object.toBe (D:\LWL\FengYue\DHJQ\test\backend\api\auth.test.js:22:35)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
+    </testcase>
+    <testcase classname="认证API测试 POST /api/auth/register 应该拒绝注册已存在的用户名" name="认证API测试 POST /api/auth/register 应该拒绝注册已存在的用户名" time="0.011">
+      <failure>Error: expect(received).toBe(expected) // Object.is equality
+
+Expected: 409
+Received: 400
+    at Object.toBe (D:\LWL\FengYue\DHJQ\test\backend\api\auth.test.js:37:35)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
+    </testcase>
+    <testcase classname="认证API测试 POST /api/auth/register 应该拒绝缺少必填字段的注册请求" name="认证API测试 POST /api/auth/register 应该拒绝缺少必填字段的注册请求" time="0.04">
+    </testcase>
+    <testcase classname="认证API测试 POST /api/auth/login 应该成功登录已注册用户" name="认证API测试 POST /api/auth/login 应该成功登录已注册用户" time="0.011">
+      <failure>Error: expect(received).toBe(expected) // Object.is equality
+
+Expected: 200
+Received: 401
+    at Object.toBe (D:\LWL\FengYue\DHJQ\test\backend\api\auth.test.js:61:35)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
+    </testcase>
+    <testcase classname="认证API测试 POST /api/auth/login 应该拒绝无效的登录凭据" name="认证API测试 POST /api/auth/login 应该拒绝无效的登录凭据" time="0.009">
+    </testcase>
+    <testcase classname="认证API测试 POST /api/auth/login 应该拒绝缺少必填字段的登录请求" name="认证API测试 POST /api/auth/login 应该拒绝缺少必填字段的登录请求" time="0.009">
+    </testcase>
+    <testcase classname="认证API测试 GET /api/auth/me 应该使用有效令牌获取用户信息" name="认证API测试 GET /api/auth/me 应该使用有效令牌获取用户信息" time="0.016">
+      <failure>Error: expect(received).toBe(expected) // Object.is equality
+
+Expected: 200
+Received: 401
+    at Object.toBe (D:\LWL\FengYue\DHJQ\test\backend\api\auth.test.js:97:35)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
+    </testcase>
+    <testcase classname="认证API测试 GET /api/auth/me 应该拒绝缺少令牌的请求" name="认证API测试 GET /api/auth/me 应该拒绝缺少令牌的请求" time="0.008">
+    </testcase>
+    <testcase classname="认证API测试 GET /api/auth/me 应该拒绝无效令牌的请求" name="认证API测试 GET /api/auth/me 应该拒绝无效令牌的请求" time="0.01">
+    </testcase>
+  </testsuite>
+  <testsuite name="游戏管理API测试" errors="0" failures="5" skipped="0" timestamp="2026-03-31T09:22:31" time="23.547" tests="14">
+    <testcase classname="游戏管理API测试 GET /api/games 应该获取游戏列表" name="游戏管理API测试 GET /api/games 应该获取游戏列表" time="0.083">
+    </testcase>
+    <testcase classname="游戏管理API测试 GET /api/games 应该支持分页和筛选" name="游戏管理API测试 GET /api/games 应该支持分页和筛选" time="0.002">
+      <failure>TypeError: Request path contains unescaped characters
+    at new ClientRequest (node:_http_client:186:13)
+    at Object.request (node:http:102:10)
+    at Test.request (D:\LWL\FengYue\DHJQ\test\node_modules\superagent\src\node\index.js:808:22)
+    at Test.request [as end] (D:\LWL\FengYue\DHJQ\test\node_modules\superagent\src\node\index.js:986:8)
+    at Test.end (D:\LWL\FengYue\DHJQ\test\node_modules\supertest\lib\test.js:118:11)
+    at end (D:\LWL\FengYue\DHJQ\test\node_modules\superagent\src\request-base.js:285:12)
+    at new Promise (&lt;anonymous&gt;)
+    at Test.Object.&lt;anonymous&gt;.RequestBase.then (D:\LWL\FengYue\DHJQ\test\node_modules\superagent\src\request-base.js:267:31)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
+    </testcase>
+    <testcase classname="游戏管理API测试 GET /api/games/featured/list 应该获取推荐游戏列表" name="游戏管理API测试 GET /api/games/featured/list 应该获取推荐游戏列表" time="0.016">
+    </testcase>
+    <testcase classname="游戏管理API测试 POST /api/games 应该成功创建新游戏" name="游戏管理API测试 POST /api/games 应该成功创建新游戏" time="0.024">
+      <failure>Error: expect(received).toBe(expected) // Object.is equality
+
+Expected: 201
+Received: 200
+    at Object.toBe (D:\LWL\FengYue\DHJQ\test\backend\api\games.test.js:64:35)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
+    </testcase>
+    <testcase classname="游戏管理API测试 POST /api/games 应该拒绝缺少必填字段的创建请求" name="游戏管理API测试 POST /api/games 应该拒绝缺少必填字段的创建请求" time="0.012">
+    </testcase>
+    <testcase classname="游戏管理API测试 POST /api/games 应该拒绝未认证的创建请求" name="游戏管理API测试 POST /api/games 应该拒绝未认证的创建请求" time="0.012">
+    </testcase>
+    <testcase classname="游戏管理API测试 GET /api/games/my 应该获取当前用户的游戏列表" name="游戏管理API测试 GET /api/games/my 应该获取当前用户的游戏列表" time="0.011">
+    </testcase>
+    <testcase classname="游戏管理API测试 GET /api/games/my 应该拒绝未认证的请求" name="游戏管理API测试 GET /api/games/my 应该拒绝未认证的请求" time="0.009">
+    </testcase>
+    <testcase classname="游戏管理API测试 PUT /api/games/:id 应该成功更新游戏信息" name="游戏管理API测试 PUT /api/games/:id 应该成功更新游戏信息" time="0.012">
+      <failure>Error: expect(received).toBe(expected) // Object.is equality
+
+Expected: 200
+Received: 404
+    at Object.toBe (D:\LWL\FengYue\DHJQ\test\backend\api\games.test.js:120:35)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
+    </testcase>
+    <testcase classname="游戏管理API测试 PUT /api/games/:id 应该拒绝未认证的更新请求" name="游戏管理API测试 PUT /api/games/:id 应该拒绝未认证的更新请求" time="0.007">
+    </testcase>
+    <testcase classname="游戏管理API测试 POST /api/games/:id/publish 应该成功发布游戏" name="游戏管理API测试 POST /api/games/:id/publish 应该成功发布游戏" time="0.007">
+      <failure>Error: expect(received).toBe(expected) // Object.is equality
+
+Expected: 200
+Received: 404
+    at Object.toBe (D:\LWL\FengYue\DHJQ\test\backend\api\games.test.js:141:35)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
+    </testcase>
+    <testcase classname="游戏管理API测试 POST /api/games/:id/publish 应该拒绝未认证的发布请求" name="游戏管理API测试 POST /api/games/:id/publish 应该拒绝未认证的发布请求" time="0.006">
+    </testcase>
+    <testcase classname="游戏管理API测试 GET /api/games/:slug 应该获取游戏详情" name="游戏管理API测试 GET /api/games/:slug 应该获取游戏详情" time="0.005">
+      <failure>Error: expect(received).toBe(expected) // Object.is equality
+
+Expected: 200
+Received: 403
+    at Object.toBe (D:\LWL\FengYue\DHJQ\test\backend\api\games.test.js:160:35)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
+    </testcase>
+    <testcase classname="游戏管理API测试 GET /api/games/:slug 应该返回404对于不存在的游戏" name="游戏管理API测试 GET /api/games/:slug 应该返回404对于不存在的游戏" time="0.005">
+    </testcase>
+  </testsuite>
+</testsuites>
