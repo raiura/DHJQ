@@ -121,6 +121,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         // 初始化世界书管理器
         await initWorldbookManager();
         
+        // 如果当前是世界概览页面，重新渲染以更新世界书计数
+        const currentPage = new URLSearchParams(window.location.search).get('page');
+        if (currentPage === 'world-overview') {
+            console.log('[Settings] Re-rendering world overview after worldbook init');
+            renderWorldOverview();
+        }
+        
         // 初始化角色编辑器事件
         initCharacterEditorEvents();
         
@@ -1439,7 +1446,7 @@ async function saveWorldbookEntry() {
             if (isUserEntry) {
                 worldbookManager.updateUserEntry(editingWorldbookId, entryData);
             } else {
-                worldbookManager.updateGlobalEntry(editingWorldbookId, entryData);
+                await worldbookManager.updateGlobalEntry(editingWorldbookId, entryData);
             }
             showToast('条目已更新', 'success');
         } else {
@@ -1448,7 +1455,7 @@ async function saveWorldbookEntry() {
             
             if (addToGlobal) {
                 // 添加到全局世界书
-                worldbookManager.addGlobalEntry(entryData);
+                await worldbookManager.addGlobalEntry(entryData);
                 showToast('条目已添加到全局世界书', 'success');
             } else {
                 // 添加到用户世界书 - 需要选中存档
@@ -1508,7 +1515,7 @@ async function deleteWorldbookEntry(entryId, isUserEntry) {
                 showToast('只有作者可以删除全局条目', 'error');
                 return;
             }
-            worldbookManager.deleteGlobalEntry(entryId);
+            await worldbookManager.deleteGlobalEntry(entryId);
         }
         
         renderWorldbookList();
@@ -1590,7 +1597,7 @@ async function batchDeleteWorldbookEntries(entryIds, isUserEntries = true) {
             if (isUserEntries) {
                 worldbookManager.deleteUserEntry(entryId);
             } else if (hasFullEditPermission()) {
-                worldbookManager.deleteGlobalEntry(entryId);
+                await worldbookManager.deleteGlobalEntry(entryId);
             }
         }
         
@@ -1921,13 +1928,13 @@ function showImportDialog(data) {
     document.getElementById('modalOverlay').style.display = 'block';
     
     // 绑定导入按钮
-    document.getElementById('confirmImportBtn').onclick = () => {
+    document.getElementById('confirmImportBtn').onclick = async () => {
         const asGlobal = document.getElementById('importAsGlobal')?.checked;
         
         try {
             for (const entry of data.entries) {
                 if (asGlobal && hasFullEditPermission()) {
-                    worldbookManager.addGlobalEntry(entry);
+                    await worldbookManager.addGlobalEntry(entry);
                 } else {
                     worldbookManager.addUserEntry(entry);
                 }

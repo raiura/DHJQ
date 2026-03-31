@@ -141,15 +141,24 @@ class WorldbookManager {
             const response = await fetch(`${API_BASE}/games/${this.gameId}/worldbook`, {
                 method: 'PUT',
                 headers: getAuthHeaders(),
-                body: JSON.stringify(this.globalWorldbook)
+                body: JSON.stringify({ entries: this.globalWorldbook.entries })
             });
             
             if (response.ok) {
-                this._saveToStorage();
-                return true;
+                const result = await response.json();
+                if (result.success) {
+                    // 更新本地条目 ID（后端可能创建了新的）
+                    if (result.data?.entries) {
+                        this.globalWorldbook.entries = result.data.entries;
+                        this._saveToStorage();
+                    }
+                    return true;
+                }
+            } else if (response.status === 404) {
+                console.log('[WorldbookManager] Backend API not available, saved to local only');
             }
         } catch (error) {
-            console.error('保存全局世界书失败:', error);
+            console.error('[WorldbookManager] 保存全局世界书失败:', error);
         }
         
         return false;
@@ -158,25 +167,46 @@ class WorldbookManager {
     /**
      * 添加全局条目
      */
-    addGlobalEntry(entry) {
+    async addGlobalEntry(entry) {
         const engine = new WorldbookEngine({ globalEntries: this.globalWorldbook.entries });
         const newEntry = engine.addGlobalEntry(entry);
         this.globalWorldbook.entries = engine.globalEntries;
         this._engine = null;
+        
+        // 先保存到本地（快速响应）
         this._saveToStorage();
+        
+        // 然后同步到后端
+        try {
+            await this.saveGlobalWorldbook();
+            console.log('[WorldbookManager] Global entry added and synced to backend');
+        } catch (err) {
+            console.warn('[WorldbookManager] Failed to sync to backend, kept in local storage:', err);
+        }
+        
         return newEntry;
     }
 
     /**
      * 更新全局条目
      */
-    updateGlobalEntry(entryId, updates) {
+    async updateGlobalEntry(entryId, updates) {
         const engine = new WorldbookEngine({ globalEntries: this.globalWorldbook.entries });
         const updated = engine.updateEntry(entryId, updates, false);
         if (updated) {
             this.globalWorldbook.entries = engine.globalEntries;
             this._engine = null;
+            
+            // 先保存到本地（快速响应）
             this._saveToStorage();
+            
+            // 然后同步到后端
+            try {
+                await this.saveGlobalWorldbook();
+                console.log('[WorldbookManager] Global entry updated and synced to backend');
+            } catch (err) {
+                console.warn('[WorldbookManager] Failed to sync to backend, kept in local storage:', err);
+            }
         }
         return updated;
     }
@@ -184,13 +214,23 @@ class WorldbookManager {
     /**
      * 删除全局条目
      */
-    deleteGlobalEntry(entryId) {
+    async deleteGlobalEntry(entryId) {
         const engine = new WorldbookEngine({ globalEntries: this.globalWorldbook.entries });
         const deleted = engine.deleteEntry(entryId, false);
         if (deleted) {
             this.globalWorldbook.entries = engine.globalEntries;
             this._engine = null;
+            
+            // 先保存到本地（快速响应）
             this._saveToStorage();
+            
+            // 然后同步到后端
+            try {
+                await this.saveGlobalWorldbook();
+                console.log('[WorldbookManager] Global entry deleted and synced to backend');
+            } catch (err) {
+                console.warn('[WorldbookManager] Failed to sync to backend, kept in local storage:', err);
+            }
         }
         return deleted;
     }

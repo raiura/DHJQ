@@ -816,6 +816,95 @@ router.post('/fix-images', async (req, res) => {
   }
 });
 
+/**
+ * 获取游戏的世界书条目
+ * GET /api/games/:id/worldbook
+ */
+router.get('/:id/worldbook', authMiddleware.verifyToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // 检查游戏是否存在
+    const game = await Game.findById(id);
+    if (!game) {
+      return ResponseUtil.error(res, '游戏不存在', 404);
+    }
+    
+    // 获取游戏的世界书条目（通过 gameId 关联）
+    const entries = await WorldbookEntry.find({ gameId: id })
+      .sort({ priority: -1, createdAt: -1 });
+    
+    ResponseUtil.success(res, {
+      gameId: id,
+      entries: entries,
+      count: entries.length
+    });
+  } catch (error) {
+    Logger.error('获取游戏世界书失败:', error);
+    ResponseUtil.error(res, '获取世界书失败', 500);
+  }
+});
+
+/**
+ * 保存游戏的世界书（全局条目）
+ * PUT /api/games/:id/worldbook
+ */
+router.put('/:id/worldbook', authMiddleware.verifyToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.userId;
+    const { entries } = req.body;
+    
+    // 检查游戏是否存在
+    const game = await Game.findById(id);
+    if (!game) {
+      return ResponseUtil.error(res, '游戏不存在', 404);
+    }
+    
+    // 检查权限
+    if (game.creator !== userId && req.userRole !== 'admin') {
+      return ResponseUtil.error(res, '无权限编辑此游戏的世界书', 403);
+    }
+    
+    // 批量更新/创建世界书条目
+    const results = [];
+    for (const entry of entries || []) {
+      const entryData = {
+        ...entry,
+        gameId: id,
+        isGlobal: true
+      };
+      
+      try {
+        if (entry._id && !entry._id.toString().startsWith('wb_')) {
+          // 更新现有条目
+          const updated = await WorldbookEntry.findByIdAndUpdate(entry._id, {
+            ...entryData,
+            updatedAt: new Date()
+          });
+          if (updated) results.push(updated);
+        } else {
+          // 创建新条目
+          const created = await WorldbookEntry.create(entryData);
+          results.push(created);
+        }
+      } catch (err) {
+        Logger.error('保存世界书条目失败:', err);
+      }
+    }
+    
+    Logger.info(`用户 ${userId} 保存了游戏 ${game.title} 的世界书: ${results.length} 条`);
+    ResponseUtil.success(res, {
+      gameId: id,
+      entries: results,
+      count: results.length
+    }, '世界书保存成功');
+  } catch (error) {
+    Logger.error('保存游戏世界书失败:', error);
+    ResponseUtil.error(res, '保存世界书失败', 500);
+  }
+});
+
 // 导出路由和初始化函数
 module.exports = router;
 module.exports.initDefaultGames = initDefaultGames;
