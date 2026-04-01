@@ -8,6 +8,13 @@
  * - 持久化到 localStorage
  */
 
+// 存储键名 - 如果全局未定义则创建，但不会覆盖已有的
+if (typeof STORAGE_KEYS === 'undefined') {
+    var STORAGE_KEYS = {
+        WORLDBOOK: (gameId) => `galgame_${gameId}_worldbook`
+    };
+}
+
 class WorldbookManager {
     constructor(options = {}) {
         this.gameId = options.gameId || null;
@@ -384,12 +391,12 @@ class WorldbookManager {
     _loadFromStorage() {
         try {
             // 加载全局世界书（尝试 gameId 和 'default'）
-            const globalKey = 'wb_global_' + (this.gameId || 'default');
+            const globalKey = STORAGE_KEYS.WORLDBOOK(this.gameId || 'default');
             let globalData = localStorage.getItem(globalKey);
             
             // 兼容旧数据：如果没有 gameId 特定的数据，尝试 'default'
             if (!globalData && this.gameId) {
-                globalData = localStorage.getItem('wb_global_default');
+                globalData = localStorage.getItem(STORAGE_KEYS.WORLDBOOK('default'));
             }
             
             if (globalData) {
@@ -416,7 +423,7 @@ class WorldbookManager {
     _saveToStorage() {
         try {
             // 保存全局世界书（使用 gameId 或 'default'）
-            const globalKey = 'wb_global_' + (this.gameId || 'default');
+            const globalKey = STORAGE_KEYS.WORLDBOOK(this.gameId || 'default');
             localStorage.setItem(globalKey, JSON.stringify(this.globalWorldbook));
             console.log('[WorldbookManager] Saved global to', globalKey, 'entries:', this.globalWorldbook.entries.length);
             

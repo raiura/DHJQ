@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-04-01T11:39:04.624Z",
+  "timestamp": "2026-04-01T16:00:58.491Z",
   "collections": {
     "users": [
       {
@@ -9,9 +9,9 @@
         "nickname": "管理员",
         "role": "admin",
         "createdAt": "2026-03-12T14:02:56.708Z",
-        "updatedAt": "2026-04-01T06:45:22.969Z",
+        "updatedAt": "2026-04-01T14:11:34.362Z",
         "isActive": true,
-        "lastLoginAt": "2026-04-01T06:45:22.968Z"
+        "lastLoginAt": "2026-04-01T14:11:34.362Z"
       }
     ],
     "characters": [
@@ -24,7 +24,7 @@
         "enabled": true,
         "gameId": "mem_1773324176145_1",
         "createdAt": "2026-03-12T14:02:56.145Z",
-        "updatedAt": "2026-04-01T11:39:04.119Z",
+        "updatedAt": "2026-04-01T15:38:41.340Z",
         "imageFit": "cover",
         "appearance": "",
         "personality": "",
@@ -98,9 +98,9 @@
           "tags": [],
           "creator": "",
           "version": "2.0.0",
-          "updatedAt": "2026-04-01T11:39:04.119Z"
+          "updatedAt": "2026-04-01T15:38:41.340Z"
         },
-        "meta.updatedAt": "2026-04-01T11:39:04.119Z"
+        "meta.updatedAt": "2026-04-01T15:38:41.340Z"
       },
       {
         "_id": "mem_1773324176145_3",
@@ -111,7 +111,7 @@
         "enabled": true,
         "gameId": "mem_1773324176145_1",
         "createdAt": "2026-03-12T14:02:56.145Z",
-        "updatedAt": "2026-04-01T11:39:04.109Z",
+        "updatedAt": "2026-04-01T15:38:41.344Z",
         "imageFit": "cover",
         "appearance": "",
         "personality": "",
@@ -189,9 +189,9 @@
           "tags": [],
           "creator": "",
           "version": "2.0.0",
-          "updatedAt": "2026-04-01T11:39:04.108Z"
+          "updatedAt": "2026-04-01T15:38:41.344Z"
         },
-        "meta.updatedAt": "2026-04-01T11:39:04.108Z"
+        "meta.updatedAt": "2026-04-01T15:38:41.344Z"
       },
       {
         "_id": "mem_1773324176145_4",
@@ -202,7 +202,7 @@
         "enabled": true,
         "gameId": "mem_1773324176145_1",
         "createdAt": "2026-03-12T14:02:56.145Z",
-        "updatedAt": "2026-04-01T11:39:04.100Z",
+        "updatedAt": "2026-04-01T15:38:41.348Z",
         "imageFit": "cover",
         "appearance": "",
         "personality": "",
@@ -280,9 +280,9 @@
           "tags": [],
           "creator": "",
           "version": "2.0.0",
-          "updatedAt": "2026-04-01T11:39:04.100Z"
+          "updatedAt": "2026-04-01T15:38:41.348Z"
         },
-        "meta.updatedAt": "2026-04-01T11:39:04.100Z"
+        "meta.updatedAt": "2026-04-01T15:38:41.348Z"
       }
     ],
     "dialogues": [],
@@ -422,8 +422,8 @@
           "favorites": 66
         },
         "createdAt": "2026-03-12T14:02:56.145Z",
-        "updatedAt": "2026-04-01T11:39:04.088Z",
-        "version": 31
+        "updatedAt": "2026-04-01T15:38:41.336Z",
+        "version": 35
       }
     ],
     "gallery": [],

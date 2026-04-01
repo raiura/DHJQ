@@ -214,7 +214,7 @@ function getCurrentCharacters() {
     console.log('[Character V2] Trying to load characters with IDs:', possibleIds);
     
     for (const gameId of possibleIds) {
-        const saved = localStorage.getItem(`game_${gameId}_characters`);
+        const saved = localStorage.getItem(STORAGE_KEYS.CHARACTERS(gameId));
         if (saved) {
             try {
                 chars = JSON.parse(saved);

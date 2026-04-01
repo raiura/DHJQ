@@ -884,66 +884,160 @@
             });
         });
         
+        // 获取游戏ID（从URL或localStorage）
+        // 注意：可能返回slug，需要调用getGameIdFromSlug转换为真实ID
+        function getGameIdOrSlug() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get('id') || 
+                   urlParams.get('world') || 
+                   localStorage.getItem('galgame_current_world') ||
+                   'dahuang-jiuqiu';
+        }
+        
+        // 缓存的真实gameId
+        let _cachedGameId = null;
+        
+        // 获取真实gameId（从slug转换）
+        async function getRealGameId() {
+            if (_cachedGameId) return _cachedGameId;
+            
+            const idOrSlug = getGameIdOrSlug();
+            
+            // 如果已经是ID格式（包含_），直接返回
+            if (idOrSlug.includes('_')) {
+                _cachedGameId = idOrSlug;
+                return idOrSlug;
+            }
+            
+            // 否则通过API从slug获取真实ID
+            try {
+                const response = await fetch(`${API_BASE}/games/${idOrSlug}`);
+                const data = await response.json();
+                if (data.success && data.data) {
+                    _cachedGameId = data.data._id || data.data.id;
+                    return _cachedGameId;
+                }
+            } catch (e) {
+                console.error('[WorldGuide] Failed to get gameId from slug:', e);
+            }
+            
+            // 失败时返回原始值
+            return idOrSlug;
+        }
+        
+        // 统一存储键名
+        const STORAGE_KEYS = {
+            CHARACTERS: (gameId) => `galgame_${gameId}_characters`,
+            WORLDBOOK: (gameId) => `galgame_${gameId}_worldbook`
+        };
+        
         // 加载角色列表
         async function loadCharacters() {
+            const gameId = await getRealGameId();
+            const storageKey = STORAGE_KEYS.CHARACTERS(gameId);
+            
             try {
-                const response = await fetch(`${API_BASE}/characters`, {
+                // 优先从API获取
+                const response = await fetch(`${API_BASE}/characters?gameId=${gameId}`, {
                     headers: getAuthHeaders()
                 });
                 const data = await response.json();
                 
                 if (data.success && data.data) {
-                    const container = document.getElementById('character-list');
-                    container.innerHTML = data.data.map(char => `
-                        <div class="character-card">
-                            <img class="character-image" src="${char.image || 'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'400\' height=\'300\'%3E%3Crect fill=\'%231a1a2e\' width=\'400\' height=\'300\'/%3E%3Ctext x=\'50%25\' y=\'50%25\' fill=\'%238a6d3b\' font-family=\'Microsoft YaHei\' font-size=\'20\' text-anchor=\'middle\'%3E' + encodeURIComponent(char.name) + '%3C/text%3E%3C/svg%3E'}" 
-                                 alt="${char.name}" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'400\' height=\'300\'%3E%3Crect fill=\'%231a1a2e\' width=\'400\' height=\'300\'/%3E%3Ctext x=\'50%25\' y=\'50%25\' fill=\'%238a6d3b\' font-family=\'Microsoft YaHei\' font-size=\'20\' text-anchor=\'middle\'%3E' + encodeURIComponent(char.name) + '%3C/text%3E%3C/svg%3E'">
-                            <div class="character-info">
-                                <div class="character-header">
-                                    <div>
-                                        <div class="character-name">${char.name}</div>
-                                        <div class="character-title">${char.background || '修仙者'}</div>
-                                    </div>
-                                    <span class="character-type">${char.enabled !== false ? '启用' : '禁用'}</span>
-                                </div>
-                                <div class="character-desc">${char.prompt ? char.prompt.substring(0, 100) + '...' : '暂无详细设定'}</div>
-                                <div class="character-traits">
-                                    ${(char.keys || []).map(key => `<span class="trait">${key}</span>`).join('')}
-                                </div>
-                            </div>
-                        </div>
-                    `).join('');
+                    // 保存到localStorage
+                    localStorage.setItem(storageKey, JSON.stringify(data.data));
+                    renderCharacters(data.data);
                 }
             } catch (error) {
-                console.error('加载角色失败:', error);
+                console.error('API加载角色失败，使用本地缓存:', error);
+                // 回退到本地缓存
+                const cached = localStorage.getItem(storageKey);
+                if (cached) {
+                    renderCharacters(JSON.parse(cached));
+                }
             }
+        }
+        
+        // 渲染角色列表
+        function renderCharacters(characters) {
+            const container = document.getElementById('character-list');
+            if (!container || !characters) return;
+            
+            container.innerHTML = characters.map(char => `
+                <div class="character-card">
+                    <img class="character-image" src="${char.image || 'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'400\' height=\'300\'%3E%3Crect fill=\'%231a1a2e\' width=\'400\' height=\'300\'/%3E%3Ctext x=\'50%25\' y=\'50%25\' fill=\'%238a6d3b\' font-family=\'Microsoft YaHei\' font-size=\'20\' text-anchor=\'middle\'%3E' + encodeURIComponent(char.name) + '%3C/text%3E%3C/svg%3E'}" 
+                             alt="${char.name}" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'400\' height=\'300\'%3E%3Crect fill=\'%231a1a2e\' width=\'400\' height=\'300\'/%3E%3Ctext x=\'50%25\' y=\'50%25\' fill=\'%238a6d3b\' font-family=\'Microsoft YaHei\' font-size=\'20\' text-anchor=\'middle\'%3E' + encodeURIComponent(char.name) + '%3C/text%3E%3C/svg%3E'">
+                    <div class="character-info">
+                        <div class="character-header">
+                            <div>
+                                <div class="character-name">${char.name}</div>
+                                <div class="character-title">${char.background || '修仙者'}</div>
+                            </div>
+                            <span class="character-type">${char.enabled !== false ? '启用' : '禁用'}</span>
+                        </div>
+                        <div class="character-desc">${char.prompt ? char.prompt.substring(0, 100) + '...' : '暂无详细设定'}</div>
+                        <div class="character-traits">
+                            ${(char.keys || []).map(key => `<span class="trait">${key}</span>`).join('')}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
         }
         
         // 加载世界书
         async function loadWorldbook() {
+            const gameId = await getRealGameId();
+            const storageKey = STORAGE_KEYS.WORLDBOOK(gameId);
+            
             try {
-                const response = await fetch(`${API_BASE}/worldbook`, {
+                // 优先从API获取
+                const response = await fetch(`${API_BASE}/games/${gameId}/worldbook`, {
                     headers: getAuthHeaders()
                 });
                 const data = await response.json();
                 
                 if (data.success && data.data) {
-                    const container = document.getElementById('worldbook-list');
-                    container.innerHTML = data.data.map(entry => `
-                        <div class="worldbook-item">
-                            <div class="worldbook-header">
-                                <div class="worldbook-name">${entry.name}</div>
-                                <div class="worldbook-keys">
-                                    ${(entry.keys || []).map(key => `<span class="key-tag">${key}</span>`).join('')}
-                                </div>
-                            </div>
-                            <div class="worldbook-content">${entry.content}</div>
-                        </div>
-                    `).join('');
+                    // API返回的是 {entries: [...]} 结构
+                    const entries = data.data.entries || data.data;
+                    // 保存到localStorage（只保存entries数组）
+                    localStorage.setItem(storageKey, JSON.stringify(entries));
+                    renderWorldbook(entries);
                 }
             } catch (error) {
-                console.error('加载世界书失败:', error);
+                console.error('API加载世界书失败，使用本地缓存:', error);
+                // 回退到本地缓存
+                const cached = localStorage.getItem(storageKey);
+                if (cached) {
+                    let entries = JSON.parse(cached);
+                    // 兼容旧格式（可能是对象）
+                    if (entries.entries) entries = entries.entries;
+                    renderWorldbook(entries);
+                }
             }
+        }
+        
+        // 渲染世界书
+        function renderWorldbook(entries) {
+            const container = document.getElementById('worldbook-list');
+            if (!container || !entries) return;
+            
+            // 确保 entries 是数组
+            if (!Array.isArray(entries)) {
+                console.error('[WorldGuide] entries is not an array:', entries);
+                return;
+            }
+            
+            container.innerHTML = entries.map(entry => `
+                <div class="worldbook-item">
+                    <div class="worldbook-header">
+                        <div class="worldbook-name">${entry.name}</div>
+                        <div class="worldbook-keys">
+                            ${(entry.keys || []).map(key => `<span class="key-tag">${key}</span>`).join('')}
+                        </div>
+                    </div>
+                    <div class="worldbook-content">${entry.content}</div>
+                </div>
+            `).join('');
         }
         
         // 角色模板选择

@@ -546,15 +546,18 @@
                 image: null
             }
         };
-        // 角色颜色映射表（保持兼容性）
-        let characterColors = {
-            '默认描述者': '#999999',
-            '林婉': '#FF69B4',
-            '陆苍雪': '#87CEFA',
-            '轩辕霓裳': '#FF4500',
-            'AI': '#4CAF50',
-            'You': '#2196F3'
-        };
+        // 角色颜色映射表（保持兼容性）- 使用 window.characterColors 避免重复定义
+        if (!window.characterColors) {
+            window.characterColors = {
+                '默认描述者': '#999999',
+                '林婉': '#FF69B4',
+                '陆苍雪': '#87CEFA',
+                '轩辕霓裳': '#FF4500',
+                'AI': '#4CAF50',
+                'You': '#2196F3'
+            };
+        }
+        const characterColors = window.characterColors;
         // 动态添加角色的函数
         function addCharacter(characterName, characterInfo) {
             // 默认颜色和立绘

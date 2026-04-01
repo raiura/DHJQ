@@ -61,9 +61,11 @@ class AIConfigEditor {
             version: '2.0',
             model: {
                 provider: 'openai',
-                name: 'gpt-4',
-                contextWindow: 8192,
-                endpoint: ''
+                name: 'gpt-4o',
+                contextWindow: 128000,
+                customModelName: '',
+                apiKey: '',
+                baseUrl: ''
             },
             generation: {
                 temperature: 0.7,
@@ -96,18 +98,60 @@ class AIConfigEditor {
     getModelList() {
         return {
             openai: [
-                { id: 'gpt-4', name: 'GPT-4', context: 8192, cost: '高' },
+                { id: 'gpt-4o', name: 'GPT-4o', context: 128000, cost: '中' },
+                { id: 'gpt-4o-mini', name: 'GPT-4o Mini', context: 128000, cost: '低' },
                 { id: 'gpt-4-turbo', name: 'GPT-4 Turbo', context: 128000, cost: '高' },
-                { id: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo', context: 16385, cost: '低' },
-                { id: 'gpt-4o', name: 'GPT-4o', context: 128000, cost: '中' }
+                { id: 'gpt-4', name: 'GPT-4', context: 8192, cost: '高' },
+                { id: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo', context: 16385, cost: '低' }
             ],
             anthropic: [
-                { id: 'claude-3-opus', name: 'Claude 3 Opus', context: 200000, cost: '高' },
-                { id: 'claude-3-sonnet', name: 'Claude 3 Sonnet', context: 200000, cost: '中' },
-                { id: 'claude-3-haiku', name: 'Claude 3 Haiku', context: 200000, cost: '低' }
+                { id: 'claude-3-5-sonnet-20240620', name: 'Claude 3.5 Sonnet', context: 200000, cost: '中' },
+                { id: 'claude-3-opus-20240229', name: 'Claude 3 Opus', context: 200000, cost: '高' },
+                { id: 'claude-3-sonnet-20240229', name: 'Claude 3 Sonnet', context: 200000, cost: '中' },
+                { id: 'claude-3-haiku-20240307', name: 'Claude 3 Haiku', context: 200000, cost: '低' }
+            ],
+            google: [
+                { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro', context: 2000000, cost: '中' },
+                { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash', context: 1000000, cost: '低' },
+                { id: 'gemini-1.0-pro', name: 'Gemini 1.0 Pro', context: 32768, cost: '低' }
+            ],
+            openrouter: [
+                { id: 'openai/gpt-4o', name: 'OpenAI GPT-4o', context: 128000, cost: '中' },
+                { id: 'anthropic/claude-3.5-sonnet', name: 'Claude 3.5 Sonnet', context: 200000, cost: '中' },
+                { id: 'google/gemini-1.5-pro', name: 'Gemini 1.5 Pro', context: 2000000, cost: '中' },
+                { id: 'meta-llama/llama-3.1-70b-instruct', name: 'Llama 3.1 70B', context: 131072, cost: '低' },
+                { id: 'deepseek/deepseek-chat', name: 'DeepSeek V2.5', context: 64000, cost: '低' }
+            ],
+            deepseek: [
+                { id: 'deepseek-chat', name: 'DeepSeek V3', context: 64000, cost: '低' },
+                { id: 'deepseek-reasoner', name: 'DeepSeek R1', context: 64000, cost: '低' }
+            ],
+            moonshot: [
+                { id: 'moonshot-v1-8k', name: 'Moonshot 8K', context: 8192, cost: '低' },
+                { id: 'moonshot-v1-32k', name: 'Moonshot 32K', context: 32768, cost: '低' },
+                { id: 'moonshot-v1-128k', name: 'Moonshot 128K', context: 128000, cost: '中' }
+            ],
+            siliconflow: [
+                { id: 'deepseek-ai/DeepSeek-V3', name: 'DeepSeek V3', context: 64000, cost: '低' },
+                { id: 'deepseek-ai/DeepSeek-R1', name: 'DeepSeek R1', context: 64000, cost: '低' },
+                { id: 'Qwen/Qwen2.5-72B-Instruct', name: 'Qwen2.5 72B', context: 32768, cost: '低' },
+                { id: 'meta-llama/Llama-3.3-70B-Instruct', name: 'Llama 3.3 70B', context: 32768, cost: '低' }
+            ],
+            aliyun: [
+                { id: 'qwen-max', name: '通义千问 Max', context: 32768, cost: '中' },
+                { id: 'qwen-plus', name: '通义千问 Plus', context: 131072, cost: '低' },
+                { id: 'qwen-turbo', name: '通义千问 Turbo', context: 131072, cost: '低' }
+            ],
+            azure: [
+                { id: 'gpt-4o', name: 'Azure GPT-4o', context: 128000, cost: '中' },
+                { id: 'gpt-4', name: 'Azure GPT-4', context: 8192, cost: '高' },
+                { id: 'gpt-35-turbo', name: 'Azure GPT-3.5', context: 16384, cost: '低' }
             ],
             local: [
                 { id: 'local-llm', name: '本地模型', context: 4096, cost: '免费' }
+            ],
+            custom: [
+                { id: '__custom__', name: '自定义模型', context: 8192, cost: '未知' }
             ]
         };
     }
@@ -218,6 +262,21 @@ class AIConfigEditor {
                     </div>
                 </div>
                 
+                <!-- 使用说明 -->
+                <div class="config-help-card" style="margin-bottom: 20px;">
+                    <div class="config-help-header">
+                        <span>📖 使用说明</span>
+                    </div>
+                    <div class="config-help-content">
+                        <p><strong>1. 选择模型提供商：</strong>根据你的 API 来源选择对应的提供商。OpenAI、DeepSeek、Moonshot、SiliconFlow、阿里云等均支持 OpenAI 兼容格式。</p>
+                        <p><strong>2. 填写 API 信息：</strong>在「API 密钥」和「API Base URL」中填入你的密钥和接口地址。Base URL 会根据所选提供商自动提示默认值。</p>
+                        <p><strong>3. 自定义模型：</strong>如果下拉列表中没有你要使用的模型，可在「模型选择」中选择「✏️ 自定义模型...」，手动输入模型名称。</p>
+                        <p><strong>4. 测试连接：</strong>配置完成后，点击「🔌 测试连接」按钮，系统会发送一个简单的请求验证 API 是否可用。</p>
+                        <p><strong>5. 应用预设与保存：</strong>左侧「配置预设」可快速切换常用的参数组合；调整完成后点击页面右上角的「💾 保存配置」即可生效。</p>
+                        <p style="color: var(--text-secondary); font-size: 12px; margin-top: 10px;">💡 提示：API 密钥仅存储在你的浏览器本地，不会上传到服务器。</p>
+                    </div>
+                </div>
+                
                 <!-- 基本设置 -->
                 <div class="config-section" data-section="model">
                     <div class="config-section-header">
@@ -231,14 +290,24 @@ class AIConfigEditor {
                                 <select class="form-select" id="ai_provider">
                                     <option value="openai">OpenAI</option>
                                     <option value="anthropic">Anthropic (Claude)</option>
+                                    <option value="google">Google (Gemini)</option>
+                                    <option value="openrouter">OpenRouter</option>
+                                    <option value="deepseek">DeepSeek</option>
+                                    <option value="moonshot">Moonshot (Kimi)</option>
+                                    <option value="siliconflow">SiliconFlow</option>
+                                    <option value="aliyun">阿里云 (通义千问)</option>
+                                    <option value="azure">Azure OpenAI</option>
                                     <option value="local">本地模型</option>
+                                    <option value="custom">自定义</option>
                                 </select>
                             </div>
                             <div class="form-group">
                                 <label>模型选择</label>
-                                <select class="form-select" id="ai_model">
+                                <select class="form-select" id="ai_model" style="margin-bottom: 8px;">
                                     <!-- 动态生成 -->
                                 </select>
+                                <input type="text" class="form-input" id="ai_customModel" 
+                                    placeholder="输入自定义模型名称" style="display: none;">
                             </div>
                         </div>
                         
@@ -253,14 +322,20 @@ class AIConfigEditor {
                         <div class="form-row">
                             <div class="form-group">
                                 <label>上下文窗口</label>
-                                <select class="form-select" id="ai_contextWindow">
+                                <select class="form-select" id="ai_contextWindow" style="margin-bottom: 8px;">
                                     <option value="4096">4K</option>
                                     <option value="8192" selected>8K</option>
                                     <option value="16384">16K</option>
                                     <option value="32768">32K</option>
+                                    <option value="64000">64K</option>
                                     <option value="128000">128K</option>
                                     <option value="200000">200K</option>
+                                    <option value="1000000">1M (Gemini)</option>
+                                    <option value="2000000">2M (Gemini)</option>
+                                    <option value="custom">✏️ 自定义</option>
                                 </select>
+                                <input type="number" class="form-input" id="ai_customContextWindow" 
+                                    placeholder="输入自定义上下文长度" style="display: none;" min="1">
                             </div>
                             <div class="form-group">
                                 <label class="checkbox-label">
@@ -270,10 +345,24 @@ class AIConfigEditor {
                             </div>
                         </div>
                         
-                        <div class="form-group api-endpoint" id="ai_endpointGroup" style="display: none;">
-                            <label>API 端点</label>
-                            <input type="text" class="form-input" id="ai_endpoint" 
-                                placeholder="http://localhost:8000/v1/chat/completions">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>API 密钥</label>
+                                <input type="password" class="form-input" id="ai_apiKey" placeholder="sk-...">
+                                <p class="form-hint" id="ai_apiKeyHint">你的 API 密钥，仅在本地使用</p>
+                            </div>
+                            <div class="form-group">
+                                <label>API Base URL</label>
+                                <input type="text" class="form-input" id="ai_baseUrl" placeholder="https://api.openai.com/v1">
+                                <p class="form-hint" id="ai_baseUrlHint">OpenAI 兼容格式的 API 地址</p>
+                            </div>
+                        </div>
+                        
+                        <div class="form-actions" style="margin-top: 10px;">
+                            <button class="btn btn-secondary" onclick="aiConfigEditor.testConnection()" id="ai_testConnectionBtn">
+                                🔌 测试连接
+                            </button>
+                            <span id="ai_testConnectionResult" style="margin-left: 12px; font-size: 13px;"></span>
                         </div>
                     </div>
                 </div>
@@ -520,7 +609,6 @@ class AIConfigEditor {
         if (providerSelect) {
             providerSelect.addEventListener('change', (e) => {
                 this.updateModelOptions();
-                this.toggleEndpointInput(e.target.value);
                 this.collectData();
             });
         }
@@ -529,9 +617,43 @@ class AIConfigEditor {
         const modelSelect = document.getElementById('ai_model');
         if (modelSelect) {
             modelSelect.addEventListener('change', () => {
+                this.toggleCustomModel();
+                this.collectData();
+            });
+        }
+        
+        // 自定义模型名输入
+        const customModelInput = document.getElementById('ai_customModel');
+        if (customModelInput) {
+            customModelInput.addEventListener('input', () => {
                 this.updateModelInfo();
                 this.collectData();
             });
+        }
+        
+        // 上下文窗口改变
+        const contextSelect = document.getElementById('ai_contextWindow');
+        if (contextSelect) {
+            contextSelect.addEventListener('change', () => {
+                this.toggleCustomContext();
+                this.collectData();
+            });
+        }
+        
+        // 自定义上下文输入
+        const customContextInput = document.getElementById('ai_customContextWindow');
+        if (customContextInput) {
+            customContextInput.addEventListener('input', () => this.collectData());
+        }
+        
+        // API Key / Base URL
+        const apiKeyInput = document.getElementById('ai_apiKey');
+        if (apiKeyInput) {
+            apiKeyInput.addEventListener('change', () => this.collectData());
+        }
+        const baseUrlInput = document.getElementById('ai_baseUrl');
+        if (baseUrlInput) {
+            baseUrlInput.addEventListener('change', () => this.collectData());
         }
         
         // 参数滑块
@@ -547,7 +669,8 @@ class AIConfigEditor {
             const slider = document.getElementById(id);
             if (slider) {
                 slider.addEventListener('input', (e) => {
-                    document.getElementById(display).textContent = e.target.value;
+                    const displayEl = document.getElementById(display);
+                    if (displayEl) displayEl.textContent = e.target.value;
                     this.collectData();
                     this.updateParamDescription(key);
                 });
@@ -570,7 +693,10 @@ class AIConfigEditor {
         const cotEnabled = document.getElementById('ai_cotEnabled');
         if (cotEnabled) {
             cotEnabled.addEventListener('change', (e) => {
-                document.getElementById('ai_cotOptions').style.display = e.target.checked ? 'block' : 'none';
+                const cotOptions = document.getElementById('ai_cotOptions');
+                if (cotOptions) {
+                    cotOptions.style.display = e.target.checked ? 'block' : 'none';
+                }
                 this.collectData();
             });
         }
@@ -579,23 +705,50 @@ class AIConfigEditor {
     updateModelOptions() {
         const provider = document.getElementById('ai_provider')?.value || 'openai';
         const modelSelect = document.getElementById('ai_model');
+        const customModelInput = document.getElementById('ai_customModel');
         if (!modelSelect) return;
         
-        const models = this.models[provider] || [];
-        modelSelect.innerHTML = models.map(m => `
+        const models = (this.models[provider] || []).filter(m => m.id !== '__custom__');
+        let html = models.map(m => `
             <option value="${m.id}" data-context="${m.context}" data-cost="${m.cost}">${m.name}</option>
         `).join('');
+        html += `<option value="__custom__">✏️ 自定义模型...</option>`;
+        modelSelect.innerHTML = html;
+        
+        const isCustomProvider = provider === 'custom';
+        if (isCustomProvider && customModelInput) {
+            modelSelect.value = '__custom__';
+            modelSelect.style.display = 'none';
+            customModelInput.style.display = 'block';
+        } else if (customModelInput) {
+            modelSelect.style.display = 'block';
+            customModelInput.style.display = 'none';
+        }
         
         this.updateModelInfo();
+        this.updateBaseUrlHint(provider);
     }
     
     updateModelInfo() {
         const modelSelect = document.getElementById('ai_model');
         const modelInfo = document.getElementById('ai_modelInfo');
+        const customModelInput = document.getElementById('ai_customModel');
         if (!modelSelect || !modelInfo) return;
         
+        const isCustom = modelSelect.value === '__custom__';
+        if (isCustom && customModelInput?.value) {
+            modelInfo.innerHTML = `
+                <div class="model-badge">
+                    <span class="model-name">${customModelInput.value}</span>
+                    <span class="model-context">自定义模型</span>
+                </div>
+            `;
+            modelInfo.style.display = 'block';
+            return;
+        }
+        
         const selected = modelSelect.options[modelSelect.selectedIndex];
-        if (selected) {
+        if (selected && !isCustom) {
             const context = selected.dataset.context;
             const cost = selected.dataset.cost;
             
@@ -607,14 +760,89 @@ class AIConfigEditor {
                 </div>
             `;
             modelInfo.style.display = 'block';
+        } else {
+            modelInfo.style.display = 'none';
         }
     }
     
-    toggleEndpointInput(provider) {
-        const endpointGroup = document.getElementById('ai_endpointGroup');
-        if (endpointGroup) {
-            endpointGroup.style.display = provider === 'local' ? 'block' : 'none';
+    toggleCustomModel() {
+        const modelSelect = document.getElementById('ai_model');
+        const customModelInput = document.getElementById('ai_customModel');
+        if (!modelSelect || !customModelInput) return;
+        
+        if (modelSelect.value === '__custom__') {
+            customModelInput.style.display = 'block';
+            customModelInput.focus();
+        } else {
+            customModelInput.style.display = 'none';
         }
+        this.updateModelInfo();
+    }
+    
+    toggleCustomContext() {
+        const contextSelect = document.getElementById('ai_contextWindow');
+        const customContextInput = document.getElementById('ai_customContextWindow');
+        if (!contextSelect || !customContextInput) return;
+        
+        if (contextSelect.value === 'custom') {
+            customContextInput.style.display = 'block';
+            customContextInput.focus();
+        } else {
+            customContextInput.style.display = 'none';
+        }
+    }
+    
+    updateBaseUrlHint(provider) {
+        const baseUrlInput = document.getElementById('ai_baseUrl');
+        const baseUrlHint = document.getElementById('ai_baseUrlHint');
+        if (!baseUrlInput || !baseUrlHint) return;
+        
+        const defaultUrls = {
+            openai: 'https://api.openai.com/v1',
+            anthropic: 'https://api.anthropic.com/v1',
+            google: 'https://generativelanguage.googleapis.com/v1beta',
+            openrouter: 'https://openrouter.ai/api/v1',
+            deepseek: 'https://api.deepseek.com/v1',
+            moonshot: 'https://api.moonshot.cn/v1',
+            siliconflow: 'https://api.siliconflow.cn/v1',
+            aliyun: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+            azure: 'https://<resource>.openai.azure.com/openai/deployments/<deployment>',
+            local: 'http://localhost:8000/v1',
+            custom: 'https://your-api.com/v1'
+        };
+        
+        const placeholders = {
+            openai: 'https://api.openai.com/v1',
+            anthropic: 'https://api.anthropic.com/v1',
+            google: 'https://generativelanguage.googleapis.com/v1beta',
+            openrouter: 'https://openrouter.ai/api/v1',
+            deepseek: 'https://api.deepseek.com/v1',
+            moonshot: 'https://api.moonshot.cn/v1',
+            siliconflow: 'https://api.siliconflow.cn/v1',
+            aliyun: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+            azure: 'https://<your-resource>.openai.azure.com',
+            local: 'http://localhost:8000/v1',
+            custom: 'https://your-api.com/v1'
+        };
+        
+        if (baseUrlInput.value === '' || Object.values(defaultUrls).includes(baseUrlInput.value)) {
+            baseUrlInput.placeholder = placeholders[provider] || 'https://api.example.com/v1';
+        }
+        
+        const hints = {
+            openai: 'OpenAI 官方或兼容接口',
+            anthropic: 'Anthropic 官方接口',
+            google: 'Gemini API 地址',
+            openrouter: 'OpenRouter 统一接口',
+            deepseek: 'DeepSeek 官方接口',
+            moonshot: 'Moonshot (Kimi) 官方接口',
+            siliconflow: 'SiliconFlow 官方接口',
+            aliyun: '阿里云百炼兼容接口',
+            azure: 'Azure OpenAI 部署地址',
+            local: '本地模型服务地址 (Ollama/vLLM等)',
+            custom: '你的自定义 API 地址'
+        };
+        baseUrlHint.textContent = hints[provider] || 'OpenAI 兼容格式的 API 地址';
     }
     
     updateParamDescription(paramKey) {
@@ -636,15 +864,27 @@ class AIConfigEditor {
     
     collectData() {
         const provider = document.getElementById('ai_provider')?.value || 'openai';
-        const modelName = document.getElementById('ai_model')?.value || 'gpt-4';
+        let modelName = document.getElementById('ai_model')?.value || 'gpt-4o';
+        const customModelName = document.getElementById('ai_customModel')?.value?.trim() || '';
+        
+        if (modelName === '__custom__' && customModelName) {
+            modelName = customModelName;
+        }
         
         const modelInfo = this.models[provider]?.find(m => m.id === modelName);
+        
+        let contextWindow = parseInt(document.getElementById('ai_contextWindow')?.value) || 0;
+        if (document.getElementById('ai_contextWindow')?.value === 'custom') {
+            contextWindow = parseInt(document.getElementById('ai_customContextWindow')?.value) || 8192;
+        }
         
         this.config.model = {
             provider: provider,
             name: modelName,
-            contextWindow: parseInt(document.getElementById('ai_contextWindow')?.value) || modelInfo?.context || 8192,
-            endpoint: document.getElementById('ai_endpoint')?.value || ''
+            contextWindow: contextWindow || modelInfo?.context || 8192,
+            customModelName: customModelName,
+            apiKey: this.sanitizeApiKey(document.getElementById('ai_apiKey')?.value || ''),
+            baseUrl: this.sanitizeApiKey(document.getElementById('ai_baseUrl')?.value || '')
         };
         
         this.config.generation = {
@@ -682,7 +922,23 @@ class AIConfigEditor {
     }
     
     loadData(config) {
-        this.config = { ...this.getDefaultConfig(), ...config };
+        const defaults = this.getDefaultConfig();
+        
+        // 兼容旧配置：endpoint -> baseUrl
+        if (config.model?.endpoint && !config.model?.baseUrl) {
+            config.model = { ...config.model, baseUrl: config.model.endpoint };
+        }
+        
+        this.config = {
+            ...defaults,
+            ...config,
+            model: { ...defaults.model, ...(config.model || {}) },
+            generation: { ...defaults.generation, ...(config.generation || {}) },
+            streaming: { ...defaults.streaming, ...(config.streaming || {}) },
+            retry: { ...defaults.retry, ...(config.retry || {}) },
+            chainOfThought: { ...defaults.chainOfThought, ...(config.chainOfThought || {}) },
+            safety: { ...defaults.safety, ...(config.safety || {}) }
+        };
         
         // 填充表单
         const setValue = (id, value) => {
@@ -695,30 +951,67 @@ class AIConfigEditor {
             if (el) el.checked = value;
         };
         
+        const setText = (id, value) => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = value;
+        };
+        
         // 模型设置
         setValue('ai_provider', this.config.model.provider);
         this.updateModelOptions();
-        setValue('ai_model', this.config.model.name);
+        
+        const modelSelect = document.getElementById('ai_model');
+        const customModelInput = document.getElementById('ai_customModel');
+        if (modelSelect) {
+            const knownModels = Array.from(modelSelect.options).map(o => o.value);
+            if (knownModels.includes(this.config.model.name)) {
+                setValue('ai_model', this.config.model.name);
+                if (customModelInput) customModelInput.style.display = 'none';
+            } else if (this.config.model.name || this.config.model.customModelName) {
+                modelSelect.value = '__custom__';
+                if (customModelInput) {
+                    customModelInput.value = this.config.model.customModelName || this.config.model.name || '';
+                    customModelInput.style.display = 'block';
+                }
+            }
+        }
         this.updateModelInfo();
-        setValue('ai_contextWindow', this.config.model.contextWindow);
-        setValue('ai_endpoint', this.config.model.endpoint || '');
-        this.toggleEndpointInput(this.config.model.provider);
+        
+        const contextWindow = this.config.model.contextWindow;
+        const contextSelect = document.getElementById('ai_contextWindow');
+        const customContextInput = document.getElementById('ai_customContextWindow');
+        if (contextSelect) {
+            const knownContexts = Array.from(contextSelect.options).map(o => o.value);
+            if (knownContexts.includes(String(contextWindow))) {
+                setValue('ai_contextWindow', contextWindow);
+                if (customContextInput) customContextInput.style.display = 'none';
+            } else {
+                contextSelect.value = 'custom';
+                if (customContextInput) {
+                    customContextInput.value = contextWindow || '';
+                    customContextInput.style.display = 'block';
+                }
+            }
+        }
+        
+        setValue('ai_apiKey', this.config.model.apiKey || '');
+        setValue('ai_baseUrl', this.config.model.baseUrl || '');
         
         // 生成参数
         setValue('ai_temperature', this.config.generation.temperature);
-        document.getElementById('ai_tempValue').textContent = this.config.generation.temperature;
+        setText('ai_tempValue', this.config.generation.temperature);
         
         setValue('ai_maxTokens', this.config.generation.maxTokens);
-        document.getElementById('ai_tokensValue').textContent = this.config.generation.maxTokens;
+        setText('ai_tokensValue', this.config.generation.maxTokens);
         
         setValue('ai_topP', this.config.generation.topP);
-        document.getElementById('ai_topPValue').textContent = this.config.generation.topP;
+        setText('ai_topPValue', this.config.generation.topP);
         
         setValue('ai_frequencyPenalty', this.config.generation.frequencyPenalty);
-        document.getElementById('ai_freqValue').textContent = this.config.generation.frequencyPenalty;
+        setText('ai_freqValue', this.config.generation.frequencyPenalty);
         
         setValue('ai_presencePenalty', this.config.generation.presencePenalty);
-        document.getElementById('ai_presValue').textContent = this.config.generation.presencePenalty;
+        setText('ai_presValue', this.config.generation.presencePenalty);
         
         // 其他设置
         setChecked('ai_streaming', this.config.streaming.enabled);
@@ -729,8 +1022,10 @@ class AIConfigEditor {
         const cotDepthRadio = document.querySelector(`input[name="cotDepth"][value="${this.config.chainOfThought.depth}"]`);
         if (cotDepthRadio) cotDepthRadio.checked = true;
         
-        document.getElementById('ai_cotOptions').style.display = 
-            this.config.chainOfThought.enabled ? 'block' : 'none';
+        const cotOptions = document.getElementById('ai_cotOptions');
+        if (cotOptions) {
+            cotOptions.style.display = this.config.chainOfThought.enabled ? 'block' : 'none';
+        }
         
         // 安全设置
         const filterRadio = document.querySelector(`input[name="filterLevel"][value="${this.config.safety.filterLevel}"]`);
@@ -741,17 +1036,28 @@ class AIConfigEditor {
         setValue('ai_maxRetries', this.config.retry.maxAttempts);
         setValue('ai_timeout', this.config.retry.timeout);
         
+        if (!this.config.generation.stopSequences) {
+            this.config.generation.stopSequences = [];
+        }
         this.renderStopSequences();
     }
     
     // 预设管理
     applyPreset(presetId) {
         const preset = this.presets.find(p => p.id === presetId);
-        if (!preset) return;
+        if (!preset) {
+            console.warn('[AIConfigEditor] Preset not found:', presetId);
+            return;
+        }
         
         if (confirm(`应用预设「${preset.name}」将覆盖当前配置，确定吗？`)) {
-            this.loadData(preset.config);
-            showToast(`已应用预设: ${preset.name}`, 'success');
+            try {
+                this.loadData(preset.config);
+                showToast(`已应用预设: ${preset.name}`, 'success');
+            } catch (err) {
+                console.error('[AIConfigEditor] applyPreset failed:', err);
+                showToast('应用预设失败: ' + err.message, 'error');
+            }
         }
     }
     
@@ -899,6 +1205,73 @@ class AIConfigEditor {
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
+    }
+    
+    sanitizeApiKey(value) {
+        if (!value) return '';
+        // 移除零宽字符、BOM、全角空格、换行符等不可见字符
+        return value
+            .replace(/[\u200B-\u200D\uFEFF\u3000]/g, '')
+            .replace(/[\n\r\t]/g, '')
+            .trim();
+    }
+    
+    async testConnection() {
+        const btn = document.getElementById('ai_testConnectionBtn');
+        const resultEl = document.getElementById('ai_testConnectionResult');
+        if (!btn || !resultEl) return;
+        
+        const config = this.collectData();
+        const apiKey = this.sanitizeApiKey(config.model.apiKey);
+        const baseUrl = (config.model.baseUrl || '').replace(/[\u200B-\u200D\uFEFF\u3000\n\r\t]/g, '').trim();
+        const modelName = config.model.name;
+        
+        if (!apiKey) {
+            resultEl.innerHTML = '<span style="color: #ff6b6b;">❌ 请先填写 API 密钥</span>';
+            return;
+        }
+        if (!baseUrl) {
+            resultEl.innerHTML = '<span style="color: #ff6b6b;">❌ 请先填写 API Base URL</span>';
+            return;
+        }
+        
+        const originalText = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '⏳ 测试中...';
+        resultEl.innerHTML = '<span style="color: var(--text-secondary);">正在通过后端代理发送测试请求...</span>';
+        
+        try {
+            // 通过后端代理测试，避免浏览器 CORS 限制
+            const testUrl = baseUrl.replace(/\/$/, '') + '/chat/completions';
+            const response = await fetch(`${API_BASE}/settings/test`, {
+                method: 'POST',
+                headers: getAuthHeaders(),
+                body: JSON.stringify({
+                    apiKey: apiKey,
+                    apiUrl: testUrl,
+                    model: modelName
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok && data.success) {
+                resultEl.innerHTML = '<span style="color: #4ecdc4;">✅ 连接成功！API 可用</span>';
+            } else {
+                const errMsg = data.message || data.error || '未知错误';
+                // 判断是否是模型名错误
+                if (errMsg.includes('model') || errMsg.includes('Model')) {
+                    resultEl.innerHTML = `<span style="color: #feca57;">⚠️ 模型名称可能不正确: ${this.escapeHtml(errMsg)}</span>`;
+                } else {
+                    resultEl.innerHTML = `<span style="color: #ff6b6b;">❌ 连接失败: ${this.escapeHtml(errMsg)}</span>`;
+                }
+            }
+        } catch (err) {
+            resultEl.innerHTML = `<span style="color: #ff6b6b;">❌ 请求异常: ${this.escapeHtml(err.message)}</span>`;
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        }
     }
     
     getConfig() {

@@ -57,7 +57,7 @@ router.get('/', async (req, res) => {
  * 更新AI设置
  * 需要管理员权限
  */
-router.put('/', requireAdmin, async (req, res) => {
+router.put('/', requireAdmin(async (req, res) => {
   try {
     const { apiKey, apiUrl, model } = req.body;
     
@@ -102,7 +102,7 @@ router.put('/', requireAdmin, async (req, res) => {
  * 测试AI连接
  * 需要登录
  */
-router.post('/test', requireAuth, async (req, res) => {
+router.post('/test', requireAuth(async (req, res) => {
   try {
     const axios = require('axios');
     const { apiKey, apiUrl, model } = req.body;

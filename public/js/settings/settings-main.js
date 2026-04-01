@@ -2,26 +2,11 @@
 // 注意：这些变量已在 settings-config.js 中声明
 // 这里不再重复声明，直接使用全局变量
 
-// 暴露到全局供V2编辑器使用（如果尚未设置）
+// 简单地将变量暴露到全局（不使用 defineProperty 避免递归）
 if (typeof window !== 'undefined') {
-    if (!Object.getOwnPropertyDescriptor(window, 'gameId')) {
-        Object.defineProperty(window, 'gameId', {
-            get: () => gameId,
-            set: (val) => { gameId = val; }
-        });
-    }
-    if (!Object.getOwnPropertyDescriptor(window, 'characters')) {
-        Object.defineProperty(window, 'characters', {
-            get: () => characters,
-            set: (val) => { characters = val; }
-        });
-    }
-    if (!Object.getOwnPropertyDescriptor(window, 'editingCharacterId')) {
-        Object.defineProperty(window, 'editingCharacterId', {
-            get: () => editingCharacterId,
-            set: (val) => { editingCharacterId = val; }
-        });
-    }
+    window.gameId = gameId;
+    window.characters = characters;
+    window.editingCharacterId = editingCharacterId;
 }
 
 // 全局错误处理
@@ -176,7 +161,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             }).catch(err => {
                 console.error('[Settings] Failed to load game data:', err);
                 // API 失败时，尝试从 localStorage 加载迁移的角色
-                const migratedChars = JSON.parse(localStorage.getItem(`game_${gameId}_characters`) || '[]');
+                const migratedChars = JSON.parse(localStorage.getItem(STORAGE_KEYS.CHARACTERS(gameId)) || '[]');
                 if (migratedChars.length > 0) {
                     characters = migratedChars;
                     renderCharacterList();
@@ -231,23 +216,28 @@ async function loadGameData() {
             currentGame = result.data.game;
             const backendChars = result.data.characters || [];
             
-            // 合并从迁移工具导入的角色（localStorage）
-            // 策略：以 localStorage 为准（因为它包含最新编辑），后端数据作为后备
-            const localChars = JSON.parse(localStorage.getItem(`game_${gameId}_characters`) || '[]');
+            // 统一策略：API优先，本地缓存为辅
+            // 先使用后端数据，然后同步到 localStorage
+            console.log('[Settings] Load characters - Backend:', backendChars.length);
+            console.log('[Settings] STORAGE_KEYS:', STORAGE_KEYS);
+            console.log('[Settings] STORAGE_KEYS.CHARACTERS:', STORAGE_KEYS.CHARACTERS);
             
-            console.log('[Settings] Load characters - Backend:', backendChars.length, 'LocalStorage:', localChars.length);
-            
-            if (localChars.length > 0) {
-                // 使用 localStorage 的数据为主
-                // 对于本地没有的角色，从后端补充
-                const localIds = new Set(localChars.map(c => c._id || c.id));
-                const backendOnlyChars = backendChars.filter(c => !localIds.has(c._id || c.id));
-                characters = [...localChars, ...backendOnlyChars];
-                console.log('[Settings] >>> 使用本地角色:', localChars.length, '后端补充:', backendOnlyChars.length, '总计:', characters.length);
-            } else {
-                // 本地没有，使用后端数据
+            if (backendChars.length > 0) {
+                // 使用后端数据
                 characters = backendChars;
-                console.log('[Settings] >>> 从后端加载角色:', characters.length);
+                // 同步到 localStorage 作为缓存
+                localStorage.setItem(STORAGE_KEYS.CHARACTERS(gameId), JSON.stringify(characters));
+                console.log('[Settings] >>> 从后端加载角色:', characters.length, '已同步到 localStorage');
+            } else {
+                // 后端没有数据，尝试从 localStorage 加载
+                const localChars = JSON.parse(localStorage.getItem(STORAGE_KEYS.CHARACTERS(gameId)) || '[]');
+                if (localChars.length > 0) {
+                    characters = localChars;
+                    console.log('[Settings] >>> 后端无数据，从 localStorage 加载角色:', characters.length);
+                } else {
+                    characters = [];
+                    console.log('[Settings] >>> 无角色数据');
+                }
             }
             
             fillGameInfo(currentGame);
@@ -259,7 +249,7 @@ async function loadGameData() {
         } else {
             showToast(result.message || '加载失败', 'error');
             // 后端返回失败时，尝试从 localStorage 加载迁移的角色
-            const migratedChars = JSON.parse(localStorage.getItem(`game_${gameId}_characters`) || '[]');
+            const migratedChars = JSON.parse(localStorage.getItem(STORAGE_KEYS.CHARACTERS(gameId)) || '[]');
             if (migratedChars.length > 0) {
                 characters = migratedChars;
                 renderCharacterList();
@@ -270,7 +260,7 @@ async function loadGameData() {
         console.error('加载游戏数据失败:', error);
         showToast('加载失败: ' + error.message, 'error');
         // API 请求异常时，尝试从 localStorage 加载迁移的角色
-        const migratedChars = JSON.parse(localStorage.getItem(`game_${gameId}_characters`) || '[]');
+        const migratedChars = JSON.parse(localStorage.getItem(STORAGE_KEYS.CHARACTERS(gameId)) || '[]');
         if (migratedChars.length > 0) {
             characters = migratedChars;
             renderCharacterList();
@@ -385,6 +375,14 @@ function toggleViewMode() {
     
     localStorage.setItem('settings_view_mode', isUserView ? 'user' : 'admin');
     initSaveSelector();
+    
+    const adminOnlyPages = ['ai-settings', 'worldbook', 'prompts', 'memories'];
+    if (isUserView) {
+        const currentPage = new URLSearchParams(window.location.search).get('page') || 'dashboard';
+        if (adminOnlyPages.includes(currentPage)) {
+            switchToPage('dashboard');
+        }
+    }
 }
 
 // 立即导出到全局（供HTML按钮调用）
@@ -432,6 +430,15 @@ function restoreViewMode() {
         loadUserPersonalSettings();
     }
     initSaveSelector();
+    
+    const adminOnlyPages = ['ai-settings', 'worldbook', 'prompts', 'memories'];
+    if (isUserView) {
+        const currentPage = new URLSearchParams(window.location.search).get('page') || 'dashboard';
+        if (adminOnlyPages.includes(currentPage)) {
+            switchToPage('dashboard');
+        }
+    }
+    
     console.log('[Settings] View mode restored:', isUserView ? 'user' : 'admin');
 }
 
@@ -449,6 +456,12 @@ function loadUserPersonalSettings() {
 function fillUserPersonalSettings() {
     const bgEl = document.getElementById('userPersonalBackground');
     if (bgEl) bgEl.value = userPersonalSettings.worldbook.background || '';
+}
+
+function saveUserPersonalSettings() {
+    if (!gameId) return;
+    const storageKey = `user_settings_${gameId}`;
+    localStorage.setItem(storageKey, JSON.stringify(userPersonalSettings));
 }
 
 // ==================== 导航 ====================
@@ -505,7 +518,7 @@ async function renderWorldOverview() {
     
     // 如果characters为空，尝试从存储加载
     if (!characters || characters.length === 0) {
-        const saved = localStorage.getItem(`game_${gameId}_characters`);
+        const saved = localStorage.getItem(STORAGE_KEYS.CHARACTERS(gameId));
         if (saved) {
             try {
                 characters = JSON.parse(saved);
@@ -713,7 +726,7 @@ function renderCharacterList() {
                 <div class="character-showcase-traits">
                     ${traits.slice(0, 4).map(t => `<span class="trait-tag">${t}</span>`).join('')}
                 </div>
-                <div class="character-showcase-actions">
+                <div class="character-showcase-actions admin-only">
                     <button class="btn btn-sm btn-secondary" onclick="editCharacter('${charId}')">编辑</button>
                     <button class="btn btn-sm btn-danger" onclick="deleteCharacter('${charId}')">删除</button>
                 </div>
@@ -758,7 +771,7 @@ async function deleteCharacter(id) {
     
     // 保存到 localStorage
     if (gameId) {
-        localStorage.setItem(`game_${gameId}_characters`, JSON.stringify(characters));
+        localStorage.setItem(STORAGE_KEYS.CHARACTERS(gameId), JSON.stringify(characters));
     }
     
     // 尝试同步到后端
@@ -843,7 +856,7 @@ async function saveCharacter() {
     
     // 保存到localStorage
     if (gameId) {
-        localStorage.setItem(`game_${gameId}_characters`, JSON.stringify(characters));
+        localStorage.setItem(STORAGE_KEYS.CHARACTERS(gameId), JSON.stringify(characters));
         
         // 同步到后端
         try {
@@ -2159,7 +2172,7 @@ async function saveCharactersToBackend(gameId, chars) {
     }
     
     // 更新 localStorage 中的角色 ID
-    localStorage.setItem(`game_${gameId}_characters`, JSON.stringify(chars));
+    localStorage.setItem(STORAGE_KEYS.CHARACTERS(gameId), JSON.stringify(chars));
     
     return results;
 }
@@ -3412,7 +3425,7 @@ function confirmImportCharacters(mode) {
     
     // 保存到 localStorage（关键！确保刷新后数据不丢失）
     if (gameId) {
-        localStorage.setItem(`game_${gameId}_characters`, JSON.stringify(characters));
+        localStorage.setItem(STORAGE_KEYS.CHARACTERS(gameId), JSON.stringify(characters));
         console.log('[Settings] Characters saved to localStorage after import:', characters.length);
     }
     
@@ -3449,7 +3462,7 @@ function importCharactersDirectReplace(importedChars) {
     
     // 保存到 localStorage
     if (gameId) {
-        localStorage.setItem(`game_${gameId}_characters`, JSON.stringify(characters));
+        localStorage.setItem(STORAGE_KEYS.CHARACTERS(gameId), JSON.stringify(characters));
     }
     
     // 渲染

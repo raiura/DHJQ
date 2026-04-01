@@ -737,39 +737,24 @@
         }
 
         /* 瑙嗗浘鍒囨崲鐩稿叧 */
-        .admin-only {
-            display: block;
-        }
-        
         .user-only {
             display: none;
         }
-        
-        /* 鐢ㄦ埛瑙嗗浘妯″紡 - 闅愯棌浣滃搧绾ц缃?*/
+
+        /* 用户视图模式 - 隐藏管理员功能 */
         body.user-view .admin-only {
             display: none !important;
         }
-        
+
         body.user-view .user-only {
             display: block !important;
         }
-        
-        /* 鐢ㄦ埛瑙嗗浘涓嬮殣钘忎綔鍝佽缃殑瀵艰埅 */
+
+        /* 用户视图下隐藏管理员专用导航 */
         body.user-view .nav-item[data-page="ai-settings"],
         body.user-view .nav-item[data-page="worldbook"],
         body.user-view .nav-item[data-page="prompts"],
-        body.user-view .nav-item[data-page="characters"],
-        body.user-view .nav-item[data-page="memories"],
-        body.user-view .nav-item[data-page="gallery"] {
-            display: none !important;
-        }
-        
-        /* 绠＄悊鍛樿鍥句笅闅愯棌涓汉璁剧疆鐨勫鑸?*/
-        body:not(.user-view) .nav-item[data-page="user-worldbook"],
-        body:not(.user-view) .nav-item[data-page="user-prompts"],
-        body:not(.user-view) .nav-item[data-page="user-characters"],
-        body:not(.user-view) .nav-item[data-page="user-ai-config"],
-        body:not(.user-view) .nav-item[data-page="user-memory"] {
+        body.user-view .nav-item[data-page="memories"] {
             display: none !important;
         }
         

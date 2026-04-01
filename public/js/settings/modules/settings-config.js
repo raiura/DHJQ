@@ -5,6 +5,31 @@
 // API 基础地址
 const API_BASE = 'http://localhost:3000/api';
 
+// 统一的 localStorage Key 命名规范（如果尚未定义）
+if (typeof STORAGE_KEYS === 'undefined') {
+    var STORAGE_KEYS = {
+        // 全局
+        TOKEN: 'galgame_token',
+        USER: 'galgame_user',
+        CURRENT_WORLD: 'galgame_current_world',
+        SAVES: 'galgame_saves',
+        CURRENT_SAVE: 'galgame_current_save',
+        
+        // 游戏特定 (使用统一前缀 galgame_${gameId}_${type})
+        CHARACTERS: (gameId) => `galgame_${gameId}_characters`,
+        WORLDBOOK: (gameId) => `galgame_${gameId}_worldbook`,
+        SETTINGS: (gameId) => `galgame_${gameId}_settings`,
+        CHAT_UI: (gameId) => `galgame_${gameId}_chatui`,
+        MEMORIES: (gameId) => `galgame_${gameId}_memories`,
+        GALLERY: (gameId) => `galgame_${gameId}_gallery`,
+        
+        // 用户设置
+        USER_SETTINGS: 'galgame_user_settings',
+        AI_CONFIG: 'galgame_ai_config',
+        PROMPT_CONFIG: (gameId) => `galgame_${gameId}_prompt_config`
+    };
+}
+
 // 全局状态
 let currentUser = null;
 let currentGame = null;

@@ -936,31 +936,7 @@
                     </div>
                 </div>
 
-                <!-- 用户 -->
-                <div class="nav-section">
-                    <div class="nav-section-title">用户</div>
-                    <div class="nav-item" data-page="user-worldbook">
-                        <span class="nav-icon">📖</span>
-                        <span class="nav-text">我的世界书</span>
-                    </div>
-                    <div class="nav-item" data-page="user-prompts">
-                        <span class="nav-icon">✏️</span>
-                        <span class="nav-text">我的提示词</span>
-                    </div>
-                    <div class="nav-item" data-page="user-characters">
-                        <span class="nav-icon">🎭</span>
-                        <span class="nav-text">我的角色</span>
-                    </div>
-                    <div class="nav-item" data-page="user-ai-config">
-                        <span class="nav-icon">⚙️</span>
-                        <span class="nav-text">AI配置</span>
-                    </div>
-                    <div class="nav-item" data-page="user-memory">
-                        <span class="nav-icon">💾</span>
-                        <span class="nav-text">记忆管理</span>
-                    </div>
-                </div>
-                
+
                 <!-- 平台 -->
                 <div class="nav-section">
                     <div class="nav-section-title">平台</div>
@@ -1254,32 +1230,12 @@
             <section class="page-section" id="page-ai-settings">
                 <div class="page-header">
                     <h1 class="page-title">🤖 AI 配置</h1>
-                </div>
-                <div class="content-grid">
-                    <div class="card" style="grid-column: 1 / -1;">
-                        <div class="card-header">
-                            <h3 class="card-title">API 设置</h3>
-                        </div>
-                        <div class="card-body">
-                            <div class="form-group">
-                                <label class="form-label">API 密钥</label>
-                                <input type="password" class="form-input" id="apiKey" placeholder="sk-...">
-                                <p class="form-hint">你的 OpenAI 或兼容 API 密钥</p>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">API 地址</label>
-                                <input type="text" class="form-input" id="apiUrl" placeholder="https://api.openai.com/v1">
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">模型</label>
-                                <input type="text" class="form-input" id="model" placeholder="gpt-4">
-                            </div>
-                            <div class="form-actions">
-                                <button class="btn btn-secondary" onclick="testAIConnection()">测试连接</button>
-                                <button class="btn btn-primary" onclick="saveAISettings()">保存设置</button>
-                            </div>
-                        </div>
+                    <div class="page-actions">
+                        <button class="btn btn-primary" onclick="saveUserAIConfig()">💾 保存配置</button>
                     </div>
+                </div>
+                <div id="aiConfigContainer">
+                    <!-- AI配置编辑器将在这里初始化 -->
                 </div>
             </section>
 
@@ -1290,7 +1246,7 @@
                     <div class="page-actions">
                         <button class="btn btn-secondary" onclick="exportAllWorldbooks()">📤 导出全部</button>
                         <button class="btn btn-danger admin-only" onclick="resetWorldbook()" title="清空所有世界书">🗑️ 重置</button>
-                        <button class="btn btn-primary" onclick="createNewWorldbook()">+ 新建世界书</button>
+                        <button class="btn btn-primary admin-only" onclick="createNewWorldbook()">+ 新建世界书</button>
                     </div>
                 </div>
                 
@@ -1325,11 +1281,11 @@
                 <div class="page-header">
                     <h1 class="page-title">👥 世界角色</h1>
                     <div class="page-actions">
-                        <button class="btn btn-secondary" onclick="exportCharactersOnly()">导出</button>
-                        <button class="btn btn-secondary" onclick="importCharactersBatch()">导入</button>
-                        <button class="btn btn-secondary" onclick="resetCharacters()">重置</button>
-                        <button class="btn btn-secondary" onclick="fixCharacterImages(event)" title="修复失效的外部图片地址">🔧 修复图片</button>
-                        <button class="btn btn-primary" onclick="openCharacterModal()">+ 新建角色</button>
+                        <button class="btn btn-secondary admin-only" onclick="exportCharactersOnly()">导出</button>
+                        <button class="btn btn-secondary admin-only" onclick="importCharactersBatch()">导入</button>
+                        <button class="btn btn-secondary admin-only" onclick="resetCharacters()">重置</button>
+                        <button class="btn btn-secondary admin-only" onclick="fixCharacterImages(event)" title="修复失效的外部图片地址">🔧 修复图片</button>
+                        <button class="btn btn-primary admin-only" onclick="openCharacterModal()">+ 新建角色</button>
                     </div>
                 </div>
                 <div class="card">
@@ -1347,11 +1303,11 @@
                     <h1 class="page-title">🧠 三层记忆管理</h1>
                     <div class="page-actions">
                         <button class="btn btn-secondary" onclick="loadMemories()">🔄 刷新</button>
-                        <button class="btn btn-primary" onclick="openMemoryModal()">+ 添加记忆</button>
-                        <button class="btn btn-warning" onclick="solidifyTimeline()" title="将当前核心记忆写入世界书存档">💾 固化时间线</button>
-                        <button class="btn btn-secondary" onclick="exportAllMemories()">📤 导出</button>
-                        <button class="btn btn-secondary" onclick="importMemories()">📥 导入</button>
-                        <button class="btn btn-danger" onclick="clearMemories()">🗑️ 清空</button>
+                        <button class="btn btn-primary admin-only" onclick="openMemoryModal()">+ 添加记忆</button>
+                        <button class="btn btn-warning admin-only" onclick="solidifyTimeline()" title="将当前核心记忆写入世界书存档">💾 固化时间线</button>
+                        <button class="btn btn-secondary admin-only" onclick="exportAllMemories()">📤 导出</button>
+                        <button class="btn btn-secondary admin-only" onclick="importMemories()">📥 导入</button>
+                        <button class="btn btn-danger admin-only" onclick="clearMemories()">🗑️ 清空</button>
                     </div>
                 </div>
 
@@ -1457,7 +1413,7 @@
                 <div class="page-header">
                     <h1 class="page-title">🖼️ 图库管理 V2.0</h1>
                     <div class="page-actions">
-                        <button class="btn btn-primary" onclick="openGalleryV2Modal()">+ 添加CG</button>
+                        <button class="btn btn-primary admin-only" onclick="openGalleryV2Modal()">+ 添加CG</button>
                     </div>
                 </div>
                 
@@ -1528,81 +1484,6 @@
                 </div>
             </section>
 
-            <!-- ==================== 用户页面（简化版） ==================== -->
-            <section class="page-section" id="page-user-worldbook">
-                <div class="page-header">
-                    <h1 class="page-title">📖 我的世界书</h1>
-                </div>
-                <div class="card">
-                    <div class="card-body">
-                        <div class="entries-stats" style="margin-bottom: 20px;">
-                            <span>我的条目数: <strong id="userWbTotalEntries">0</strong></span>
-                        </div>
-                        <div class="entries-list" id="userWorldbookList"></div>
-                    </div>
-                </div>
-            </section>
-
-            <section class="page-section" id="page-user-prompts">
-                <div class="page-header">
-                    <h1 class="page-title">✏️ 我的提示词</h1>
-                </div>
-                <div class="card">
-                    <div class="card-body">
-                        <div class="form-group">
-                            <label class="form-label">个人背景</label>
-                            <textarea class="form-textarea" id="userPersonalBackground" rows="4" placeholder="描述你自己的背景故事..."></textarea>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">前置提示词</label>
-                            <textarea class="form-textarea" id="userPrePrompt" rows="4"></textarea>
-                        </div>
-                        <div class="form-actions">
-                            <button class="btn btn-primary" onclick="saveUserPrompt()">保存</button>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <section class="page-section" id="page-user-characters">
-                <div class="page-header">
-                    <h1 class="page-title">🎭 我的角色</h1>
-                    <div class="page-actions">
-                        <button class="btn btn-primary" onclick="openCharacterModal()">+ 新建角色</button>
-                    </div>
-                </div>
-                <div class="card">
-                    <div class="card-body">
-                        <div class="characters-grid" id="userCharacterList"></div>
-                    </div>
-                </div>
-            </section>
-
-            <section class="page-section" id="page-user-ai-config">
-                <div class="page-header">
-                    <h1 class="page-title">⚙️ AI 配置</h1>
-                </div>
-                <div id="aiConfigContainer">
-                    <!-- AI配置编辑器将在这里初始化 -->
-                </div>
-            </section>
-
-            <section class="page-section" id="page-user-memory">
-                <div class="page-header">
-                    <h1 class="page-title">💾 记忆管理</h1>
-                    <div class="page-actions">
-                        <button class="btn btn-secondary" onclick="loadUserMemoryList()">刷新</button>
-                        <button class="btn btn-secondary" onclick="exportUserMemories()">导出</button>
-                        <button class="btn btn-danger" onclick="clearAllUserMemories()">清空所有</button>
-                    </div>
-                </div>
-                <div class="card">
-                    <div class="card-body">
-                        <div id="userMemoryStats" style="margin-bottom: 20px;"></div>
-                        <div class="memories-list" id="userMemoryList"></div>
-                    </div>
-                </div>
-            </section>
         </main>
     </div>
 
@@ -2233,6 +2114,9 @@
     <script src="public/js/loader.js"></script>
     
     <!-- 世界书引擎 2.0 (SillyTavern 风格多书本架构) - 必须在 settings-main 之前加载 -->
+    <!-- 基础配置必须先加载 -->
+    <script src="public/js/settings/modules/settings-config.js"></script>
+    
     <script src="public/js/core/worldbookEngine.js"></script>
     <script src="public/js/core/worldBook.js"></script>
     <script src="public/js/core/worldbookLibrary.js"></script>
@@ -2243,7 +2127,6 @@
     <script src="public/js/components/worldbookManagerUI.js"></script>
     
     <!-- 设置页面模块化系统 (新增) -->
-    <script src="public/js/settings/modules/settings-config.js"></script>
     <script src="public/js/settings/modules/settings-utils.js"></script>
     <script src="public/js/settings/modules/settings-worldbook.js"></script>
     <script src="public/js/settings/modules/settings-memory.js"></script>

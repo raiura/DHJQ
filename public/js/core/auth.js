@@ -5,10 +5,10 @@
  */
 
 /**
- * 存储键名常量
+ * 认证模块存储键名常量
  * @constant {Object}
  */
-const STORAGE_KEYS = {
+const AUTH_STORAGE_KEYS = {
     TOKEN: 'token',
     USER: 'user',
     REFRESH_TOKEN: 'refresh_token',
@@ -36,8 +36,8 @@ const Auth = {
      * @returns {boolean} 是否已认证
      */
     init() {
-        const token = localStorage.getItem(STORAGE_KEYS.TOKEN);
-        const user = Store.get(STORAGE_KEYS.USER);
+        const token = localStorage.getItem(AUTH_STORAGE_KEYS.TOKEN);
+        const user = Store.get(AUTH_STORAGE_KEYS.USER);
         
         if (token && user) {
             // 检查令牌是否过期
@@ -60,7 +60,7 @@ const Auth = {
      * @returns {boolean}
      */
     isTokenExpired() {
-        const expiry = localStorage.getItem(STORAGE_KEYS.TOKEN_EXPIRY);
+        const expiry = localStorage.getItem(AUTH_STORAGE_KEYS.TOKEN_EXPIRY);
         if (!expiry) return false;
         return new Date().getTime() > parseInt(expiry);
     },
@@ -76,12 +76,12 @@ const Auth = {
         authState.user = user;
         authState.isAuthenticated = true;
         
-        localStorage.setItem(STORAGE_KEYS.TOKEN, token);
-        Store.set(STORAGE_KEYS.USER, user);
+        localStorage.setItem(AUTH_STORAGE_KEYS.TOKEN, token);
+        Store.set(AUTH_STORAGE_KEYS.USER, user);
         
         // 设置过期时间
         const expiryTime = new Date().getTime() + (expiresIn * 1000);
-        localStorage.setItem(STORAGE_KEYS.TOKEN_EXPIRY, expiryTime.toString());
+        localStorage.setItem(AUTH_STORAGE_KEYS.TOKEN_EXPIRY, expiryTime.toString());
         
         this._notifyListeners();
     },
@@ -169,7 +169,7 @@ const Auth = {
      */
     updateUser(updates) {
         authState.user = { ...authState.user, ...updates };
-        Store.set(STORAGE_KEYS.USER, authState.user);
+        Store.set(AUTH_STORAGE_KEYS.USER, authState.user);
         this._notifyListeners();
     },
     
