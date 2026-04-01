@@ -241,6 +241,7 @@ const userSchemas = {
         'string.min': '密码至少需要6个字符',
         'any.required': '密码是必填项'
       }),
+    nickname: Joi.string().max(50).allow('', null),
     email: Joi.string().email().allow('', null)
   }),
 

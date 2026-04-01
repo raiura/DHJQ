@@ -7,6 +7,9 @@ const fs = require('fs').promises;
 const path = require('path');
 const Logger = require('./logger');
 
+// 检查是否为测试环境
+const isTestEnvironment = process.env.NODE_ENV === 'test' || process.env.JEST_WORKER_ID;
+
 const DATA_DIR = path.join(__dirname, '..', 'data');
 const DATA_FILE = path.join(DATA_DIR, 'memory_store.json');
 
@@ -27,7 +30,7 @@ class FilePersistence {
 
   // 保存内存数据到文件
   async save(memoryStore) {
-    if (this.isLoading) return;
+    if (isTestEnvironment || this.isLoading) return;
     
     try {
       await this.ensureDataDir();
@@ -51,6 +54,10 @@ class FilePersistence {
 
   // 从文件加载数据到内存
   async load(memoryStore) {
+    if (isTestEnvironment) {
+      return false;
+    }
+    
     try {
       await this.ensureDataDir();
       
@@ -97,6 +104,8 @@ class FilePersistence {
 
   // 启动自动保存
   startAutoSave(memoryStore, intervalMinutes = 5) {
+    if (isTestEnvironment) return;
+    
     // 先保存一次
     this.save(memoryStore);
     

@@ -10,9 +10,9 @@ process.env.DATABASE_URI = 'memory';
 const { faker } = require('@faker-js/faker');
 
 global.testUtils = {
-  // 生成测试用户数据
+  // 生成测试用户数据（确保用户名只包含字母和数字）
   generateUser: () => ({
-    username: faker.internet.userName(),
+    username: faker.string.alphanumeric({ length: { min: 3, max: 20 } }),
     password: faker.internet.password(),
     nickname: faker.person.fullName()
   }),

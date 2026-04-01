@@ -98,7 +98,12 @@ if (!useMemoryStore) {
       
       return all.filter(doc => {
         for (const [key, value] of Object.entries(query)) {
-          if (doc[key] !== value) return false;
+          // 支持大小写不敏感的用户名查询
+          if (key === 'username' && typeof doc[key] === 'string' && typeof value === 'string') {
+            if (doc[key].toLowerCase() !== value.toLowerCase()) return false;
+          } else if (doc[key] !== value) {
+            return false;
+          }
         }
         return true;
       });
