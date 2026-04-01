@@ -286,10 +286,13 @@ if (!useMemoryStore) {
 
       if (options.sort) {
         const [field, order] = Object.entries(options.sort)[0];
-        all.sort((a, b) => order === -1 
-          ? new Date(b[field]) - new Date(a[field])
-          : new Date(a[field]) - new Date(b[field])
-        );
+        all.sort((a, b) => {
+          const aValue = this._getField(a, field);
+          const bValue = this._getField(b, field);
+          return order === -1 
+            ? new Date(bValue) - new Date(aValue)
+            : new Date(aValue) - new Date(bValue);
+        });
       }
 
       return all;
@@ -357,10 +360,46 @@ if (!useMemoryStore) {
         if (key === '$or') {
           const match = value.some(condition => {
             return Object.entries(condition).every(([k, v]) => {
-              return this._getField(doc, k) === v;
+              if (v && v.$regex) {
+                // 处理正则表达式查询
+                const fieldValue = this._getField(doc, k);
+                if (typeof fieldValue === 'string') {
+                  const regex = new RegExp(v.$regex, v.$options || '');
+                  return regex.test(fieldValue);
+                }
+                return false;
+              } else if (v && v.$in) {
+                // 处理 $in 查询
+                const fieldValue = this._getField(doc, k);
+                return v.$in.some(item => {
+                  if (item instanceof RegExp) {
+                    return typeof fieldValue === 'string' && item.test(fieldValue);
+                  }
+                  return fieldValue === item;
+                });
+              } else {
+                return this._getField(doc, k) === v;
+              }
             });
           });
           if (!match) return false;
+        } else if (value && value.$regex) {
+          // 处理正则表达式查询
+          const fieldValue = this._getField(doc, key);
+          if (typeof fieldValue === 'string') {
+            const regex = new RegExp(value.$regex, value.$options || '');
+            if (!regex.test(fieldValue)) {
+              return false;
+            }
+          } else {
+            return false;
+          }
+        } else if (value && value.$in) {
+          // 处理 $in 查询
+          const fieldValue = this._getField(doc, key);
+          if (!value.$in.includes(fieldValue)) {
+            return false;
+          }
         } else if (this._getField(doc, key) !== value) {
           return false;
         }

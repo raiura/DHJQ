@@ -8,15 +8,7 @@ let chatHistory = [];
 let currentCharacter = null;
 
 // AI API 设置
-let aiApiSettings = {
-    provider: 'openai',
-    model: 'gpt-3.5-turbo',
-    apiKey: '',
-    apiUrl: 'https://api.openai.com/v1/chat/completions',
-    temperature: 0.7,
-    maxTokens: 2000,
-    systemPrompt: ''
-};
+// aiApiSettings 已在 game-main.js 中声明
 
 // 获取用户设置
 function getUserSettings() {
@@ -190,7 +182,10 @@ function escapeHtml(text) {
 if (typeof window !== 'undefined') {
     window.chatHistory = chatHistory;
     window.currentCharacter = currentCharacter;
-    window.aiApiSettings = aiApiSettings;
+    // 从全局获取 aiApiSettings
+    if (window.aiApiSettings) {
+        window.aiApiSettings = window.aiApiSettings;
+    }
     window.generateAIResponse = generateAIResponse;
     window.addMessageToChat = addMessageToChat;
     window.renderMessage = renderMessage;

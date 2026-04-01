@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>存储系统测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .test-section h2 {
+            margin-top: 0;
+            color: #555;
+        }
+        .result {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .warning {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeeba;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #0069d9;
+        }
+        pre {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>存储系统测试</h1>
+        
+        <div class="test-section">
+            <h2>1. AI配置存储测试</h2>
+            <button onclick="testAISettings()">测试AI配置</button>
+            <div id="ai-test-result"></div>
+        </div>
+        
+        <div class="test-section">
+            <h2>2. 世界书存储测试</h2>
+            <button onclick="testWorldbook()">测试世界书</button>
+            <div id="worldbook-test-result"></div>
+        </div>
+        
+        <div class="test-section">
+            <h2>3. 存储大小测试</h2>
+            <button onclick="testStorageSize()">测试存储大小</button>
+            <div id="storage-size-result"></div>
+        </div>
+        
+        <div class="test-section">
+            <h2>4. 内存服务API测试</h2>
+            <button onclick="testMemoryAPI()">测试内存API</button>
+            <div id="memory-api-result"></div>
+        </div>
+        
+        <div class="test-section">
+            <h2>5. 存储数据查看</h2>
+            <button onclick="viewStorage()">查看存储数据</button>
+            <div id="storage-view"></div>
+        </div>
+    </div>
+    
+    <script>
+        function showResult(elementId, type, message) {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<div class="result ${type}">${message}</div>`;
+        }
+        
+        function testAISettings() {
+            try {
+                const aiSettings = localStorage.getItem('galgame_ai_settings');
+                if (aiSettings) {
+                    const settings = JSON.parse(aiSettings);
+                    showResult('ai-test-result', 'success', `✅ AI配置已存在: <pre>${JSON.stringify(settings, null, 2)}</pre>`);
+                } else {
+                    showResult('ai-test-result', 'error', '❌ AI配置不存在，创建默认配置...');
+                    const defaultSettings = {
+                        apiKey: '',
+                        apiUrl: 'https://api.openai.com/v1',
+                        model: 'gpt-3.5-turbo'
+                    };
+                    localStorage.setItem('galgame_ai_settings', JSON.stringify(defaultSettings));
+                    showResult('ai-test-result', 'success', `✅ 默认AI配置已创建: <pre>${JSON.stringify(defaultSettings, null, 2)}</pre>`);
+                }
+            } catch (error) {
+                showResult('ai-test-result', 'error', `❌ AI配置测试失败: ${error.message}`);
+            }
+        }
+        
+        function testWorldbook() {
+            try {
+                // 测试全局世界书
+                const gameId = 'mem_1773324176145_1'; // 从URL中获取的gameId
+                const globalKey = `wb_global_${gameId}`;
+                const globalData = localStorage.getItem(globalKey);
+                
+                let result = '';
+                if (globalData) {
+                    const parsed = JSON.parse(globalData);
+                    result += `✅ 全局世界书已存在 (${globalKey}): ${parsed.entries.length} 个条目<br>`;
+                    result += `<pre>${JSON.stringify(parsed, null, 2)}</pre>`;
+                } else {
+                    result += `❌ 全局世界书不存在 (${globalKey})，创建默认数据...<br>`;
+                    const defaultGlobal = {
+                        entries: [
+                            {
+                                id: 'default_1',
+                                name: '默认设置',
+                                keys: ['默认', '设置'],
+                                content: '这是默认的世界书条目',
+                                priority: 100,
+                                group: '默认',
+                                matchType: 'contains',
+                                insertPosition: 'character',
+                                enabled: true,
+                                constant: false
+                            }
+                        ],
+                        groups: {
+                            '默认': {
+                                color: '#888',
+                                count: 1
+                            }
+                        },
+                        version: '1.0'
+                    };
+                    localStorage.setItem(globalKey, JSON.stringify(defaultGlobal));
+                    result += `✅ 默认全局世界书已创建<br>`;
+                    result += `<pre>${JSON.stringify(defaultGlobal, null, 2)}</pre>`;
+                }
+                
+                // 测试用户世界书
+                const userData = localStorage.getItem('wb_user_data');
+                if (userData) {
+                    const parsed = JSON.parse(userData);
+                    result += `✅ 用户世界书已存在: ${Object.keys(parsed).length} 个存档<br>`;
+                    result += `<pre>${JSON.stringify(parsed, null, 2)}</pre>`;
+                } else {
+                    result += `❌ 用户世界书不存在，创建默认数据...<br>`;
+                    const defaultUserData = {
+                        'default': {
+                            entries: [],
+                            stats: {},
+                            createdAt: new Date().toISOString()
+                        }
+                    };
+                    localStorage.setItem('wb_user_data', JSON.stringify(defaultUserData));
+                    result += `✅ 默认用户世界书已创建<br>`;
+                    result += `<pre>${JSON.stringify(defaultUserData, null, 2)}</pre>`;
+                }
+                
+                showResult('worldbook-test-result', 'success', result);
+            } catch (error) {
+                showResult('worldbook-test-result', 'error', `❌ 世界书测试失败: ${error.message}`);
+            }
+        }
+        
+        function testStorageSize() {
+            try {
+                let totalSize = 0;
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    const value = localStorage.getItem(key);
+                    totalSize += key.length + value.length;
+                }
+                const totalSizeMB = (totalSize / 1024 / 1024).toFixed(2);
+                let type = 'success';
+                let message = `✅ 存储总大小: ${totalSizeMB} MB (限制: 5 MB)<br>`;
+                if (totalSizeMB < 5) {
+                    message += '✅ 存储空间充足';
+                } else {
+                    type = 'warning';
+                    message += '⚠️  存储空间接近限制';
+                }
+                showResult('storage-size-result', type, message);
+            } catch (error) {
+                showResult('storage-size-result', 'error', `❌ 存储大小测试失败: ${error.message}`);
+            }
+        }
+        
+        function testMemoryAPI() {
+            try {
+                // 获取认证令牌
+                const token = localStorage.getItem('galgame_token');
+                const user = localStorage.getItem('galgame_user');
+                
+                if (!token || !user) {
+                    showResult('memory-api-result', 'warning', '⚠️ 用户未登录，跳过内存服务API测试');
+                    return;
+                }
+                
+                // 尝试获取记忆统计数据
+                const headers = {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                };
+                
+                fetch('http://localhost:3000/api/memories/mem_1773324176145_1/stats', {
+                    method: 'GET',
+                    headers: headers
+                })
+                .then(response => {
+                    if (response.ok) {
+                        return response.json();
+                    } else {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+                })
+                .then(data => {
+                    showResult('memory-api-result', 'success', `✅ 内存服务API调用成功: <pre>${JSON.stringify(data, null, 2)}</pre>`);
+                })
+                .catch(error => {
+                    showResult('memory-api-result', 'error', `❌ 内存服务API调用失败: ${error.message}`);
+                });
+            } catch (error) {
+                showResult('memory-api-result', 'error', `❌ 内存服务API测试失败: ${error.message}`);
+            }
+        }
+        
+        function viewStorage() {
+            try {
+                let html = '<h3>存储数据:</h3>';
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    const value = localStorage.getItem(key);
+                    const size = (key.length + value.length) / 1024;
+                    html += `<h4>${key} (${size.toFixed(2)} KB)</h4>`;
+                    html += `<pre>${value}</pre>`;
+                }
+                document.getElementById('storage-view').innerHTML = html;
+            } catch (error) {
+                showResult('storage-view', 'error', `❌ 查看存储数据失败: ${error.message}`);
+            }
+        }
+        
+        // 页面加载时自动测试
+        window.onload = function() {
+            testAISettings();
+            testWorldbook();
+            testStorageSize();
+        };
+    </script>
+</body>
+</html>

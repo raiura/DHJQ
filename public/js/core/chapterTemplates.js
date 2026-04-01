@@ -298,7 +298,7 @@ const ChapterTemplates = {
  * 经历模板数据库
  * @constant {Object.<string, ExperienceTemplate>}
  */
-const ExperienceTemplates = {
+const ChapterExperienceTemplates = {
     // 第一章经历
     'ch1_sect_meet': {
         id: 'ch1_sect_meet',
@@ -490,7 +490,7 @@ const ExperienceDB = {
      * @returns {ExperienceTemplate|null}
      */
     get(expId) {
-        return ExperienceTemplates[expId] || null;
+        return ChapterExperienceTemplates[expId] || null;
     },
     
     /**
@@ -499,7 +499,7 @@ const ExperienceDB = {
      * @returns {ExperienceTemplate[]}
      */
     getByChapter(chapterId) {
-        return Object.values(ExperienceTemplates).filter(exp => exp.chapter === chapterId);
+        return Object.values(ChapterExperienceTemplates).filter(exp => exp.chapter === chapterId);
     },
     
     /**
@@ -507,7 +507,7 @@ const ExperienceDB = {
      * @returns {ExperienceTemplate[]}
      */
     getAll() {
-        return Object.values(ExperienceTemplates);
+        return Object.values(ChapterExperienceTemplates);
     },
     
     /**
@@ -517,7 +517,7 @@ const ExperienceDB = {
      */
     search(keyword) {
         const lower = keyword.toLowerCase();
-        return Object.values(ExperienceTemplates).filter(exp => 
+        return Object.values(ChapterExperienceTemplates).filter(exp => 
             exp.title.toLowerCase().includes(lower) ||
             exp.description.toLowerCase().includes(lower) ||
             exp.category.toLowerCase().includes(lower)
@@ -527,5 +527,5 @@ const ExperienceDB = {
 
 // 导出
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { ChapterTemplates, ExperienceTemplates, ChapterDB, ExperienceDB };
+    module.exports = { ChapterTemplates, ChapterExperienceTemplates, ChapterDB, ExperienceDB };
 }

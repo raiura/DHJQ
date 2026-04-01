@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
@@ -402,16 +402,16 @@
     <script src="public/js/game/modules/game-api.js"></script>
     <script src="public/js/game/modules/game-emotion.js"></script>
     <script src="public/js/game/modules/game-worldbook-integration.js"></script>
-    <script src="public/js/game/modules/game-dialogue.js"></script>
     
     <!-- 主游戏逻辑（向后兼容） -->
     <script src="public/js/game/game-main.js"></script>
+    
+    <!-- 对话模块 -->
+    <script src="public/js/game/modules/game-dialogue.js"></script>
     <!-- 原始脚本已移至外部文件 -->
     <script style="display:none;">// 认证检查 - 已移至 game-main.js
-        const API_BASE = 'http://localhost:3000/api';
-        
-        // 当前游戏世界配置
-        let currentWorld = null;
+        // API_BASE 和 currentWorld 已在 game-config.js 中声明
+        // 这里不再重复声明，直接使用全局变量
         
         // 从URL获取世界slug
         function getWorldSlugFromUrl() {
@@ -503,8 +503,7 @@
         }
         
         // 图库数据
-        let worldGallery = [];
-        let currentBackground = null;
+        // worldGallery 和 currentBackground 已在 game-config.js 中声明
 
         // 加载世界图库
         async function loadWorldGallery(gameId) {
@@ -865,107 +864,19 @@
         }
         
         // 游戏状态
-        const gameState = {
-            currentScene: 1,
-            currentDialogue: 0,
-            characterPositions: {
-                left: null,
-                center: null,
-                right: null
-            }
+        // gameState 已在 game-config.js 中声明
+        // 这里只更新需要的属性
+        gameState.currentScene = 1;
+        gameState.currentDialogue = 0;
+        gameState.characterPositions = {
+            left: null,
+            center: null,
+            right: null
         };
         // 游戏数据
-        const gameData = {
-            scenes: [
-                {
-                    id: 1,
-                    background: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1920' height='1080'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%231a1a2e'/%3E%3Cstop offset='50%25' stop-color='%2316213e'/%3E%3Cstop offset='100%25' stop-color='%230f3460'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect fill='url(%23g)' width='1920' height='1080'/%3E%3C/svg%3E",
-                    dialogues: [
-                        {
-                            character: "林婉",
-                            text: "你好，欢迎来到这个世界。这里是一个充满奇迹和冒险的地方，希望你能在这里找到属于自己的故事。"
-                        }
-                    ]
-                },
-                {
-                    id: 2,
-                    background: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1920' height='1080'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%231a1a2e'/%3E%3Cstop offset='50%25' stop-color='%2316213e'/%3E%3Cstop offset='100%25' stop-color='%230f3460'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect fill='url(%23g)' width='1920' height='1080'/%3E%3C/svg%3E",
-                    dialogues: [
-                        {
-                            character: "林婉",
-                            text: "我也很高兴认识你！我叫林婉，是这里的向导。如果你有任何问题，都可以问我。"
-                        }
-                    ]
-                },
-                {
-                    id: 3,
-                    background: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1920' height='1080'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%231a1a2e'/%3E%3Cstop offset='50%25' stop-color='%2316213e'/%3E%3Cstop offset='100%25' stop-color='%230f3460'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect fill='url(%23g)' width='1920' height='1080'/%3E%3C/svg%3E",
-                    dialogues: [
-                        {
-                            character: "陆苍雪",
-                            text: "你好，我是陆苍雪。这里的冰雪世界很美，不是吗？"
-                        }
-                    ]
-                },
-                {
-                    id: 4,
-                    background: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1920' height='1080'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%231a1a2e'/%3E%3Cstop offset='50%25' stop-color='%2316213e'/%3E%3Cstop offset='100%25' stop-color='%230f3460'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect fill='url(%23g)' width='1920' height='1080'/%3E%3C/svg%3E",
-                    dialogues: [
-                        {
-                            character: "陆苍雪",
-                            text: "我擅长冰系法术，如果你遇到任何困难，我可以帮助你。"
-                        }
-                    ]
-                },
-                {
-                    id: 5,
-                    background: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1920' height='1080'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%231a1a2e'/%3E%3Cstop offset='50%25' stop-color='%2316213e'/%3E%3Cstop offset='100%25' stop-color='%230f3460'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect fill='url(%23g)' width='1920' height='1080'/%3E%3C/svg%3E",
-                    dialogues: [
-                        {
-                            character: "轩辕霓裳",
-                            text: "哈哈，你就是新来的吧？我是轩辕霓裳，这里的守护者之一。"
-                        }
-                    ]
-                },
-                {
-                    id: 6,
-                    background: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1920' height='1080'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%231a1a2e'/%3E%3Cstop offset='50%25' stop-color='%2316213e'/%3E%3Cstop offset='100%25' stop-color='%230f3460'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect fill='url(%23g)' width='1920' height='1080'/%3E%3C/svg%3E",
-                    dialogues: [
-                        {
-                            character: "轩辕霓裳",
-                            text: "我喜欢热闹的地方，如果你想找乐子，就来找我吧！"
-                        }
-                    ]
-                }
-            ]
-        };
+        // gameData 已在 game-main.js 中声明
         // 角色配置对象 - 统一管理角色信息，支持动态添加
-        let characterConfig = {
-            '默认描述者': {
-                color: '#999999',
-                image: null
-            },
-            '林婉': {
-                color: '#FF69B4',
-                image: 'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'300\' height=\'400\'%3E%3Crect fill=\'%23FF69B4\' width=\'300\' height=\'400\'/%3E%3Ctext x=\'50%25\' y=\'50%25\' fill=\'%23fff\' font-family=\'Microsoft YaHei\' font-size=\'20\' text-anchor=\'middle\'%3E林婉%3C/text%3E%3C/svg%3E'
-            },
-            '陆苍雪': {
-                color: '#87CEFA',
-                image: 'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'300\' height=\'400\'%3E%3Crect fill=\'%234ECDC4\' width=\'300\' height=\'400\'/%3E%3Ctext x=\'50%25\' y=\'50%25\' fill=\'%23fff\' font-family=\'Microsoft YaHei\' font-size=\'20\' text-anchor=\'middle\'%3E陆苍雪%3C/text%3E%3C/svg%3E'
-            },
-            '轩辕霓裳': {
-                color: '#FF4500',
-                image: 'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'300\' height=\'400\'%3E%3Crect fill=\'%23FFD93D\' width=\'300\' height=\'400\'/%3E%3Ctext x=\'50%25\' y=\'50%25\' fill=\'%23fff\' font-family=\'Microsoft YaHei\' font-size=\'20\' text-anchor=\'middle\'%3E玄辙霓裳%3C/text%3E%3C/svg%3E'
-            },
-            'AI': {
-                color: '#4CAF50',
-                image: null
-            },
-            'You': {
-                color: '#2196F3',
-                image: null
-            }
-        };
+        // characterConfig 已在 game-main.js 中声明
         // 角色颜色映射表（保持兼容性）
         let characterColors = {
             '默认描述者': '#999999',
@@ -1002,7 +913,7 @@
             return color;
         }
         // 聊天历史
-        const chatHistory = [];
+        // chatHistory 已在 game-dialogue.js 中声明
         // AI回复历史 - 保存所有完整的AI回复
         const aiResponseHistory = [];
         // 当前发言人
@@ -1014,20 +925,7 @@
             '轩辕霓裳': '轩辕霓裳是一个活泼、热情、豪爽的女孩，充满活力和趣味性。她喜欢热闹的地方，总是能给周围的人带来快乐。'
         };
         // AI API设置
-        let aiApiSettings = {
-            apiKey: 'sk-ohkdoeggttsnylwvggqbovjakxjxtqnatuwidaucuxmdxfxs',
-            apiUrl: 'https://api.siliconflow.cn/v1/chat/completions',
-            model: 'Pro/deepseek-ai/DeepSeek-V3.2',
-            provider: 'siliconflow',
-            temperature: 0.7,
-            topP: 0.9,
-            maxTokens: 2000,
-            presencePenalty: 0,
-            streaming: true,
-            thinkChain: false,
-            jsonMode: false,
-            systemPrompt: ''
-        };
+        // aiApiSettings 已在 game-main.js 中声明
         // DOM元素
         const elements = {
             loadingScreen: document.getElementById('loading-screen'),
@@ -1090,28 +988,13 @@
             userSystemPrompt: document.getElementById('user-system-prompt')
         };
         // 保存AI设置
-        function saveCharacterSettings() {
-            aiApiSettings.apiKey = elements.apiKey.value.trim() || 'sk-ohkdoeggttsnylwvggqbovjakxjxtqnatuwidaucuxmdxfxs';
-            aiApiSettings.model = elements.modelName.value.trim() || 'Pro/deepseek-ai/DeepSeek-V3.2';
-            // 隐藏设置面板
-            elements.characterSettings.style.display = 'none';
-            // 提示保存成功
-            alert('AI设置保存成功！');
-        }
+        // saveCharacterSettings 已在 game-main.js 中定义
         // 加载AI设置到表单
-        function loadCharacterSettings() {
-            elements.apiKey.value = aiApiSettings.apiKey || '';
-            elements.modelName.value = aiApiSettings.model || '';
-        }
+        // loadCharacterSettings 已在 game-main.js 中定义
         // 显示AI设置面板
-        function showCharacterSettings() {
-            loadCharacterSettings();
-            elements.characterSettings.style.display = 'block';
-        }
+        // showCharacterSettings 已在 game-main.js 中定义
         // 隐藏AI设置面板
-        function hideCharacterSettings() {
-            elements.characterSettings.style.display = 'none';
-        }
+        // hideCharacterSettings 已在 game-main.js 中定义
 
         // ==================== 用户个人设置管理 ====================
         // 用户设置数据结构
@@ -1476,39 +1359,7 @@
         }
 
         // 根据用户设置更新AI配置（优先级：用户 > 书本 > 默认）
-        function updateAISettingsFromUser() {
-            // 如果用户设置了API密钥，优先使用
-            if (userSettings.ai.apiKey) {
-                aiApiSettings.apiKey = userSettings.ai.apiKey;
-            }
-            // 如果用户设置了自定义API地址，优先使用
-            if (userSettings.ai.apiUrl) {
-                aiApiSettings.apiUrl = userSettings.ai.apiUrl;
-            }
-            if (userSettings.ai.modelName) {
-                aiApiSettings.model = userSettings.ai.modelName;
-            }
-            // 高级设置
-            if (userSettings.ai.temperature !== undefined) {
-                aiApiSettings.temperature = userSettings.ai.temperature;
-            }
-            if (userSettings.ai.topP !== undefined) {
-                aiApiSettings.topP = userSettings.ai.topP;
-            }
-            if (userSettings.ai.maxTokens !== undefined) {
-                aiApiSettings.maxTokens = userSettings.ai.maxTokens;
-            }
-            if (userSettings.ai.presencePenalty !== undefined) {
-                aiApiSettings.presencePenalty = userSettings.ai.presencePenalty;
-            }
-            aiApiSettings.streaming = userSettings.ai.streaming !== false;
-            aiApiSettings.thinkChain = userSettings.ai.thinkChain || false;
-            aiApiSettings.jsonMode = userSettings.ai.jsonMode || false;
-            if (userSettings.ai.systemPrompt) {
-                aiApiSettings.systemPrompt = userSettings.ai.systemPrompt;
-            }
-            aiApiSettings.provider = userSettings.ai.provider || 'siliconflow';
-        }
+        // updateAISettingsFromUser 已在 game-main.js 中定义
 
         // 获取用于AI对话的完整提示词（合并用户设置）
         function getUserPromptAddon() {
@@ -3660,45 +3511,10 @@
         };
 
         // 世界书管理器实例
-        let worldbookManager = null;
+        // worldbookManager 已在 game-worldbook-integration.js 中声明
         
         // 初始化世界书系统
-        async function initWorldbookSystem() {
-            console.log('[Worldbook] 初始化世界书系统...');
-            
-            try {
-                const gameId = currentWorld?._id || currentWorld?.id;
-                if (!gameId) {
-                    console.warn('[Worldbook] 未找到游戏ID');
-                    return;
-                }
-                
-                // 创建世界书管理器
-                worldbookManager = new WorldbookManager({ gameId });
-                
-                // 尝试从 settings 的 localStorage 加载世界书数据
-                const localWbKey = `wb_global_${gameId}`;
-                const localWbData = localStorage.getItem(localWbKey);
-                
-                if (localWbData) {
-                    console.log('[Worldbook] 从 localStorage 加载世界书数据');
-                    const wbData = JSON.parse(localWbData);
-                    worldbookManager.globalWorldbook = wbData;
-                }
-                
-                // 设置当前存档
-                const currentSaveId = localStorage.getItem(`galgame_current_save_${gameId}`);
-                if (currentSaveId) {
-                    worldbookManager.setCurrentSave(currentSaveId);
-                }
-                
-                const stats = worldbookManager.getStats();
-                console.log('[Worldbook] 世界书系统初始化完成:', stats);
-                
-            } catch (error) {
-                console.error('[Worldbook] 初始化失败:', error);
-            }
-        }
+        // initWorldbookSystem 已在 game-worldbook-integration.js 中定义
         
         async function initGameWithCharacter(userCharacter) {
             // 初始化世界角色

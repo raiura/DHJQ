@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-04-01T00:44:24.565Z",
+  "timestamp": "2026-04-01T11:39:04.624Z",
   "collections": {
     "users": [
       {
@@ -9,9 +9,9 @@
         "nickname": "管理员",
         "role": "admin",
         "createdAt": "2026-03-12T14:02:56.708Z",
-        "updatedAt": "2026-03-28T13:59:50.914Z",
+        "updatedAt": "2026-04-01T06:45:22.969Z",
         "isActive": true,
-        "lastLoginAt": "2026-03-28T13:59:50.914Z"
+        "lastLoginAt": "2026-04-01T06:45:22.968Z"
       }
     ],
     "characters": [
@@ -24,7 +24,7 @@
         "enabled": true,
         "gameId": "mem_1773324176145_1",
         "createdAt": "2026-03-12T14:02:56.145Z",
-        "updatedAt": "2026-03-31T16:30:06.643Z",
+        "updatedAt": "2026-04-01T11:39:04.119Z",
         "imageFit": "cover",
         "appearance": "",
         "personality": "",
@@ -98,9 +98,9 @@
           "tags": [],
           "creator": "",
           "version": "2.0.0",
-          "updatedAt": "2026-03-31T16:30:06.643Z"
+          "updatedAt": "2026-04-01T11:39:04.119Z"
         },
-        "meta.updatedAt": "2026-03-31T16:30:06.643Z"
+        "meta.updatedAt": "2026-04-01T11:39:04.119Z"
       },
       {
         "_id": "mem_1773324176145_3",
@@ -111,7 +111,7 @@
         "enabled": true,
         "gameId": "mem_1773324176145_1",
         "createdAt": "2026-03-12T14:02:56.145Z",
-        "updatedAt": "2026-03-31T16:30:06.647Z",
+        "updatedAt": "2026-04-01T11:39:04.109Z",
         "imageFit": "cover",
         "appearance": "",
         "personality": "",
@@ -189,9 +189,9 @@
           "tags": [],
           "creator": "",
           "version": "2.0.0",
-          "updatedAt": "2026-03-31T16:30:06.647Z"
+          "updatedAt": "2026-04-01T11:39:04.108Z"
         },
-        "meta.updatedAt": "2026-03-31T16:30:06.647Z"
+        "meta.updatedAt": "2026-04-01T11:39:04.108Z"
       },
       {
         "_id": "mem_1773324176145_4",
@@ -202,7 +202,7 @@
         "enabled": true,
         "gameId": "mem_1773324176145_1",
         "createdAt": "2026-03-12T14:02:56.145Z",
-        "updatedAt": "2026-03-31T16:30:06.650Z",
+        "updatedAt": "2026-04-01T11:39:04.100Z",
         "imageFit": "cover",
         "appearance": "",
         "personality": "",
@@ -271,7 +271,7 @@
           }
         },
         "relationship": {
-          "favor": 18,
+          "favor": 59,
           "trust": 21,
           "mood": "平静"
         },
@@ -280,9 +280,9 @@
           "tags": [],
           "creator": "",
           "version": "2.0.0",
-          "updatedAt": "2026-03-31T16:30:06.650Z"
+          "updatedAt": "2026-04-01T11:39:04.100Z"
         },
-        "meta.updatedAt": "2026-03-31T16:30:06.650Z"
+        "meta.updatedAt": "2026-04-01T11:39:04.100Z"
       }
     ],
     "dialogues": [],
@@ -422,8 +422,8 @@
           "favorites": 66
         },
         "createdAt": "2026-03-12T14:02:56.145Z",
-        "updatedAt": "2026-03-31T16:30:06.638Z",
-        "version": 17
+        "updatedAt": "2026-04-01T11:39:04.088Z",
+        "version": 31
       }
     ],
     "gallery": [],

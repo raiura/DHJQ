@@ -165,6 +165,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             loadUserAIConfig();
         }
         
+        // 加载AI设置
+        loadAISettings();
+        
         if (isEditMode) {
             loadGameData().then(() => {
                 restoreViewMode();
@@ -779,7 +782,7 @@ async function deleteCharacter(id) {
     showToast('角色已删除');
 }
 
-function saveCharacter() {
+async function saveCharacter() {
     // 收集所有字段
     const name = document.getElementById('charName')?.value.trim() || '';
     const color = document.getElementById('charColor')?.value.trim() || '#8a6d3b';
@@ -841,6 +844,15 @@ function saveCharacter() {
     // 保存到localStorage
     if (gameId) {
         localStorage.setItem(`game_${gameId}_characters`, JSON.stringify(characters));
+        
+        // 同步到后端
+        try {
+            await saveCharactersToBackend(gameId, characters);
+            console.log('[Settings] Character saved to backend:', char.name);
+        } catch (err) {
+            console.warn('[Settings] Failed to save character to backend:', err);
+            // 后端保存失败不影响前端保存
+        }
     }
     
     closeCharacterModal();
@@ -2339,6 +2351,29 @@ function closeModal(modalId) {
 }
 
 // ==================== AI 配置 ====================
+
+// 加载AI配置
+function loadAISettings() {
+    try {
+        const savedSettings = localStorage.getItem('galgame_ai_settings');
+        if (savedSettings) {
+            const settings = JSON.parse(savedSettings);
+            if (settings.apiKey && document.getElementById('apiKey')) {
+                document.getElementById('apiKey').value = settings.apiKey;
+            }
+            if (settings.apiUrl && document.getElementById('apiUrl')) {
+                document.getElementById('apiUrl').value = settings.apiUrl;
+            }
+            if (settings.model && document.getElementById('model')) {
+                document.getElementById('model').value = settings.model;
+            }
+            console.log('[Settings] Loaded AI settings from localStorage');
+        }
+    } catch (error) {
+        console.error('[Settings] Failed to load AI settings:', error);
+    }
+}
+
 async function testAIConnection() {
     const apiKey = document.getElementById('apiKey')?.value;
     const apiUrl = document.getElementById('apiUrl')?.value || 'https://api.openai.com/v1';

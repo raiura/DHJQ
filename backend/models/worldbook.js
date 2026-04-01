@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const memoryStore = require('../utils/memoryStore');
 
 /**
  * 世界书条目模型
@@ -233,7 +234,178 @@ worldbookEntrySchema.statics.updateTimelineArchive = async function(gameId, cont
   return entry;
 };
 
+// 检查 MongoDB 是否连接
+let useMemoryStore = false;
+try {
+  useMemoryStore = mongoose.connection.readyState !== 1;
+} catch (error) {
+  useMemoryStore = true;
+}
+
+/**
+ * 内存世界书条目模型
+ */
+class WorldbookEntryModel {
+  constructor() {
+    this.collectionName = 'worldbook_entries';
+  }
+
+  async create(data) {
+    const doc = memoryStore.create(this.collectionName, {
+      ...data,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    });
+    return this._addMethods(doc);
+  }
+
+  async find(query = {}) {
+    let docs = memoryStore.findAll(this.collectionName);
+    
+    // 过滤
+    if (Object.keys(query).length > 0) {
+      docs = docs.filter(doc => {
+        for (const [key, value] of Object.entries(query)) {
+          if (doc[key] !== value) return false;
+        }
+        return true;
+      });
+    }
+    
+    // 按更新时间倒序排序
+    docs.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+    
+    return docs.map(d => this._addMethods(d));
+  }
+
+  async findOne(query) {
+    const docs = await this.find(query);
+    return docs[0] || null;
+  }
+
+  async findById(id) {
+    const doc = memoryStore.findById(this.collectionName, id);
+    return doc ? this._addMethods(doc) : null;
+  }
+
+  async update(id, data) {
+    const updated = memoryStore.update(this.collectionName, id, {
+      ...data,
+      updatedAt: new Date()
+    });
+    return updated ? this._addMethods(updated) : null;
+  }
+
+  async delete(id) {
+    return memoryStore.delete(this.collectionName, id);
+  }
+
+  // 给文档添加方法
+  _addMethods(doc) {
+    if (!doc) return null;
+    doc.save = async () => {
+      return memoryStore.update(this.collectionName, doc._id, doc);
+    };
+    doc.matches = function(text) {
+      if (!this.enabled || !this.keys || this.keys.length === 0) {
+        return false;
+      }
+      
+      const checkText = this.caseSensitive ? text : text.toLowerCase();
+      
+      for (const key of this.keys) {
+        if (!key) continue;
+        
+        const checkKey = this.caseSensitive ? key : key.toLowerCase();
+        
+        switch (this.matchType) {
+          case 'exact':
+            if (checkText === checkKey) return true;
+            break;
+          case 'contains':
+            if (checkText.includes(checkKey)) return true;
+            break;
+          case 'prefix':
+            if (checkText.startsWith(checkKey)) return true;
+            break;
+          case 'suffix':
+            if (checkText.endsWith(checkKey)) return true;
+            break;
+          case 'regex':
+            try {
+              const regex = new RegExp(key, this.caseSensitive ? '' : 'i');
+              if (regex.test(text)) return true;
+            } catch (e) {
+              console.error('Invalid regex:', key);
+            }
+            break;
+        }
+      }
+      
+      return false;
+    };
+    doc.getFormattedContent = function() {
+      if (this.entryType === EntryType.TIMELINE) {
+        return `【世界书·存档·当前时间线】\n${this.content}`;
+      }
+      if (this.entryType === EntryType.SETTING) {
+        return `【世界书·基础设定】\n${this.content}`;
+      }
+      return `[${this.name}]: ${this.content}`;
+    };
+    return doc;
+  }
+
+  // 静态方法
+  async findMatching(text) {
+    const entries = await this.find({ enabled: true });
+    entries.sort((a, b) => (b.priority || 0) - (a.priority || 0));
+    return entries.filter(entry => entry.matches(text));
+  }
+
+  async getTimelineArchive(gameId) {
+    const entries = await this.find({ 
+      gameId, 
+      entryType: EntryType.TIMELINE 
+    });
+    return entries[0] || null;
+  }
+
+  async updateTimelineArchive(gameId, content) {
+    let entry = await this.findOne({ 
+      gameId, 
+      entryType: EntryType.TIMELINE 
+    });
+    
+    if (entry) {
+      entry.content = content;
+      entry.updatedAt = new Date();
+      await entry.save();
+    } else {
+      entry = await this.create({
+        name: '存档·当前时间线',
+        entryType: EntryType.TIMELINE,
+        gameId,
+        content,
+        keys: [],
+        enabled: true,
+        priority: 1000,
+        insertPosition: 'system'
+      });
+    }
+    
+    return entry;
+  }
+}
+
 // 导出类型
 worldbookEntrySchema.statics.EntryType = EntryType;
 
-module.exports = mongoose.model('WorldbookEntry', worldbookEntrySchema);
+// 导出模型
+if (!useMemoryStore) {
+  module.exports = mongoose.model('WorldbookEntry', worldbookEntrySchema);
+} else {
+  const model = new WorldbookEntryModel();
+  model.EntryType = EntryType;
+  module.exports = model;
+}

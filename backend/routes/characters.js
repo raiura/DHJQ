@@ -43,7 +43,19 @@ router.get('/', checkMongoDB, async (req, res) => {
       ];
     }
     
-    const characters = await Character.find(query).sort({ 'meta.updatedAt': -1 });
+    let characters = await Character.find(query);
+    
+    // 内存存储模式下手动排序
+    if (Array.isArray(characters)) {
+      characters.sort((a, b) => {
+        const aDate = new Date(a.meta?.updatedAt || a.updatedAt || 0);
+        const bDate = new Date(b.meta?.updatedAt || b.updatedAt || 0);
+        return bDate - aDate;
+      });
+    } else {
+      // MongoDB 模式下使用 sort 方法
+      characters = characters.sort({ 'meta.updatedAt': -1 });
+    }
     
     res.json({
       success: true,
@@ -93,8 +105,16 @@ router.post('/', checkMongoDB, async (req, res) => {
     // 确保符合V2结构
     const characterData = ensureV2Structure(data);
     
-    const character = new Character(characterData);
-    await character.save();
+    // 根据存储模式选择创建方式
+    let character;
+    if (typeof Character.create === 'function') {
+        // 内存存储模式
+        character = await Character.create(characterData);
+    } else {
+        // MongoDB模式
+        character = new Character(characterData);
+        await character.save();
+    }
     
     res.json({
       success: true,
@@ -186,8 +206,15 @@ router.post('/batch', checkMongoDB, async (req, res) => {
           results.push({ success: true, id: updated._id, action: 'update' });
         } else {
           // 创建
-          const character = new Character(v2Data);
-          await character.save();
+          let character;
+          if (typeof Character.create === 'function') {
+              // 内存存储模式
+              character = await Character.create(v2Data);
+          } else {
+              // MongoDB模式
+              character = new Character(v2Data);
+              await character.save();
+          }
           results.push({ success: true, id: character._id, action: 'create' });
         }
       } catch (err) {
@@ -232,8 +259,16 @@ router.post('/import', checkMongoDB, async (req, res) => {
     
     if (gameId) characterData.gameId = gameId;
     
-    const character = new Character(characterData);
-    await character.save();
+    // 根据存储模式选择创建方式
+    let character;
+    if (typeof Character.create === 'function') {
+        // 内存存储模式
+        character = await Character.create(characterData);
+    } else {
+        // MongoDB模式
+        character = new Character(characterData);
+        await character.save();
+    }
     
     res.json({
       success: true,

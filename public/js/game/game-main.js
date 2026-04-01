@@ -1,13 +1,6 @@
-﻿
+
         // ==================== 认证检查 ====================
-        // 注意：API_BASE 和 currentWorld 已在 game-config.js 中声明
-        // 这里不再重复声明，直接使用全局变量
-        if (typeof API_BASE === 'undefined') {
-            var API_BASE = 'http://localhost:3000/api';
-        }
-        if (typeof currentWorld === 'undefined') {
-            var currentWorld = null;
-        }
+        // API_BASE 和 currentWorld 已在 game-config.js 中声明
         
         // 从URL获取世界slug
         function getWorldSlugFromUrl() {
@@ -99,8 +92,7 @@
         }
         
         // 图库数据
-        let worldGallery = [];
-        let currentBackground = null;
+        // worldGallery 和 currentBackground 已在 game-config.js 中声明
 
         // 加载世界图库
         async function loadWorldGallery(gameId) {
@@ -461,15 +453,7 @@
         }
         
         // 游戏状态
-        const gameState = {
-            currentScene: 1,
-            currentDialogue: 0,
-            characterPositions: {
-                left: null,
-                center: null,
-                right: null
-            }
-        };
+        // gameState 已在 game-config.js 中声明
         // 游戏数据
         const gameData = {
             scenes: [
@@ -598,7 +582,7 @@
             return color;
         }
         // 聊天历史
-        const chatHistory = [];
+        // chatHistory 已在 game-dialogue.js 中声明
         // AI回复历史 - 保存所有完整的AI回复
         const aiResponseHistory = [];
         // 当前发言人
@@ -2162,7 +2146,7 @@
             if (!container) return;
             
             try {
-                const response = await fetch(`${API_BASE}/characters/${characterId}/experiences`, {
+                const response = await fetch(`${API_BASE}/experiences/${characterId}`, {
                     headers: getAuthHeaders()
                 });
                 
@@ -3196,7 +3180,7 @@
         };
 
         // 世界书管理器实例
-        let worldbookManager = null;
+        // worldbookManager 已在 game-worldbook-integration.js 中声明
         
         async function initGameWithCharacter(userCharacter) {
             // 初始化世界角色
@@ -3237,7 +3221,7 @@
         }
 
         // 世界书图书馆实例（2.0 新系统）
-        let worldbookLibrary = null;
+        // worldbookLibrary 已在 game-worldbook-integration.js 中声明
         
         // 初始化世界书系统
         async function initWorldbookSystem() {
@@ -3267,8 +3251,8 @@
                     console.log('[WorldbookLibrary] 已初始化，激活书本数:', worldbookLibrary.getActiveBooks().length);
                 }
                 
-                const stats = worldbookManager.getStats();
-                console.log('[Worldbook] 世界书系统初始化完成:', stats);
+                console.log('[Worldbook] 旧系统初始化完成');
+                // worldbookManager.getStats() 方法不存在，已移除
                 
             } catch (error) {
                 console.error('[Worldbook] 初始化失败:', error);
