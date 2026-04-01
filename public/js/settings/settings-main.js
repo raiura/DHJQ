@@ -136,9 +136,40 @@ document.addEventListener('DOMContentLoaded', async () => {
             initGalleryV2();
         }
         
+        // 初始化提示词编辑器
+        if (typeof initPromptEditor === 'function') {
+            initPromptEditor({
+                containerId: 'promptEditorContainer',
+                gameId: gameId,
+                onChange: (config) => {
+                    console.log('[PromptEditor] Config changed:', config);
+                },
+                onSave: (config) => {
+                    console.log('[PromptEditor] Config saved:', config);
+                }
+            });
+        }
+        
+        // 初始化AI配置编辑器
+        if (typeof initAIConfigEditor === 'function') {
+            initAIConfigEditor({
+                containerId: 'aiConfigContainer',
+                onChange: (config) => {
+                    console.log('[AIConfigEditor] Config changed:', config);
+                },
+                onSave: (config) => {
+                    console.log('[AIConfigEditor] Config saved:', config);
+                }
+            });
+            // 加载保存的AI配置
+            loadUserAIConfig();
+        }
+        
         if (isEditMode) {
             loadGameData().then(() => {
                 restoreViewMode();
+                // 加载提示词配置
+                loadPromptConfig();
             }).catch(err => {
                 console.error('[Settings] Failed to load game data:', err);
                 // API 失败时，尝试从 localStorage 加载迁移的角色
@@ -715,11 +746,37 @@ function closeCharacterModal() {
     }
 }
 
-function deleteCharacter(id) {
+async function deleteCharacter(id) {
     if (!confirm('确定要删除这个角色吗？')) return;
+    
+    // 从前端数组删除
     characters = characters.filter((c, i) => (c._id || i.toString()) !== id);
     renderCharacterList();
-    showToast('已删除');
+    
+    // 保存到 localStorage
+    if (gameId) {
+        localStorage.setItem(`game_${gameId}_characters`, JSON.stringify(characters));
+    }
+    
+    // 尝试同步到后端
+    if (gameId && id && !id.toString().startsWith('char_')) {
+        try {
+            const response = await fetch(`${API_BASE}/characters/${id}`, {
+                method: 'DELETE',
+                headers: getAuthHeaders()
+            });
+            
+            if (response.ok) {
+                console.log('[Settings] Character deleted from backend:', id);
+            } else if (response.status === 404 || response.status === 503) {
+                console.warn('[Settings] Backend not available, character deleted locally only');
+            }
+        } catch (err) {
+            console.warn('[Settings] Failed to delete from backend:', err);
+        }
+    }
+    
+    showToast('角色已删除');
 }
 
 function saveCharacter() {
@@ -2331,29 +2388,66 @@ async function saveAISettings() {
     showToast('AI 设置已保存', 'success');
 }
 
-// ==================== 提示词功能 ====================
+// ==================== 提示词功能 2.0 ====================
 function resetPrompts() {
     if (!confirm('确定要重置提示词吗？这将恢复到默认设置。')) return;
     
-    document.getElementById('originalPrePrompt').value = '';
-    document.getElementById('originalMainPrompt').value = '';
+    if (promptEditor) {
+        promptEditor.loadData(promptEditor.getDefaultConfig());
+    }
     showToast('提示词已重置');
 }
 
 async function savePrompts() {
-    const prompts = {
-        prePrompt: document.getElementById('originalPrePrompt')?.value,
-        mainPrompt: document.getElementById('originalMainPrompt')?.value
-    };
+    if (!promptEditor) {
+        showToast('提示词编辑器未初始化', 'error');
+        return;
+    }
+    
+    const config = promptEditor.getConfig();
     
     // 保存到游戏配置中
     if (currentGame) {
         currentGame.config = currentGame.config || {};
-        currentGame.config.prePrompt = prompts.prePrompt;
-        currentGame.config.mainPrompt = prompts.mainPrompt;
+        currentGame.config.promptConfig = config;
     }
     
+    // 保存到 localStorage
+    const storageKey = `game_${gameId}_prompt_config`;
+    localStorage.setItem(storageKey, JSON.stringify(config));
+    
     showToast('提示词已保存', 'success');
+}
+
+function onPromptTemplateChange(templateKey) {
+    if (!templateKey || !promptEditor) return;
+    
+    promptEditor.loadTemplate(templateKey);
+    // 重置选择框
+    document.getElementById('promptTemplateSelect').value = '';
+}
+
+// 加载提示词配置
+function loadPromptConfig() {
+    if (!promptEditor || !gameId) return;
+    
+    // 尝试从 localStorage 加载
+    const storageKey = `game_${gameId}_prompt_config`;
+    const saved = localStorage.getItem(storageKey);
+    
+    if (saved) {
+        try {
+            const config = JSON.parse(saved);
+            promptEditor.loadData(config);
+            console.log('[Settings] Loaded prompt config from localStorage');
+        } catch (e) {
+            console.error('[Settings] Failed to load prompt config:', e);
+        }
+    } else if (currentGame?.config?.promptConfig) {
+        // 从游戏配置加载
+        promptEditor.loadData(currentGame.config.promptConfig);
+        console.log('[Settings] Loaded prompt config from game config');
+    }
 }
 
 // ==================== 记忆管理功能 2.0 ====================
@@ -2975,14 +3069,41 @@ async function testUserAIConnection() {
 }
 
 function saveUserAIConfig() {
-    const config = {
-        temperature: parseFloat(document.getElementById('userAITemperature')?.value || 0.7),
-        maxTokens: parseInt(document.getElementById('userAIMaxTokens')?.value || 2000)
-    };
+    if (!aiConfigEditor) {
+        showToast('AI配置编辑器未初始化', 'error');
+        return;
+    }
+    
+    const config = aiConfigEditor.getConfig();
     
     userPersonalSettings.config = config;
     saveUserPersonalSettings();
+    
+    // 同时保存到 localStorage 作为全局默认
+    localStorage.setItem('user_ai_config', JSON.stringify(config));
+    
     showToast('AI 配置已保存', 'success');
+}
+
+// 加载AI配置
+function loadUserAIConfig() {
+    if (!aiConfigEditor) return;
+    
+    // 尝试加载保存的配置
+    const saved = localStorage.getItem('user_ai_config');
+    if (saved) {
+        try {
+            const config = JSON.parse(saved);
+            aiConfigEditor.loadData(config);
+            console.log('[Settings] Loaded AI config from localStorage');
+        } catch (e) {
+            console.error('[Settings] Failed to load AI config:', e);
+        }
+    } else if (userPersonalSettings?.config) {
+        // 从用户设置加载
+        aiConfigEditor.loadData(userPersonalSettings.config);
+        console.log('[Settings] Loaded AI config from user settings');
+    }
 }
 
 async function loadUserMemoryList() {
@@ -3067,18 +3188,241 @@ function importCharactersBatch() {
             const text = await file.text();
             const data = JSON.parse(text);
             
-            if (data.characters && Array.isArray(data.characters)) {
-                characters = [...characters, ...data.characters];
-                renderCharacterList();
-                showToast(`已导入 ${data.characters.length} 个角色`, 'success');
-            } else {
-                showToast('文件格式不正确', 'error');
+            console.log('[Import] File loaded:', file.name);
+            console.log('[Import] Data keys:', Object.keys(data));
+            console.log('[Import] Characters count:', data.characters?.length);
+            
+            if (!data.characters || !Array.isArray(data.characters)) {
+                showToast('文件格式不正确，缺少 characters 数组', 'error');
+                return;
             }
+            
+            // 同时保存到 _pendingImportChars 确保数据可用
+            _pendingImportChars = data.characters;
+            
+            console.log('[Import] About to show modal, _pendingImportChars:', _pendingImportChars?.length);
+            
+            // 显示导入选项弹窗
+            showImportOptionsModal(data.characters);
+            
+            console.log('[Import] Modal function called');
         } catch (err) {
+            console.error('[Import] Error:', err);
             showToast('导入失败: ' + err.message, 'error');
         }
     };
     input.click();
+}
+
+let _pendingImportChars = null;
+
+function showImportOptionsModal(importedChars) {
+    console.log('[Import] showImportOptionsModal called with', importedChars?.length, 'chars');
+    
+    // 保存到全局变量，避免通过HTML传递
+    _pendingImportChars = importedChars;
+    
+    // 统计信息
+    const newChars = importedChars.filter(ic => !characters.some(c => c.name === ic.name));
+    const existingChars = importedChars.filter(ic => characters.some(c => c.name === ic.name));
+    
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.style.display = 'flex';
+    modal.id = 'importOptionsModal';
+    modal.innerHTML = `
+        <div class="modal" style="max-width: 500px;">
+            <div class="modal-header">
+                <h3 class="modal-title">📥 导入选项</h3>
+                <button class="modal-close" id="importModalClose">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div style="margin-bottom: 20px;">
+                    <p>检测到 <strong>${importedChars.length}</strong> 个角色：</p>
+                    <ul style="margin: 10px 0; padding-left: 20px; color: var(--text-secondary);">
+                        <li>新增角色: <strong style="color: #4ade80;">${newChars.length}</strong></li>
+                        <li>同名角色: <strong style="color: #fbbf24;">${existingChars.length}</strong></li>
+                    </ul>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 10px;" id="importButtons">
+                    <button class="btn btn-primary" data-mode="replace">
+                        🔄 完全替换
+                        <small style="display: block; font-weight: normal; opacity: 0.8;">删除现有角色，使用导入的角色</small>
+                    </button>
+                    <button class="btn btn-secondary" data-mode="merge">
+                        🔀 智能合并
+                        <small style="display: block; font-weight: normal; opacity: 0.8;">同名角色更新，其他角色追加</small>
+                    </button>
+                    <button class="btn btn-secondary" data-mode="append">
+                        ➕ 仅追加新角色
+                        <small style="display: block; font-weight: normal; opacity: 0.8;">只导入不存在的角色</small>
+                    </button>
+                    <button class="btn" id="importModalCancel">取消</button>
+                </div>
+                <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(138, 109, 59, 0.2);">
+                    <button class="btn btn-warning" id="importDirectReplace" style="width: 100%;">
+                        ⚡ 强制直接替换
+                        <small style="display: block; font-weight: normal; opacity: 0.8;">如果上方按钮无效，点此强制替换</small>
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // 绑定事件
+    modal.querySelector('#importModalClose').onclick = () => {
+        modal.remove();
+        _pendingImportChars = null;
+    };
+    
+    modal.querySelector('#importModalCancel').onclick = () => {
+        modal.remove();
+        _pendingImportChars = null;
+    };
+    
+    modal.querySelectorAll('#importButtons button[data-mode]').forEach(btn => {
+        btn.onclick = () => {
+            const mode = btn.dataset.mode;
+            confirmImportCharacters(mode);
+        };
+    });
+    
+    // 强制直接替换按钮
+    const directBtn = modal.querySelector('#importDirectReplace');
+    if (directBtn) {
+        directBtn.onclick = () => {
+            const chars = _pendingImportChars;
+            modal.remove();
+            importCharactersDirectReplace(chars);
+        };
+    }
+    
+    // 点击遮罩关闭
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            modal.remove();
+            _pendingImportChars = null;
+        }
+    });
+    
+    document.body.appendChild(modal);
+    console.log('[Import] Modal appended to body, display:', modal.style.display);
+}
+
+function confirmImportCharacters(mode) {
+    console.log('[Import] Button clicked, mode:', mode);
+    
+    // 关闭弹窗
+    const modal = document.querySelector('#importOptionsModal');
+    if (modal) modal.remove();
+    
+    // 从全局变量获取导入的角色
+    const importedChars = _pendingImportChars;
+    
+    console.log('[Import] Mode:', mode, 'Imported chars:', importedChars?.length);
+    console.log('[Import] Current characters before:', characters?.length);
+    
+    if (!importedChars || !Array.isArray(importedChars)) {
+        showToast('导入数据无效', 'error');
+        console.error('[Import] Invalid data:', importedChars);
+        _pendingImportChars = null;
+        return;
+    }
+    
+    let importedCount = 0;
+    let updatedCount = 0;
+    let skippedCount = 0;
+    
+    switch (mode) {
+        case 'replace':
+            // 完全替换
+            characters = JSON.parse(JSON.stringify(importedChars));
+            importedCount = importedChars.length;
+            break;
+            
+        case 'merge':
+            // 智能合并：同名更新，其他追加
+            importedChars.forEach(importedChar => {
+                const existingIndex = characters.findIndex(c => c.name === importedChar.name);
+                if (existingIndex >= 0) {
+                    // 更新现有角色
+                    characters[existingIndex] = { ...importedChar };
+                    updatedCount++;
+                } else {
+                    // 添加新角色
+                    characters.push({ ...importedChar });
+                    importedCount++;
+                }
+            });
+            break;
+            
+        case 'append':
+            // 仅追加不存在的角色
+            importedChars.forEach(importedChar => {
+                const exists = characters.some(c => c.name === importedChar.name);
+                if (!exists) {
+                    characters.push({ ...importedChar });
+                    importedCount++;
+                } else {
+                    skippedCount++;
+                }
+            });
+            break;
+    }
+    
+    console.log('[Import] Result - imported:', importedCount, 'updated:', updatedCount, 'skipped:', skippedCount);
+    console.log('[Import] Total characters now:', characters.length);
+    
+    renderCharacterList();
+    
+    // 保存到 localStorage（关键！确保刷新后数据不丢失）
+    if (gameId) {
+        localStorage.setItem(`game_${gameId}_characters`, JSON.stringify(characters));
+        console.log('[Settings] Characters saved to localStorage after import:', characters.length);
+    }
+    
+    // 显示结果
+    let message = '';
+    if (importedCount > 0) message += `导入 ${importedCount} 个`;
+    if (updatedCount > 0) message += (message ? '，' : '') + `更新 ${updatedCount} 个`;
+    if (skippedCount > 0) message += (message ? '，' : '') + `跳过 ${skippedCount} 个`;
+    
+    showToast(message || '导入完成', 'success');
+    
+    // 自动保存到后端
+    if (gameId && characters.length > 0) {
+        saveCharactersToBackend(gameId, characters).catch(err => {
+            console.warn('[Settings] Auto-save after import failed:', err);
+        });
+    }
+    
+    // 清空临时数据
+    _pendingImportChars = null;
+}
+
+// 直接替换角色（用于测试）
+function importCharactersDirectReplace(importedChars) {
+    console.log('[Import Direct] Replacing with', importedChars?.length, 'characters');
+    
+    if (!importedChars || !Array.isArray(importedChars)) {
+        showToast('无效的角色数据', 'error');
+        return;
+    }
+    
+    // 直接替换
+    characters = JSON.parse(JSON.stringify(importedChars));
+    
+    // 保存到 localStorage
+    if (gameId) {
+        localStorage.setItem(`game_${gameId}_characters`, JSON.stringify(characters));
+    }
+    
+    // 渲染
+    renderCharacterList();
+    
+    showToast(`已替换为 ${characters.length} 个角色`, 'success');
+    
+    console.log('[Import Direct] Done, now have', characters.length, 'characters');
 }
 
 function resetCharacters() {
@@ -3145,6 +3489,8 @@ window.initWorldbookManager = initWorldbookManager;
 window.closeGalleryModal = closeGalleryModal;
 window.resetPrompts = resetPrompts;
 window.savePrompts = savePrompts;
+window.onPromptTemplateChange = onPromptTemplateChange;
+window.loadPromptConfig = loadPromptConfig;
 window.loadMemories = loadMemories;
 window.solidifyTimeline = solidifyTimeline;
 window.exportAllMemories = exportAllMemories;
@@ -3165,10 +3511,14 @@ window.saveChatUISettings = saveChatUISettings;
 window.saveUserPrompt = saveUserPrompt;
 window.testUserAIConnection = testUserAIConnection;
 window.saveUserAIConfig = saveUserAIConfig;
+window.loadUserAIConfig = loadUserAIConfig;
 window.loadUserMemoryList = loadUserMemoryList;
 window.exportUserMemories = exportUserMemories;
 window.clearAllUserMemories = clearAllUserMemories;
 window.exportCharactersOnly = exportCharactersOnly;
 window.importCharactersBatch = importCharactersBatch;
+window.importCharactersDirectReplace = importCharactersDirectReplace;
+window.showImportOptionsModal = showImportOptionsModal;
+window.confirmImportCharacters = confirmImportCharacters;
 window.resetCharacters = resetCharacters;
 window.fixCharacterImages = fixCharacterImages;

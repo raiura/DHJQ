@@ -1,0 +1,205 @@
+{
+  "characters": [
+    {
+      "name": "林婉",
+      "visual": {
+        "avatar": "https://origin.picgo.net/2026/01/31/LinWan85351d4173bd3ae6.png",
+        "cover": "",
+        "color": "#ff69b4",
+        "emotionCGs": {}
+      },
+      "core": {
+        "description": "",
+        "personality": "",
+        "scenario": "",
+        "firstMessage": "",
+        "worldConnection": {
+          "faction": "",
+          "location": ""
+        }
+      },
+      "activation": {
+        "keys": [
+          "林婉",
+          "婉儿",
+          "桃蕊"
+        ],
+        "priority": 100,
+        "enabled": true
+      },
+      "examples": {
+        "style": "",
+        "dialogues": []
+      },
+      "lorebook": {
+        "entries": [],
+        "linkMode": "MANUAL",
+        "linkedEntryIds": []
+      },
+      "injection": {
+        "characterNote": {
+          "content": "",
+          "depth": 0,
+          "frequency": 1,
+          "role": "system"
+        },
+        "postHistory": {
+          "content": "",
+          "enabled": false
+        }
+      },
+      "relationship": {
+        "favor": 16,
+        "trust": 30,
+        "mood": "平静"
+      },
+      "meta": {
+        "description": "",
+        "tags": [],
+        "creator": "",
+        "version": "2.0.0",
+        "updatedAt": "2026-03-31T16:29:27.008Z"
+      },
+      "color": "#ff69b4",
+      "image": "https://origin.picgo.net/2026/01/31/LinWan85351d4173bd3ae6.png",
+      "imageFit": "cover",
+      "enabled": true,
+      "_id": "mem_1773324176145_2"
+    },
+    {
+      "name": "陆苍雪",
+      "visual": {
+        "avatar": "https://origin.picgo.net/2026/01/31/LuCangXued0d1fd51b000d674.png",
+        "cover": "",
+        "color": "#87cefa",
+        "emotionCGs": {}
+      },
+      "core": {
+        "description": "",
+        "personality": "",
+        "scenario": "",
+        "firstMessage": "",
+        "worldConnection": {
+          "faction": "",
+          "location": ""
+        }
+      },
+      "activation": {
+        "keys": [
+          "陆苍雪",
+          "雪儿",
+          "寒雪剑仙",
+          "落星剑宗掌门"
+        ],
+        "priority": 100,
+        "enabled": true
+      },
+      "examples": {
+        "style": "",
+        "dialogues": []
+      },
+      "lorebook": {
+        "entries": [],
+        "linkMode": "MANUAL",
+        "linkedEntryIds": []
+      },
+      "injection": {
+        "characterNote": {
+          "content": "",
+          "depth": 0,
+          "frequency": 1,
+          "role": "system"
+        },
+        "postHistory": {
+          "content": "",
+          "enabled": false
+        }
+      },
+      "relationship": {
+        "favor": 12,
+        "trust": 24,
+        "mood": "平静"
+      },
+      "meta": {
+        "description": "",
+        "tags": [],
+        "creator": "",
+        "version": "2.0.0",
+        "updatedAt": "2026-03-31T16:29:30.070Z"
+      },
+      "color": "#87cefa",
+      "image": "https://origin.picgo.net/2026/01/31/LuCangXued0d1fd51b000d674.png",
+      "imageFit": "cover",
+      "enabled": true,
+      "_id": "mem_1773324176145_3"
+    },
+    {
+      "name": "轩辕霓裳",
+      "visual": {
+        "avatar": "https://origin.picgo.net/2026/01/31/XuanYuanNiChang934310ad29aa54d8.png",
+        "cover": "",
+        "color": "#ff4500",
+        "emotionCGs": {}
+      },
+      "core": {
+        "description": "",
+        "personality": "",
+        "scenario": "",
+        "firstMessage": "",
+        "worldConnection": {
+          "faction": "",
+          "location": ""
+        }
+      },
+      "activation": {
+        "keys": [
+          "轩辕霓裳",
+          "霓裳",
+          "长公主殿下",
+          "合欢宗宗主"
+        ],
+        "priority": 100,
+        "enabled": true
+      },
+      "examples": {
+        "style": "",
+        "dialogues": []
+      },
+      "lorebook": {
+        "entries": [],
+        "linkMode": "MANUAL",
+        "linkedEntryIds": []
+      },
+      "injection": {
+        "characterNote": {
+          "content": "",
+          "depth": 0,
+          "frequency": 1,
+          "role": "system"
+        },
+        "postHistory": {
+          "content": "",
+          "enabled": false
+        }
+      },
+      "relationship": {
+        "favor": 18,
+        "trust": 21,
+        "mood": "平静"
+      },
+      "meta": {
+        "description": "",
+        "tags": [],
+        "creator": "",
+        "version": "2.0.0",
+        "updatedAt": "2026-03-31T16:29:33.266Z"
+      },
+      "color": "#ff4500",
+      "image": "https://origin.picgo.net/2026/01/31/XuanYuanNiChang934310ad29aa54d8.png",
+      "imageFit": "cover",
+      "enabled": true,
+      "_id": "mem_1773324176145_4"
+    }
+  ],
+  "exportTime": "2026-03-31T23:32:01.912Z"
+}

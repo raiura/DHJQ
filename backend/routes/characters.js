@@ -7,15 +7,9 @@ const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
 
-// 检查MongoDB连接状态
+// 检查MongoDB连接状态（内存存储模式下允许通过）
 const checkMongoDB = (req, res, next) => {
-  if (mongoose.connection.readyState !== 1) {
-    return res.status(503).json({ 
-      success: false, 
-      message: '数据库未连接',
-      useLocalStorage: true 
-    });
-  }
+  // 内存存储模式下也允许请求通过（由模型层处理）
   next();
 };
 
