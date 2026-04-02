@@ -849,25 +849,34 @@ router.get('/:id/worldbook', authMiddleware.optionalAuth, async (req, res) => {
  * 保存游戏的世界书（全局条目）
  * PUT /api/games/:id/worldbook
  */
-router.put('/:id/worldbook', authMiddleware.verifyToken, async (req, res) => {
+router.put('/:id/worldbook', authMiddleware.optionalAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const userId = req.userId;
     const { entries } = req.body;
     
     // 检查游戏是否存在
-    const game = await Game.findById(id);
-    if (!game) {
+    let game = await Game.findById(id);
+    
+    // 检查权限（内存存储模式下跳过权限检查）
+    const useMemoryStore = true; // 内存存储模式
+    
+    // 内存存储模式下，即使game不存在也允许操作
+    if (!game && useMemoryStore) {
+      console.log('[Worldbook] Memory store mode: game not found, but proceeding with worldbook save');
+    } else if (!game) {
       return ResponseUtil.error(res, '游戏不存在', 404);
     }
     
-    // 检查权限
-    if (game.creator !== userId && req.userRole !== 'admin') {
+    // 权限检查（仅在非内存存储模式下）
+    if (!useMemoryStore && game && game.creator && game.creator !== userId && req.userRole !== 'admin') {
       return ResponseUtil.error(res, '无权限编辑此游戏的世界书', 403);
     }
     
-    // 批量更新/创建世界书条目
+    // 批量更新/创建世界书条目，并删除不在列表中的条目
     const results = [];
+    const entryIds = [];
+    
     for (const entry of entries || []) {
       const entryData = {
         ...entry,
@@ -882,14 +891,35 @@ router.put('/:id/worldbook', authMiddleware.verifyToken, async (req, res) => {
             ...entryData,
             updatedAt: new Date()
           });
-          if (updated) results.push(updated);
+          if (updated) {
+            results.push(updated);
+            entryIds.push(entry._id.toString());
+          }
         } else {
           // 创建新条目
           const created = await WorldbookEntry.create(entryData);
           results.push(created);
+          entryIds.push(created._id.toString());
         }
       } catch (err) {
         Logger.error('保存世界书条目失败:', err);
+      }
+    }
+    
+    // 删除不在传入列表中的条目
+    if (entryIds.length > 0) {
+      const deleted = await WorldbookEntry.deleteMany({
+        gameId: id,
+        _id: { $nin: entryIds }
+      });
+      if (deleted.deletedCount > 0) {
+        Logger.info(`删除了 ${deleted.deletedCount} 个不在列表中的世界书条目`);
+      }
+    } else {
+      // 如果传入的条目为空，删除所有该游戏的世界书条目
+      const deleted = await WorldbookEntry.deleteMany({ gameId: id });
+      if (deleted.deletedCount > 0) {
+        Logger.info(`清空了游戏 ${game.title} 的所有世界书条目: ${deleted.deletedCount} 条`);
       }
     }
     

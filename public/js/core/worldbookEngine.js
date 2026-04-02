@@ -268,7 +268,7 @@ class WorldbookEngine {
      */
     deleteEntry(entryId, isUserEntry = false) {
         const list = isUserEntry ? this.userEntries : this.globalEntries;
-        const idx = list.findIndex(e => e.id === entryId);
+        const idx = list.findIndex(e => e.id === entryId || e._id === entryId);
         
         if (idx >= 0) {
             const deleted = list.splice(idx, 1)[0];

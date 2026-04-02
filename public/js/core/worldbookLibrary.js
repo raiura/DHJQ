@@ -462,6 +462,9 @@ class WorldbookLibrary {
                 if (globalEntries.length > 0) {
                     console.log('[WorldbookLibrary] 从worldbookManager同步', globalEntries.length, '个条目');
                     
+                    // 先清空目标书本的条目，避免重复
+                    targetBook.entries = [];
+                    
                     globalEntries.forEach(entry => {
                         targetBook.addEntry({
                             name: entry.name || '未命名条目',

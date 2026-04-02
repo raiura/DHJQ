@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-04-02T07:53:38.508Z",
+  "timestamp": "2026-04-02T08:54:54.843Z",
   "collections": {
     "users": [
       {
@@ -9,9 +9,9 @@
         "nickname": "管理员",
         "role": "admin",
         "createdAt": "2026-03-12T14:02:56.708Z",
-        "updatedAt": "2026-04-02T06:57:44.527Z",
+        "updatedAt": "2026-04-02T08:40:25.908Z",
         "isActive": true,
-        "lastLoginAt": "2026-04-02T06:57:44.527Z"
+        "lastLoginAt": "2026-04-02T08:40:25.908Z"
       }
     ],
     "characters": [
@@ -24,7 +24,7 @@
         "enabled": true,
         "gameId": "mem_1773324176145_1",
         "createdAt": "2026-03-12T14:02:56.145Z",
-        "updatedAt": "2026-04-02T07:26:36.069Z",
+        "updatedAt": "2026-04-02T08:14:28.506Z",
         "imageFit": "cover",
         "appearance": "",
         "personality": "",
@@ -99,7 +99,7 @@
           "tags": [],
           "creator": "",
           "version": "2.0.0",
-          "updatedAt": "2026-04-02T07:26:36.069Z"
+          "updatedAt": "2026-04-02T08:14:28.506Z"
         },
         "meta.updatedAt": "2026-04-02T04:49:17.845Z"
       },
@@ -112,7 +112,7 @@
         "enabled": true,
         "gameId": "mem_1773324176145_1",
         "createdAt": "2026-03-12T14:02:56.145Z",
-        "updatedAt": "2026-04-02T07:26:36.070Z",
+        "updatedAt": "2026-04-02T08:14:28.506Z",
         "imageFit": "cover",
         "appearance": "",
         "personality": "",
@@ -190,7 +190,7 @@
           "tags": [],
           "creator": "",
           "version": "2.0.0",
-          "updatedAt": "2026-04-02T07:26:36.070Z"
+          "updatedAt": "2026-04-02T08:14:28.506Z"
         },
         "meta.updatedAt": "2026-04-02T04:49:17.845Z"
       }
@@ -356,8 +356,8 @@
           "favorites": 66
         },
         "createdAt": "2026-03-12T14:02:56.145Z",
-        "updatedAt": "2026-04-02T05:34:07.441Z",
-        "version": 41
+        "updatedAt": "2026-04-02T08:14:28.496Z",
+        "version": 43
       }
     ],
     "gallery": [],

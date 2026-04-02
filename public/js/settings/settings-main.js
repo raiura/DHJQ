@@ -2034,6 +2034,12 @@ function importWorldbookEntries() {
                 // 检测是否为 Lorebook 格式
                 if (data.entries && Array.isArray(data.entries)) {
                     data = convertFromLorebookFormat(data);
+                } 
+                // 检测是否为角色导出格式（直接数组或包含characters字段的对象）
+                else if ((Array.isArray(data) && data.length > 0 && data[0]._id && data[0].name) || 
+                         (data.characters && Array.isArray(data.characters) && data.characters.length > 0 && data.characters[0]._id && data.characters[0].name)) {
+                    const characters = Array.isArray(data) ? data : data.characters;
+                    data = convertFromCharacterFormat(characters);
                 }
             }
             
@@ -2045,6 +2051,36 @@ function importWorldbookEntries() {
         }
     };
     input.click();
+}
+
+/**
+ * 从角色导出格式转换为世界书条目格式
+ */
+function convertFromCharacterFormat(characters) {
+    const entries = characters.map(char => {
+        // 提取角色信息构建世界书条目
+        const keys = [...(char.keys || []), ...(char.activation?.keys || [])];
+        const content = `【角色】${char.name}\n\n` +
+                      `【关键词】${keys.join('、')}\n\n` +
+                      `【身份】${char.identity || '未知'}\n\n` +
+                      `【性格】${char.personality || '未知'}\n\n` +
+                      `【经历】${char.backstory || '未知'}\n\n` +
+                      `【关系】${char.relationship || '未知'}\n\n` +
+                      `【外貌】${char.appearance || '未知'}\n\n` +
+                      `【能力】${char.abilities || '未知'}\n\n` +
+                      `【物品】${char.belongings || '未知'}`;
+        
+        return {
+            name: char.name,
+            keys: keys.filter(Boolean),
+            content: content,
+            group: '角色',
+            priority: char.activation?.priority || 100,
+            enabled: char.activation?.enabled !== false
+        };
+    });
+    
+    return { entries };
 }
 
 /**

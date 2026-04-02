@@ -62,7 +62,7 @@ class WorldBook {
      * 更新条目
      */
     updateEntry(entryId, updates) {
-        const idx = this.entries.findIndex(e => e.id === entryId);
+        const idx = this.entries.findIndex(e => e.id === entryId || e._id === entryId);
         if (idx >= 0) {
             this.entries[idx] = { 
                 ...this.entries[idx], 
@@ -79,7 +79,7 @@ class WorldBook {
      * 删除条目
      */
     deleteEntry(entryId) {
-        const idx = this.entries.findIndex(e => e.id === entryId);
+        const idx = this.entries.findIndex(e => e.id === entryId || e._id === entryId);
         if (idx >= 0) {
             this.entries.splice(idx, 1);
             this.updatedAt = new Date().toISOString();

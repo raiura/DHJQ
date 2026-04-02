@@ -124,20 +124,52 @@ class WorldbookManager {
                 
                 if (data.success) {
                     // 确保数据结构正确
-                    this.globalWorldbook = {
-                        entries: data.data.entries || [],
-                        groups: data.data.groups || {},
-                        version: '1.0'
-                    };
+                    const backendEntries = data.data.entries || [];
+                    console.log('[Worldbook] Backend entries count:', backendEntries.length);
+                    
+                    // 检查本地存储是否有数据
+                    const localData = localStorage.getItem(STORAGE_KEYS.WORLDBOOK(gameId || 'default'));
+                    let localEntries = [];
+                    if (localData) {
+                        const parsed = JSON.parse(localData);
+                        localEntries = parsed.entries || [];
+                        console.log('[Worldbook] Local entries count:', localEntries.length);
+                    }
+                    
+                    // 优先使用本地存储的数据（因为本地数据包含删除操作）
+                    if (localEntries.length > 0) {
+                        console.log('[Worldbook] Using local entries (contains delete operations)');
+                        this.globalWorldbook = {
+                            entries: localEntries,
+                            groups: data.data.groups || {},
+                            version: '1.0'
+                        };
+                    } else {
+                        console.log('[Worldbook] Using backend entries');
+                        this.globalWorldbook = {
+                            entries: backendEntries,
+                            groups: data.data.groups || {},
+                            version: '1.0'
+                        };
+                    }
+                    
                     this._engine = null;
                     this._saveToStorage();
-                    console.log('[Worldbook] Loaded from backend:', this.globalWorldbook.entries.length, 'entries');
-                    console.log('[Worldbook] Sample entry:', this.globalWorldbook.entries[0]);
+                    console.log('[Worldbook] Loaded entries:', this.globalWorldbook.entries.length);
+                    if (this.globalWorldbook.entries.length > 0) {
+                        console.log('[Worldbook] Sample entry:', this.globalWorldbook.entries[0]);
+                    }
                     return this.globalWorldbook;
+                } else {
+                    // 后端返回错误，使用本地存储
+                    console.log('[Worldbook] Backend returned error, using local storage:', data.message);
                 }
             } else if (response.status === 404) {
                 // API 不存在，使用本地存储（这是正常的）
                 console.log('[Worldbook] Backend API not available, using local storage');
+            } else {
+                // 其他错误状态，使用本地存储
+                console.log('[Worldbook] Backend error status:', response.status, 'using local storage');
             }
         } catch (error) {
             // 网络错误，使用本地存储

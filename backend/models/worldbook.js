@@ -327,6 +327,44 @@ class WorldbookEntryModel {
     return memoryStore.delete(this.collectionName, id);
   }
 
+  async deleteMany(query) {
+    const docs = memoryStore.findAll(this.collectionName);
+    let deletedCount = 0;
+    
+    // 过滤出符合条件的文档
+    const toDelete = docs.filter(doc => {
+      // 处理 gameId 条件
+      if (query.gameId !== undefined) {
+        if (query.gameId === null) {
+          if (doc.gameId !== null && doc.gameId !== undefined) {
+            return false;
+          }
+        } else if (doc.gameId !== query.gameId) {
+          return false;
+        }
+      }
+      
+      // 处理 _id $nin 条件
+      if (query._id && query._id.$nin) {
+        if (!query._id.$nin.includes(doc._id)) {
+          return true; // 不在列表中的需要删除
+        } else {
+          return false; // 在列表中的保留
+        }
+      }
+      
+      return true;
+    });
+    
+    // 删除符合条件的文档
+    for (const doc of toDelete) {
+      memoryStore.delete(this.collectionName, doc._id);
+      deletedCount++;
+    }
+    
+    return { deletedCount };
+  }
+
   // 给文档添加方法
   _addMethods(doc) {
     if (!doc) return null;
