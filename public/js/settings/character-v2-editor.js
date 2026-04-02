@@ -195,7 +195,12 @@ function getCurrentCharacters() {
     // 优先从window.characters获取
     let chars = window.characters || [];
     if (chars.length > 0) {
-        return chars;
+        // 过滤掉null值，确保所有角色对象都有效
+        const validChars = chars.filter(char => char != null);
+        if (validChars.length !== chars.length) {
+            console.warn('[Character V2] Filtered out null characters from window.characters:', chars.length - validChars.length);
+        }
+        return validChars;
     }
     
     // 尝试从localStorage加载
@@ -218,11 +223,16 @@ function getCurrentCharacters() {
         if (saved) {
             try {
                 chars = JSON.parse(saved);
+                // 过滤掉null值，确保所有角色对象都有效
+                const validChars = chars.filter(char => char != null);
+                if (validChars.length !== chars.length) {
+                    console.warn('[Character V2] Filtered out null characters from localStorage:', chars.length - validChars.length);
+                }
                 // 同步到全局变量
-                window.characters = chars;
+                window.characters = validChars;
                 window.gameId = gameId; // 确保gameId被设置
-                console.log('[Character V2] Loaded characters from storage:', chars.length, 'for game:', gameId);
-                return chars;
+                console.log('[Character V2] Loaded characters from storage:', validChars.length, 'for game:', gameId);
+                return validChars;
             } catch (e) {
                 console.error('[Character V2] Failed to load characters for', gameId, e);
             }
@@ -237,9 +247,14 @@ function getCurrentCharacters() {
                 const saved = localStorage.getItem(key);
                 if (saved) {
                     chars = JSON.parse(saved);
-                    console.log('[Character V2] Found characters in key:', key, 'count:', chars.length);
-                    window.characters = chars;
-                    return chars;
+                    // 过滤掉null值，确保所有角色对象都有效
+                    const validChars = chars.filter(char => char != null);
+                    if (validChars.length !== chars.length) {
+                        console.warn('[Character V2] Filtered out null characters from localStorage key:', key, 'count:', chars.length - validChars.length);
+                    }
+                    console.log('[Character V2] Found characters in key:', key, 'count:', validChars.length);
+                    window.characters = validChars;
+                    return validChars;
                 }
             } catch (e) {
                 // 忽略解析错误
@@ -409,7 +424,7 @@ function populateCharacterFormV2(char) {
 }
 
 // 重写 saveCharacter 函数
-window.saveCharacter = function() {
+window.saveCharacter = async function() {
     console.log('[Character V2] saveCharacter called');
     
     // 基础验证
@@ -423,7 +438,7 @@ window.saveCharacter = function() {
         return;
     }
     
-    // 获取全局变量（使用getter/setter）
+    // 获取全局变量
     let globalGameId = window.gameId;
     const charId = window.editingCharacterId;
     
@@ -500,6 +515,7 @@ window.saveCharacter = function() {
             version: '2.0.0',
             updatedAt: new Date().toISOString()
         },
+        gameId: globalGameId !== 'draft' ? globalGameId : null,
         // 兼容旧字段
         color: document.getElementById('charColor')?.value.trim() || '#8a6d3b',
         image: document.getElementById('charAvatar')?.value.trim() || '',
@@ -525,18 +541,19 @@ window.saveCharacter = function() {
         globalCharacters.push(char);
     }
     
-    // 更新全局变量（通过setter，会同步到settings-main.js的局部变量）
+    // 更新全局变量
     window.characters = globalCharacters;
     
-    // 同时直接更新settings-main.js的局部变量（以防万一）
+    // 同时更新settings-main.js的局部变量
     if (typeof characters !== 'undefined') {
-        // 这个赋值会通过setter影响window.characters
-        // 但我们已经设置了window.characters，所以不需要额外操作
+        characters = globalCharacters;
     }
     
     // 保存到localStorage
     if (globalGameId) {
-        const storageKey = `game_${globalGameId}_characters`;
+        const storageKey = typeof STORAGE_KEYS !== 'undefined' && typeof STORAGE_KEYS.CHARACTERS === 'function' 
+            ? STORAGE_KEYS.CHARACTERS(globalGameId) 
+            : `galgame_${globalGameId}_characters`;
         try {
             localStorage.setItem(storageKey, JSON.stringify(globalCharacters));
             // 验证保存成功
@@ -550,6 +567,21 @@ window.saveCharacter = function() {
         console.error('[Character V2] gameId is null, cannot save to localStorage');
     }
     
+    // 同步到后端
+    if (globalGameId && globalGameId !== 'draft') {
+        try {
+            if (typeof saveCharactersToBackend === 'function') {
+                await saveCharactersToBackend(globalGameId, globalCharacters);
+                console.log('[Character V2] Characters synced to backend:', globalCharacters.length);
+            } else {
+                console.warn('[Character V2] saveCharactersToBackend function not available');
+            }
+        } catch (err) {
+            console.error('[Character V2] Failed to sync to backend:', err);
+            // 后端同步失败不影响本地保存
+        }
+    }
+    
     // 关闭模态框
     const overlay = document.getElementById('characterModalOverlay');
     if (overlay) {
@@ -559,13 +591,11 @@ window.saveCharacter = function() {
         }, 300);
     }
     
-    // 刷新列表（延迟确保DOM更新）
-    setTimeout(() => {
-        if (typeof renderCharacterList === 'function') {
-            renderCharacterList();
-            console.log('[Character V2] Character list refreshed');
-        }
-    }, 100);
+    // 刷新列表（立即刷新，确保UI更新）
+    if (typeof renderCharacterList === 'function') {
+        renderCharacterList();
+        console.log('[Character V2] Character list refreshed');
+    }
     
     // 显示提示
     if (typeof showToast === 'function') {

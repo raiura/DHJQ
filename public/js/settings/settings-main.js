@@ -90,6 +90,57 @@ function createNewSaveFromSettings() {
     showToast('新存档已创建', 'success');
 }
 
+// 自动保存游戏配置
+const autoSaveGameConfig = debounce(async () => {
+    if (!gameId) return;
+    
+    try {
+        const gameData = {
+            title: document.getElementById('gameTitle')?.value || '',
+            subtitle: document.getElementById('gameSubtitle')?.value || '',
+            description: document.getElementById('gameDescription')?.value || '',
+            worldSetting: document.getElementById('gameWorldSetting')?.value || '',
+            cover: document.getElementById('gameCover')?.value || ''
+        };
+        
+        const response = await fetch(`${API_BASE}/games/${gameId}`, {
+            method: 'PUT',
+            headers: getAuthHeaders(),
+            body: JSON.stringify(gameData)
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+            console.log('[Settings] Game config auto-saved successfully');
+            showToast('配置已自动保存', 'success');
+        } else {
+            console.error('[Settings] Auto-save failed:', result.message);
+            showToast('自动保存失败: ' + result.message, 'error');
+        }
+    } catch (error) {
+        console.error('[Settings] Auto-save error:', error);
+        showToast('自动保存失败: ' + error.message, 'error');
+    }
+}, 1000); // 1秒防抖
+
+// 初始化自动保存事件监听器
+function initAutoSave() {
+    const configFields = [
+        'gameTitle',
+        'gameSubtitle',
+        'gameDescription',
+        'gameWorldSetting',
+        'gameCover'
+    ];
+    
+    configFields.forEach(fieldId => {
+        const field = document.getElementById(fieldId);
+        if (field) {
+            field.addEventListener('input', autoSaveGameConfig);
+        }
+    });
+}
+
 // ==================== 初始化 ====================
 document.addEventListener('DOMContentLoaded', async () => {
     try {
@@ -158,6 +209,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 restoreViewMode();
                 // 加载提示词配置
                 loadPromptConfig();
+                // 初始化自动保存
+                initAutoSave();
             }).catch(err => {
                 console.error('[Settings] Failed to load game data:', err);
                 // API 失败时，尝试从 localStorage 加载迁移的角色
@@ -167,6 +220,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     renderCharacterList();
                     console.log('[Settings] API 失败，从 localStorage 加载迁移角色:', characters.length);
                 }
+                // 初始化自动保存
+                initAutoSave();
             });
         } else {
             // 创建新模式
@@ -189,15 +244,19 @@ document.addEventListener('DOMContentLoaded', async () => {
             const migratedChars = JSON.parse(localStorage.getItem(`game_${tempGameId}_characters`) || '[]');
             if (migratedChars.length > 0) {
                 characters = migratedChars;
+                window.characters = characters; // 同步到 window.characters
                 console.log('[Settings] 加载迁移角色:', characters.length);
             } else {
                 characters = [
                     { name: '向导', color: '#FF69B4', prompt: '陪伴玩家冒险的伙伴' },
                     { name: '伙伴', color: '#87CEFA', prompt: '陪伴玩家冒险的伙伴' }
                 ];
+                window.characters = characters; // 同步到 window.characters
             }
             renderCharacterList();
             restoreViewMode();
+            // 初始化自动保存
+            initAutoSave();
         }
         console.log('[Settings] Initialized successfully');
     } catch (error) {
@@ -222,20 +281,35 @@ async function loadGameData() {
             console.log('[Settings] STORAGE_KEYS:', STORAGE_KEYS);
             console.log('[Settings] STORAGE_KEYS.CHARACTERS:', STORAGE_KEYS.CHARACTERS);
             
+            // 检查是否有已删除的角色ID列表
+            const deletedIdsKey = `deleted_characters_${gameId}`;
+            const deletedIds = JSON.parse(localStorage.getItem(deletedIdsKey) || '[]');
+            
             if (backendChars.length > 0) {
-                // 使用后端数据
-                characters = backendChars;
+                // 过滤掉已删除的角色
+                const filteredBackendChars = backendChars.filter(char => 
+                    !deletedIds.includes(char._id?.toString() || char.id?.toString())
+                );
+                
+                // 使用过滤后的后端数据
+                characters = filteredBackendChars;
+                // 同步到 window.characters 确保全局可访问
+                window.characters = characters;
                 // 同步到 localStorage 作为缓存
                 localStorage.setItem(STORAGE_KEYS.CHARACTERS(gameId), JSON.stringify(characters));
-                console.log('[Settings] >>> 从后端加载角色:', characters.length, '已同步到 localStorage');
+                console.log('[Settings] >>> 从后端加载角色:', characters.length, '已同步到 localStorage，已过滤', deletedIds.length, '个已删除角色');
             } else {
                 // 后端没有数据，尝试从 localStorage 加载
                 const localChars = JSON.parse(localStorage.getItem(STORAGE_KEYS.CHARACTERS(gameId)) || '[]');
                 if (localChars.length > 0) {
                     characters = localChars;
+                    // 同步到 window.characters 确保全局可访问
+                    window.characters = characters;
                     console.log('[Settings] >>> 后端无数据，从 localStorage 加载角色:', characters.length);
                 } else {
                     characters = [];
+                    // 同步到 window.characters 确保全局可访问
+                    window.characters = characters;
                     console.log('[Settings] >>> 无角色数据');
                 }
             }
@@ -252,6 +326,7 @@ async function loadGameData() {
             const migratedChars = JSON.parse(localStorage.getItem(STORAGE_KEYS.CHARACTERS(gameId)) || '[]');
             if (migratedChars.length > 0) {
                 characters = migratedChars;
+                window.characters = characters; // 同步到 window.characters
                 renderCharacterList();
                 console.log('[Settings] 后端返回失败，从 localStorage 加载迁移角色:', characters.length);
             }
@@ -263,6 +338,7 @@ async function loadGameData() {
         const migratedChars = JSON.parse(localStorage.getItem(STORAGE_KEYS.CHARACTERS(gameId)) || '[]');
         if (migratedChars.length > 0) {
             characters = migratedChars;
+            window.characters = characters; // 同步到 window.characters
             renderCharacterList();
             console.log('[Settings] API 异常，从 localStorage 加载迁移角色:', characters.length);
         }
@@ -522,6 +598,7 @@ async function renderWorldOverview() {
         if (saved) {
             try {
                 characters = JSON.parse(saved);
+                window.characters = characters; // 同步到 window.characters
                 console.log('[WorldOverview] 从存储加载角色:', characters.length);
             } catch (e) {
                 console.error('[WorldOverview] 加载角色失败:', e);
@@ -683,13 +760,16 @@ function renderCharacterList() {
         return;
     }
     
-    if (!characters || characters.length === 0) {
+    // 使用 window.characters 确保数据同步
+    const displayCharacters = window.characters || characters || [];
+    
+    if (!displayCharacters || displayCharacters.length === 0) {
         container.innerHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 40px;">暂无角色，点击"新建角色"添加</p>';
         return;
     }
     
     // 使用 world-guide.html 风格的角色卡片设计 (支持V2格式)
-    container.innerHTML = characters.map((char, index) => {
+    container.innerHTML = displayCharacters.map((char, index) => {
         const charId = char._id || char.id || index;
         
         // V2格式兼容处理
@@ -767,15 +847,25 @@ async function deleteCharacter(id) {
     
     // 从前端数组删除
     characters = characters.filter((c, i) => (c._id || i.toString()) !== id);
+    window.characters = characters; // 同步到 window.characters
     renderCharacterList();
     
     // 保存到 localStorage
     if (gameId) {
         localStorage.setItem(STORAGE_KEYS.CHARACTERS(gameId), JSON.stringify(characters));
+        
+        // 记录已删除的角色ID
+        const deletedIdsKey = `deleted_characters_${gameId}`;
+        const deletedIds = JSON.parse(localStorage.getItem(deletedIdsKey) || '[]');
+        if (!deletedIds.includes(id)) {
+            deletedIds.push(id);
+            localStorage.setItem(deletedIdsKey, JSON.stringify(deletedIds));
+            console.log('[Settings] Added to deleted IDs list:', id);
+        }
     }
     
-    // 尝试同步到后端
-    if (gameId && id && !id.toString().startsWith('char_')) {
+    // 尝试同步到后端（包括临时ID）
+    if (gameId && id) {
         try {
             const response = await fetch(`${API_BASE}/characters/${id}`, {
                 method: 'DELETE',
@@ -784,6 +874,11 @@ async function deleteCharacter(id) {
             
             if (response.ok) {
                 console.log('[Settings] Character deleted from backend:', id);
+                // 如果后端删除成功，从已删除列表中移除
+                const deletedIdsKey = `deleted_characters_${gameId}`;
+                const deletedIds = JSON.parse(localStorage.getItem(deletedIdsKey) || '[]');
+                const updatedDeletedIds = deletedIds.filter(deletedId => deletedId !== id);
+                localStorage.setItem(deletedIdsKey, JSON.stringify(updatedDeletedIds));
             } else if (response.status === 404 || response.status === 503) {
                 console.warn('[Settings] Backend not available, character deleted locally only');
             }
@@ -817,42 +912,95 @@ async function saveCharacter() {
     // 解析关键词
     const keys = keysText.split(/[,，]/).map(k => k.trim()).filter(Boolean);
     
-    // 构建角色对象 (与后端模型完全一致)
+    // 构建V2格式角色对象
     const char = {
         name,
-        color,
-        image: avatar,
-        imageFit,
-        avatar,
-        keys,
-        priority,
-        favor,
-        trust,
-        stats: { mood, encounters: 0, dialogueTurns: 0 },
-        appearance,
-        personality,
-        background,
-        physique,
-        special,
-        // 生成AI提示词
-        prompt: buildCharacterPrompt({ name, appearance, personality, background, physique, special }),
-        enabled: true,
+        visual: {
+            avatar: avatar,
+            cover: '',
+            color: color,
+            emotionCGs: {}
+        },
+        core: {
+            description: [appearance, physique, special].filter(Boolean).join('\n\n'),
+            personality: personality,
+            scenario: background,
+            firstMessage: '',
+            worldConnection: { faction: '', location: '' }
+        },
+        activation: {
+            keys: keys,
+            priority: priority,
+            enabled: true
+        },
+        examples: {
+            style: '',
+            dialogues: []
+        },
+        lorebook: {
+            entries: [],
+            linkMode: 'MANUAL',
+            linkedEntryIds: []
+        },
+        injection: {
+            characterNote: {
+                content: '',
+                depth: 0,
+                frequency: 1,
+                role: 'system'
+            },
+            postHistory: {
+                content: '',
+                enabled: false
+            }
+        },
+        relationship: {
+            favor: favor,
+            trust: trust,
+            mood: mood
+        },
+        meta: {
+            description: '',
+            tags: [],
+            creator: '',
+            version: '2.0.0',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+        },
+        gameId: gameId || null,
         _id: editingCharacterId || 'char_' + Date.now(),
-        updatedAt: new Date().toISOString()
+        // 向后兼容字段
+        _legacy: {
+            appearance: appearance,
+            personality: personality,
+            physique: physique,
+            background: background,
+            special: special,
+            prompt: buildCharacterPrompt({ name, appearance, personality, background, physique, special }),
+            image: avatar,
+            imageFit: imageFit,
+            color: color,
+            keys: keys,
+            priority: priority,
+            enabled: true
+        }
     };
     
     if (editingCharacterId) {
         const idx = characters.findIndex(c => c._id === editingCharacterId || c.id === editingCharacterId);
         if (idx >= 0) {
             // 保留原有统计字段
-            char.stats.encounters = characters[idx].stats?.encounters || 0;
-            char.stats.dialogueTurns = characters[idx].stats?.dialogueTurns || 0;
+            if (characters[idx].stats) {
+                char.stats = characters[idx].stats;
+            }
             characters[idx] = char;
         }
     } else {
-        char.createdAt = new Date().toISOString();
         characters.push(char);
     }
+    
+    // 同步到 window.characters 确保全局可访问
+    window.characters = characters;
     
     // 保存到localStorage
     if (gameId) {
@@ -949,7 +1097,8 @@ async function initWorldbookManager() {
     }
     
     // 加载全局世界书
-    await worldbookManager.loadGlobalWorldbook();
+    const worldbookData = await worldbookManager.loadGlobalWorldbook();
+    console.log('[Worldbook] Loaded worldbook data:', worldbookData?.entries?.length || 0, 'entries');
     
     // 渲染列表
     renderWorldbookList();
@@ -970,6 +1119,14 @@ function initWorldbookLibrary() {
     // 创建世界书图书馆实例
     worldbookLibrary = new WorldbookLibrary({ gameId });
     
+    // 从worldbookManager同步数据
+    if (worldbookManager && worldbookLibrary._syncFromWorldbookManager) {
+        const defaultBook = worldbookLibrary.getAllBooks()[0];
+        if (defaultBook) {
+            worldbookLibrary._syncFromWorldbookManager(defaultBook);
+        }
+    }
+    
     // 初始化世界书管理器 UI
     const container = document.getElementById('worldbookManagerContainer');
     if (container && typeof WorldbookManagerUI !== 'undefined') {
@@ -985,6 +1142,11 @@ function initWorldbookLibrary() {
             }
         });
         console.log('[WorldbookLibrary] UI initialized with', worldbookLibrary.getAllBooks().length, 'books');
+        
+        // 刷新UI以显示同步的数据
+        if (worldbookManagerUI.refresh) {
+            worldbookManagerUI.refresh();
+        }
     } else {
         console.warn('[WorldbookLibrary] Container or UI class not found');
     }
@@ -2126,13 +2288,98 @@ async function saveGame() {
  * 保存角色到后端
  */
 async function saveCharactersToBackend(gameId, chars) {
-    // 批量保存角色
+    try {
+        // 过滤掉null值，确保所有角色对象都有效
+        const validChars = chars.filter(char => char != null);
+        if (validChars.length !== chars.length) {
+            console.warn('[Settings] Filtered out null characters:', chars.length - validChars.length);
+        }
+        
+        // 为每个角色添加版本时间戳
+        const charsWithVersion = validChars.map(char => ({
+            ...char,
+            meta: {
+                ...char.meta,
+                updatedAt: new Date().toISOString()
+            }
+        }));
+        
+        // 使用批量API端点
+        const response = await fetch(`${API_BASE}/characters/batch`, {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({ characters: charsWithVersion, gameId: gameId })
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+            console.log('[Settings] Characters batch saved successfully:', result.summary);
+            
+            // 检查是否有失败的角色
+            const failedCount = result.summary?.failed || 0;
+            if (failedCount > 0) {
+                console.warn('[Settings] Some characters failed to save:', failedCount);
+                // 记录失败的角色信息
+                result.data.forEach((item, index) => {
+                    if (!item.success) {
+                        console.error('[Settings] Failed to save character:', charsWithVersion[index]?.name, item.error);
+                    }
+                });
+            }
+            
+            // 更新本地角色的 _id和版本（如果是新创建的）
+            result.data.forEach((item, index) => {
+                if (item.success && item.id && charsWithVersion[index]) {
+                    const charId = charsWithVersion[index]._id || charsWithVersion[index].id;
+                    const isTempId = charId && charId.toString().startsWith('char_');
+                    if (isTempId) {
+                        charsWithVersion[index]._id = item.id;
+                        charsWithVersion[index].id = item.id;
+                    }
+                }
+            });
+            
+            // 更新 localStorage 中的角色数据
+            localStorage.setItem(STORAGE_KEYS.CHARACTERS(gameId), JSON.stringify(charsWithVersion));
+            
+            // 更新本地characters数组
+            chars.length = 0;
+            chars.push(...charsWithVersion);
+            
+            // 更新 window.characters 确保数据同步
+            window.characters = charsWithVersion;
+            
+            return result.data;
+        } else {
+            console.error('[Settings] Batch save failed:', result.message);
+            throw new Error(result.message || '批量保存失败');
+        }
+    } catch (err) {
+        console.error('[Settings] Failed to save characters to backend:', err);
+        // 批量保存失败时，尝试逐个保存作为备份
+        return await saveCharactersIndividually(gameId, chars);
+    }
+}
+
+// 逐个保存角色（作为批量保存的备份）
+async function saveCharactersIndividually(gameId, chars) {
+    // 过滤掉null值，确保所有角色对象都有效
+    const validChars = chars.filter(char => char != null);
+    if (validChars.length !== chars.length) {
+        console.warn('[Settings] Filtered out null characters in individual save:', chars.length - validChars.length);
+    }
+    
     const results = [];
     
-    for (const char of chars) {
+    for (const char of validChars) {
+        // 为角色添加版本时间戳
         const charData = {
             ...char,
-            gameId: gameId
+            gameId: gameId,
+            meta: {
+                ...char.meta,
+                updatedAt: new Date().toISOString()
+            }
         };
         
         // 如果有 _id 且不是临时 ID，则更新；否则创建
@@ -2160,18 +2407,23 @@ async function saveCharactersToBackend(gameId, chars) {
             const result = await response.json();
             if (result.success && result.data) {
                 results.push(result.data);
-                // 更新本地角色的 _id（如果是新创建的）
+                // 更新本地角色的 _id和版本（如果是新创建的）
                 if (isTempId && result.data._id) {
                     char._id = result.data._id;
                     char.id = result.data._id;
                 }
+                // 更新本地角色的版本时间戳
+                char.meta = {
+                    ...char.meta,
+                    updatedAt: new Date().toISOString()
+                };
             }
         } catch (err) {
-            console.error('[Settings] Failed to save character:', char.name, err);
+            console.error('[Settings] Failed to save character individually:', char.name, err);
         }
     }
     
-    // 更新 localStorage 中的角色 ID
+    // 更新 localStorage 中的角色数据
     localStorage.setItem(STORAGE_KEYS.CHARACTERS(gameId), JSON.stringify(chars));
     
     return results;
@@ -2266,7 +2518,7 @@ function exportGameData() {
     showToast('数据已导出');
 }
 
-function importGameData() {
+async function importGameData() {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = '.json';
@@ -2278,17 +2530,195 @@ function importGameData() {
             const text = await file.text();
             const data = JSON.parse(text);
             
-            if (data.basic) {
+            // 导入游戏基本配置
+            if (data.basic && gameId) {
                 document.getElementById('gameTitle').value = data.basic.title || '';
                 document.getElementById('gameSubtitle').value = data.basic.subtitle || '';
                 document.getElementById('gameDescription').value = data.basic.description || '';
+                document.getElementById('gameWorldSetting').value = data.basic.worldSetting || '';
+                document.getElementById('gameCover').value = data.basic.cover || '';
+                
+                // 保存到后端
+                const gameData = {
+                    title: data.basic.title || '',
+                    subtitle: data.basic.subtitle || '',
+                    description: data.basic.description || '',
+                    worldSetting: data.basic.worldSetting || '',
+                    cover: data.basic.cover || ''
+                };
+                
+                const response = await fetch(`${API_BASE}/games/${gameId}`, {
+                    method: 'PUT',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify(gameData)
+                });
+                
+                const result = await response.json();
+                if (!result.success) {
+                    console.error('[Settings] Failed to save game config:', result.message);
+                    showToast('导入游戏配置失败: ' + result.message, 'error');
+                }
             }
-            if (data.characters) {
-                characters = data.characters;
+            
+            // 导入角色数据
+            if (data.characters && gameId) {
+                // 确保角色数据为V2格式
+                const processedCharacters = data.characters.map(importedChar => {
+                    // 如果是V1格式，转换为V2格式
+                    if (!importedChar.core || !importedChar.activation) {
+                        return {
+                            name: importedChar.name || '',
+                            visual: {
+                                avatar: importedChar.image || importedChar.avatar || '',
+                                cover: '',
+                                color: importedChar.color || '#8a6d3b',
+                                emotionCGs: {}
+                            },
+                            core: {
+                                description: importedChar.appearance || '',
+                                personality: importedChar.personality || '',
+                                scenario: importedChar.background || '',
+                                firstMessage: '',
+                                worldConnection: { faction: '', location: '' }
+                            },
+                            activation: {
+                                keys: importedChar.keys || [],
+                                priority: importedChar.priority || 100,
+                                enabled: true
+                            },
+                            examples: {
+                                style: '',
+                                dialogues: []
+                            },
+                            lorebook: {
+                                entries: [],
+                                linkMode: 'MANUAL',
+                                linkedEntryIds: []
+                            },
+                            injection: {
+                                characterNote: {
+                                    content: '',
+                                    depth: 0,
+                                    frequency: 1,
+                                    role: 'system'
+                                },
+                                postHistory: {
+                                    content: '',
+                                    enabled: false
+                                }
+                            },
+                            relationship: {
+                                favor: importedChar.favor || 50,
+                                trust: importedChar.trust || 50,
+                                mood: importedChar.mood || '平静'
+                            },
+                            meta: {
+                                description: '',
+                                tags: [],
+                                creator: '',
+                                version: '2.0.0',
+                                createdAt: new Date().toISOString(),
+                                updatedAt: new Date().toISOString()
+                            },
+                            gameId: gameId,
+                            _id: importedChar._id || importedChar.id || 'char_' + Date.now(),
+                            // 向后兼容字段
+                            _legacy: {
+                                appearance: importedChar.appearance || '',
+                                personality: importedChar.personality || '',
+                                physique: importedChar.physique || '',
+                                background: importedChar.background || '',
+                                special: importedChar.special || '',
+                                prompt: importedChar.prompt || '',
+                                image: importedChar.image || importedChar.avatar || '',
+                                imageFit: importedChar.imageFit || 'cover',
+                                color: importedChar.color || '#8a6d3b',
+                                keys: importedChar.keys || [],
+                                priority: importedChar.priority || 100,
+                                enabled: true
+                            }
+                        };
+                    }
+                    // 确保meta字段存在
+                    if (!importedChar.meta) {
+                        importedChar.meta = {
+                            description: '',
+                            tags: [],
+                            creator: '',
+                            version: '2.0.0',
+                            createdAt: new Date().toISOString(),
+                            updatedAt: new Date().toISOString()
+                        };
+                    }
+                    // 确保gameId正确设置
+                    importedChar.gameId = gameId;
+                    // 确保根级keys与activation.keys同步
+                    if (importedChar.activation && importedChar.activation.keys) {
+                        importedChar.keys = importedChar.activation.keys;
+                    } else if (importedChar.keys) {
+                        if (!importedChar.activation) {
+                            importedChar.activation = {};
+                        }
+                        importedChar.activation.keys = importedChar.keys;
+                    }
+                    return importedChar;
+                });
+                
+                // 智能合并角色数据：根据名称匹配更新现有角色，新角色则添加
+                const mergedCharacters = [];
+                const existingCharNames = new Set(characters.map(c => c.name));
+                
+                // 首先添加导入的角色
+                for (const importedChar of processedCharacters) {
+                    const existingChar = characters.find(c => c.name === importedChar.name);
+                    if (existingChar) {
+                        // 更新现有角色，保留原有ID
+                        const updatedChar = {
+                            ...importedChar,
+                            _id: existingChar._id || existingChar.id,
+                            meta: {
+                                ...importedChar.meta,
+                                createdAt: existingChar.meta?.createdAt || importedChar.meta.createdAt,
+                                updatedAt: new Date().toISOString()
+                            }
+                        };
+                        mergedCharacters.push(updatedChar);
+                        existingCharNames.delete(importedChar.name);
+                    } else {
+                        // 新角色，使用导入的ID或生成新ID
+                        mergedCharacters.push(importedChar);
+                    }
+                }
+                
+                // 添加未被导入覆盖的现有角色
+                for (const char of characters) {
+                    if (existingCharNames.has(char.name)) {
+                        mergedCharacters.push(char);
+                    }
+                }
+                
+                // 更新本地角色数据
+                characters = mergedCharacters;
                 renderCharacterList();
+                
+                // 保存到localStorage
+                localStorage.setItem(STORAGE_KEYS.CHARACTERS(gameId), JSON.stringify(characters));
+                
+                // 保存到后端
+                try {
+                    await saveCharactersToBackend(gameId, characters);
+                    console.log('[Settings] Characters imported and saved to backend:', characters.length);
+                    // 重新渲染角色列表，确保UI更新
+                    renderCharacterList();
+                } catch (err) {
+                    console.error('[Settings] Failed to save imported characters:', err);
+                    showToast('导入角色数据失败: ' + err.message, 'error');
+                }
             }
-            showToast('数据已导入', 'success');
+            
+            showToast('数据已成功导入并保存', 'success');
         } catch (err) {
+            console.error('[Settings] Import error:', err);
             showToast('导入失败: ' + err.message, 'error');
         }
     };
@@ -2315,6 +2745,19 @@ function showToast(message, type = 'info') {
     toast.textContent = message;
     toast.className = 'toast show ' + type;
     setTimeout(() => toast.classList.remove('show'), 3000);
+}
+
+// 防抖函数
+function debounce(func, wait) {
+    let timeout;
+    return function() {
+        const context = this;
+        const args = arguments;
+        clearTimeout(timeout);
+        timeout = setTimeout(() => {
+            func.apply(context, args);
+        }, wait);
+    };
 }
 
 function logout() {
@@ -3377,6 +3820,36 @@ function confirmImportCharacters(mode) {
         return;
     }
     
+    // 处理导入的角色数据，确保V2格式正确
+    const processedChars = importedChars.map(char => {
+        // 确保V2格式结构完整
+        const processedChar = { ...char };
+        
+        // 如果有旧格式的keys字段，确保同步到activation.keys
+        if (char.keys && Array.isArray(char.keys) && char.keys.length > 0) {
+            if (!processedChar.activation) {
+                processedChar.activation = {};
+            }
+            processedChar.activation.keys = char.keys;
+        }
+        
+        // 确保meta字段存在
+        if (!processedChar.meta) {
+            processedChar.meta = {
+                description: '',
+                tags: [],
+                creator: '',
+                version: '2.0.0',
+                createdAt: char.createdAt || new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            };
+        } else {
+            processedChar.meta.updatedAt = new Date().toISOString();
+        }
+        
+        return processedChar;
+    });
+    
     let importedCount = 0;
     let updatedCount = 0;
     let skippedCount = 0;
@@ -3384,13 +3857,13 @@ function confirmImportCharacters(mode) {
     switch (mode) {
         case 'replace':
             // 完全替换
-            characters = JSON.parse(JSON.stringify(importedChars));
-            importedCount = importedChars.length;
+            characters = JSON.parse(JSON.stringify(processedChars));
+            importedCount = processedChars.length;
             break;
             
         case 'merge':
             // 智能合并：同名更新，其他追加
-            importedChars.forEach(importedChar => {
+            processedChars.forEach(importedChar => {
                 const existingIndex = characters.findIndex(c => c.name === importedChar.name);
                 if (existingIndex >= 0) {
                     // 更新现有角色
@@ -3406,7 +3879,7 @@ function confirmImportCharacters(mode) {
             
         case 'append':
             // 仅追加不存在的角色
-            importedChars.forEach(importedChar => {
+            processedChars.forEach(importedChar => {
                 const exists = characters.some(c => c.name === importedChar.name);
                 if (!exists) {
                     characters.push({ ...importedChar });
@@ -3457,18 +3930,56 @@ function importCharactersDirectReplace(importedChars) {
         return;
     }
     
+    // 处理导入的角色数据，确保V2格式正确
+    const processedChars = importedChars.map(char => {
+        // 确保V2格式结构完整
+        const processedChar = { ...char };
+        
+        // 如果有旧格式的keys字段，确保同步到activation.keys
+        if (char.keys && Array.isArray(char.keys) && char.keys.length > 0) {
+            if (!processedChar.activation) {
+                processedChar.activation = {};
+            }
+            processedChar.activation.keys = char.keys;
+        }
+        
+        // 确保meta字段存在
+        if (!processedChar.meta) {
+            processedChar.meta = {
+                description: '',
+                tags: [],
+                creator: '',
+                version: '2.0.0',
+                createdAt: char.createdAt || new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            };
+        } else {
+            processedChar.meta.updatedAt = new Date().toISOString();
+        }
+        
+        return processedChar;
+    });
+    
     // 直接替换
-    characters = JSON.parse(JSON.stringify(importedChars));
+    characters = JSON.parse(JSON.stringify(processedChars));
     
     // 保存到 localStorage
     if (gameId) {
         localStorage.setItem(STORAGE_KEYS.CHARACTERS(gameId), JSON.stringify(characters));
+        console.log('[Settings] Characters saved to localStorage after direct import:', characters.length);
     }
     
     // 渲染
     renderCharacterList();
     
     showToast(`已替换为 ${characters.length} 个角色`, 'success');
+    
+    // 自动保存到后端
+    if (gameId && characters.length > 0) {
+        saveCharactersToBackend(gameId, characters).catch(err => {
+            console.warn('[Settings] Auto-save after direct import failed:', err);
+        });
+    }
     
     console.log('[Import Direct] Done, now have', characters.length, 'characters');
 }

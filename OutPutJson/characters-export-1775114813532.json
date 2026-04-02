@@ -1,7 +1,33 @@
 {
   "characters": [
     {
+      "_id": "mem_1773324176145_2",
       "name": "林婉",
+      "color": "#ff69b4",
+      "image": "https://origin.picgo.net/2026/01/31/LinWan85351d4173bd3ae6.png",
+      "prompt": "林婉是一个温柔、细腻、关心他人的女孩，说话轻声细语，总是为他人着想。她是修仙世界的向导，对周围的环境非常熟悉。",
+      "enabled": true,
+      "gameId": "mem_1773324176145_1",
+      "createdAt": "2026-03-12T14:02:56.145Z",
+      "updatedAt": "2026-04-02T07:26:36.069Z",
+      "imageFit": "cover",
+      "appearance": "",
+      "personality": "",
+      "physique": "",
+      "background": "",
+      "special": "",
+      "priority": 100,
+      "keys": [
+        "林婉",
+        "婉儿2333"
+      ],
+      "favor": 16,
+      "trust": 30,
+      "stats": {
+        "mood": "平静",
+        "encounters": 0,
+        "dialogueTurns": 0
+      },
       "visual": {
         "avatar": "https://origin.picgo.net/2026/01/31/LinWan85351d4173bd3ae6.png",
         "cover": "",
@@ -21,8 +47,8 @@
       "activation": {
         "keys": [
           "林婉",
-          "婉儿",
-          "桃蕊"
+          "婉儿2333",
+          "婉儿是啥2333"
         ],
         "priority": 100,
         "enabled": true
@@ -58,16 +84,40 @@
         "tags": [],
         "creator": "",
         "version": "2.0.0",
-        "updatedAt": "2026-03-31T16:29:27.008Z"
+        "updatedAt": "2026-04-02T07:26:36.069Z"
       },
-      "color": "#ff69b4",
-      "image": "https://origin.picgo.net/2026/01/31/LinWan85351d4173bd3ae6.png",
-      "imageFit": "cover",
-      "enabled": true,
-      "_id": "mem_1773324176145_2"
+      "meta.updatedAt": "2026-04-02T04:49:17.845Z"
     },
     {
+      "_id": "mem_1773324176145_3",
       "name": "陆苍雪",
+      "color": "#87cefa",
+      "image": "https://origin.picgo.net/2026/01/31/LuCangXued0d1fd51b000d674.png",
+      "prompt": "陆苍雪是一个冷静、智慧、神秘的男孩，擅长冰系法术。他说话简洁有力，富有哲理，给人一种高深莫测的感觉。",
+      "enabled": true,
+      "gameId": "mem_1773324176145_1",
+      "createdAt": "2026-03-12T14:02:56.145Z",
+      "updatedAt": "2026-04-02T07:26:36.070Z",
+      "imageFit": "cover",
+      "appearance": "",
+      "personality": "",
+      "physique": "",
+      "background": "",
+      "special": "",
+      "priority": 100,
+      "keys": [
+        "陆苍雪",
+        "雪儿",
+        "寒雪剑仙",
+        "落星剑宗掌门"
+      ],
+      "favor": 12,
+      "trust": 24,
+      "stats": {
+        "mood": "平静",
+        "encounters": 0,
+        "dialogueTurns": 0
+      },
       "visual": {
         "avatar": "https://origin.picgo.net/2026/01/31/LuCangXued0d1fd51b000d674.png",
         "cover": "",
@@ -125,81 +175,10 @@
         "tags": [],
         "creator": "",
         "version": "2.0.0",
-        "updatedAt": "2026-03-31T16:29:30.070Z"
+        "updatedAt": "2026-04-02T07:26:36.070Z"
       },
-      "color": "#87cefa",
-      "image": "https://origin.picgo.net/2026/01/31/LuCangXued0d1fd51b000d674.png",
-      "imageFit": "cover",
-      "enabled": true,
-      "_id": "mem_1773324176145_3"
-    },
-    {
-      "name": "轩辕霓裳",
-      "visual": {
-        "avatar": "https://origin.picgo.net/2026/01/31/XuanYuanNiChang934310ad29aa54d8.png",
-        "cover": "",
-        "color": "#ff4500",
-        "emotionCGs": {}
-      },
-      "core": {
-        "description": "",
-        "personality": "",
-        "scenario": "",
-        "firstMessage": "",
-        "worldConnection": {
-          "faction": "",
-          "location": ""
-        }
-      },
-      "activation": {
-        "keys": [
-          "轩辕霓裳",
-          "霓裳",
-          "长公主殿下",
-          "合欢宗宗主"
-        ],
-        "priority": 100,
-        "enabled": true
-      },
-      "examples": {
-        "style": "",
-        "dialogues": []
-      },
-      "lorebook": {
-        "entries": [],
-        "linkMode": "MANUAL",
-        "linkedEntryIds": []
-      },
-      "injection": {
-        "characterNote": {
-          "content": "",
-          "depth": 0,
-          "frequency": 1,
-          "role": "system"
-        },
-        "postHistory": {
-          "content": "",
-          "enabled": false
-        }
-      },
-      "relationship": {
-        "favor": 18,
-        "trust": 21,
-        "mood": "平静"
-      },
-      "meta": {
-        "description": "",
-        "tags": [],
-        "creator": "",
-        "version": "2.0.0",
-        "updatedAt": "2026-03-31T16:29:33.266Z"
-      },
-      "color": "#ff4500",
-      "image": "https://origin.picgo.net/2026/01/31/XuanYuanNiChang934310ad29aa54d8.png",
-      "imageFit": "cover",
-      "enabled": true,
-      "_id": "mem_1773324176145_4"
+      "meta.updatedAt": "2026-04-02T04:49:17.845Z"
     }
   ],
-  "exportTime": "2026-03-31T23:32:01.912Z"
+  "exportTime": "2026-04-02T07:26:53.531Z"
 }

@@ -85,6 +85,16 @@ class FilePersistence {
         }
       }
       
+      // 处理提示词配置
+      if (data.collections && data.collections.prompt_configs) {
+        console.log(`[FilePersistence] 加载了 ${data.collections.prompt_configs.length} 个提示词配置`);
+      }
+      
+      // 处理世界书条目
+      if (data.collections && data.collections.worldbook_entries) {
+        console.log(`[FilePersistence] 加载了 ${data.collections.worldbook_entries.length} 个世界书条目`);
+      }
+      
       Logger.info(`[FilePersistence] 已加载 ${totalCount} 条数据，上次保存: ${new Date(data.timestamp).toLocaleString()}`);
       this.isLoading = false;
       return true;

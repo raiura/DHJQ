@@ -265,6 +265,27 @@ class WorldbookEntryModel {
     // 过滤
     if (Object.keys(query).length > 0) {
       docs = docs.filter(doc => {
+        // 处理 $or 操作符
+        if (query.$or) {
+          return query.$or.some(orCondition => {
+            for (const [key, value] of Object.entries(orCondition)) {
+              if (key === 'gameId') {
+                if (value === null) {
+                  return doc[key] === null || doc[key] === undefined;
+                } else if (value === doc[key]) {
+                  return true;
+                }
+              } else if (key === 'gameId' && value.$exists === false) {
+                return doc[key] === undefined;
+              } else if (doc[key] !== value) {
+                return false;
+              }
+            }
+            return true;
+          });
+        }
+        
+        // 处理普通查询
         for (const [key, value] of Object.entries(query)) {
           if (doc[key] !== value) return false;
         }
@@ -272,8 +293,14 @@ class WorldbookEntryModel {
       });
     }
     
-    // 按更新时间倒序排序
-    docs.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+    // 按优先级和更新时间排序
+    docs.sort((a, b) => {
+      // 先按优先级降序
+      const priorityDiff = (b.priority || 0) - (a.priority || 0);
+      if (priorityDiff !== 0) return priorityDiff;
+      // 再按更新时间降序
+      return new Date(b.updatedAt) - new Date(a.updatedAt);
+    });
     
     return docs.map(d => this._addMethods(d));
   }

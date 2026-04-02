@@ -108,21 +108,31 @@ class WorldbookManager {
     async loadGlobalWorldbook(gameId = this.gameId) {
         if (!gameId) return null;
         
+        console.log('[Worldbook] Loading global worldbook for gameId:', gameId);
+        
         try {
             // 尝试从后端加载
             const response = await fetch(`${API_BASE}/games/${gameId}/worldbook`, {
                 headers: getAuthHeaders()
             });
             
+            console.log('[Worldbook] Backend response status:', response.status);
+            
             if (response.ok) {
                 const data = await response.json();
+                console.log('[Worldbook] Backend response data:', data);
+                
                 if (data.success) {
+                    // 确保数据结构正确
                     this.globalWorldbook = {
-                        ...this.globalWorldbook,
-                        ...data.data
+                        entries: data.data.entries || [],
+                        groups: data.data.groups || {},
+                        version: '1.0'
                     };
                     this._engine = null;
                     this._saveToStorage();
+                    console.log('[Worldbook] Loaded from backend:', this.globalWorldbook.entries.length, 'entries');
+                    console.log('[Worldbook] Sample entry:', this.globalWorldbook.entries[0]);
                     return this.globalWorldbook;
                 }
             } else if (response.status === 404) {
@@ -131,10 +141,14 @@ class WorldbookManager {
             }
         } catch (error) {
             // 网络错误，使用本地存储
-            console.log('[Worldbook] Network error, using local storage');
+            console.log('[Worldbook] Network error, using local storage:', error.message);
         }
         
         // 使用本地缓存
+        console.log('[Worldbook] Using local cache:', this.globalWorldbook.entries.length, 'entries');
+        if (this.globalWorldbook.entries.length > 0) {
+            console.log('[Worldbook] Sample cached entry:', this.globalWorldbook.entries[0]);
+        }
         return this.globalWorldbook;
     }
 

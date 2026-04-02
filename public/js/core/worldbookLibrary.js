@@ -219,13 +219,16 @@ class WorldbookLibrary {
     getAllActiveEntries() {
         const entries = [];
         this.getActiveBooks().forEach(book => {
-            const bookEntries = book.getEnabledEntries().map(e => ({
-                ...e,
-                _bookId: book.id,
-                _bookName: book.name
-            }));
-            entries.push(...bookEntries);
+            if (book && book.getEnabledEntries) {
+                const bookEntries = book.getEnabledEntries().map(e => ({
+                    ...e,
+                    _bookId: book.id,
+                    _bookName: book.name
+                }));
+                entries.push(...bookEntries);
+            }
         });
+        console.log('[WorldbookLibrary] 获取激活条目:', entries.length, '条');
         return entries;
     }
 
@@ -238,6 +241,7 @@ class WorldbookLibrary {
         if (this._engine) return this._engine;
         
         const activeEntries = this.getAllActiveEntries();
+        console.log('[WorldbookLibrary] 创建引擎，使用', activeEntries.length, '条激活条目');
         this._engine = new WorldbookEngine({
             globalEntries: activeEntries,
             userEntries: [], // 条目已经在 activeEntries 中合并了
@@ -376,8 +380,12 @@ class WorldbookLibrary {
                 // 加载书本
                 if (parsed.books) {
                     parsed.books.forEach(bookData => {
-                        const book = WorldBook.fromJSON(bookData);
-                        this.books.set(book.id, book);
+                        try {
+                            const book = WorldBook.fromJSON(bookData);
+                            this.books.set(book.id, book);
+                        } catch (bookError) {
+                            console.error('[WorldbookLibrary] 加载书本失败:', bookError);
+                        }
                     });
                 }
                 
@@ -397,12 +405,21 @@ class WorldbookLibrary {
                 }
                 
                 console.log('[WorldbookLibrary] 已加载', this.books.size, '本世界书');
+                
+                // 如果没有书本，创建默认世界书
+                if (this.books.size === 0) {
+                    this._createDefaultBook();
+                }
             } else {
                 // 首次使用，创建默认世界书
                 this._createDefaultBook();
             }
         } catch (e) {
             console.error('[WorldbookLibrary] 加载失败:', e);
+            // 加载失败时，清空现有数据并创建默认世界书
+            this.books.clear();
+            this.activeBookIds.clear();
+            this.selectedBookId = null;
             this._createDefaultBook();
         }
     }
@@ -418,8 +435,56 @@ class WorldbookLibrary {
         // 从旧格式迁移数据
         this._migrateFromOldFormat(defaultBook);
         
-        this.selectBook(defaultBook.id);
-        this.activateBook(defaultBook.id);
+        // 从worldbookManager同步全局世界书数据
+        this._syncFromWorldbookManager(defaultBook);
+        
+        // 确保至少有一个激活的世界书
+        if (this.activeBookIds.size === 0) {
+            this.activateBook(defaultBook.id);
+        }
+        
+        // 确保有选中的世界书
+        if (!this.selectedBookId) {
+            this.selectBook(defaultBook.id);
+        }
+        
+        console.log('[WorldbookLibrary] 创建默认世界书:', defaultBook.name, '条目数:', defaultBook.entries.length);
+    }
+    
+    /**
+     * 从worldbookManager同步全局世界书数据
+     */
+    _syncFromWorldbookManager(targetBook) {
+        try {
+            // 检查是否存在worldbookManager实例
+            if (typeof worldbookManager !== 'undefined' && worldbookManager.globalWorldbook) {
+                const globalEntries = worldbookManager.globalWorldbook.entries || [];
+                if (globalEntries.length > 0) {
+                    console.log('[WorldbookLibrary] 从worldbookManager同步', globalEntries.length, '个条目');
+                    
+                    globalEntries.forEach(entry => {
+                        targetBook.addEntry({
+                            name: entry.name || '未命名条目',
+                            keys: entry.keys || [],
+                            excludeKeys: entry.excludeKeys || [],
+                            content: entry.content || '',
+                            priority: entry.priority || 100,
+                            insertPosition: entry.insertPosition || 'character',
+                            group: entry.group || '默认分组',
+                            constant: entry.constant || false,
+                            enabled: entry.enabled !== false
+                        });
+                    });
+                    
+                    // 同步分组信息
+                    if (worldbookManager.globalWorldbook.groups) {
+                        Object.assign(targetBook.groups, worldbookManager.globalWorldbook.groups);
+                    }
+                }
+            }
+        } catch (e) {
+            console.error('[WorldbookLibrary] 从worldbookManager同步失败:', e);
+        }
     }
 
     /**
@@ -431,38 +496,53 @@ class WorldbookLibrary {
             const oldKeys = [
                 `wb_global_${this.gameId}`,
                 `worldbook_${this.gameId}`,
-                'worldbook_global'
+                'worldbook_global',
+                // 添加worldbookManager的存储键
+                `galgame_${this.gameId}_worldbook`,
+                `galgame_default_worldbook`
             ];
             
             for (const key of oldKeys) {
                 const oldData = localStorage.getItem(key);
                 if (oldData) {
-                    const parsed = JSON.parse(oldData);
-                    if (parsed.entries && parsed.entries.length > 0) {
-                        console.log('[WorldbookLibrary] 从旧格式迁移', parsed.entries.length, '个条目');
-                        
-                        parsed.entries.forEach(entry => {
-                            targetBook.addEntry({
-                                name: entry.name || entry.comment || '迁移条目',
-                                keys: entry.keys || entry.key || [],
-                                excludeKeys: entry.excludeKeys || entry.keysecondary || [],
-                                content: entry.content,
-                                priority: entry.priority || entry.order || 100,
-                                insertPosition: entry.insertPosition || 'character',
-                                group: entry.group || '默认分组',
-                                constant: entry.constant || false,
-                                enabled: entry.enabled !== false
-                            });
-                        });
-                        
-                        // 迁移分组信息
-                        if (parsed.groups) {
-                            Object.assign(targetBook.groups, parsed.groups);
+                    try {
+                        const parsed = JSON.parse(oldData);
+                        // 处理不同格式的数据
+                        let entries = [];
+                        if (parsed.entries && Array.isArray(parsed.entries)) {
+                            // 标准格式
+                            entries = parsed.entries;
+                        } else if (Array.isArray(parsed)) {
+                            // 直接是条目数组
+                            entries = parsed;
                         }
                         
-                        // 删除旧数据
-                        localStorage.removeItem(key);
-                        break;
+                        if (entries.length > 0) {
+                            console.log('[WorldbookLibrary] 从', key, '迁移', entries.length, '个条目');
+                            
+                            entries.forEach(entry => {
+                                targetBook.addEntry({
+                                    name: entry.name || entry.comment || '迁移条目',
+                                    keys: entry.keys || entry.key || [],
+                                    excludeKeys: entry.excludeKeys || entry.keysecondary || [],
+                                    content: entry.content,
+                                    priority: entry.priority || entry.order || 100,
+                                    insertPosition: entry.insertPosition || 'character',
+                                    group: entry.group || '默认分组',
+                                    constant: entry.constant || false,
+                                    enabled: entry.enabled !== false
+                                });
+                            });
+                            
+                            // 迁移分组信息
+                            if (parsed.groups) {
+                                Object.assign(targetBook.groups, parsed.groups);
+                            }
+                            
+                            // 不删除旧数据，只是迁移
+                        }
+                    } catch (parseError) {
+                        console.error('[WorldbookLibrary] 解析', key, '失败:', parseError);
                     }
                 }
             }

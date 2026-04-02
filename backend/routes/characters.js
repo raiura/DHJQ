@@ -195,15 +195,35 @@ router.post('/batch', checkMongoDB, async (req, res) => {
       return res.status(400).json({ success: false, message: 'characters必须是数组' });
     }
     
+    // 过滤掉null值，确保所有角色对象都有效
+    const validCharacters = characters.filter(char => char != null);
+    if (validCharacters.length !== characters.length) {
+      console.warn('[Characters] Filtered out null characters:', characters.length - validCharacters.length);
+    }
+    
     const results = [];
-    for (const charData of characters) {
+    for (const charData of validCharacters) {
       try {
         const v2Data = ensureV2Structure({ ...charData, gameId });
         
         if (v2Data._id) {
           // 更新
           const updated = await Character.findByIdAndUpdate(v2Data._id, v2Data, { new: true });
-          results.push({ success: true, id: updated._id, action: 'update' });
+          if (updated) {
+            results.push({ success: true, id: updated._id, action: 'update' });
+          } else {
+            // 如果找不到角色，尝试创建新角色
+            let character;
+            if (typeof Character.create === 'function') {
+                // 内存存储模式
+                character = await Character.create(v2Data);
+            } else {
+                // MongoDB模式
+                character = new Character(v2Data);
+                await character.save();
+            }
+            results.push({ success: true, id: character._id, action: 'create' });
+          }
         } else {
           // 创建
           let character;
@@ -226,7 +246,7 @@ router.post('/batch', checkMongoDB, async (req, res) => {
       success: true,
       data: results,
       summary: {
-        total: characters.length,
+        total: validCharacters.length,
         success: results.filter(r => r.success).length,
         failed: results.filter(r => !r.success).length
       }
@@ -388,6 +408,11 @@ router.get('/:id/lorebook', checkMongoDB, async (req, res) => {
  * 确保数据符合V2结构
  */
 function ensureV2Structure(data) {
+  // 检查数据是否为null或undefined
+  if (!data) {
+    throw new Error('Character data cannot be null or undefined');
+  }
+  
   // 如果已经是V2结构，直接返回
   if (data.core && data.visual) {
     return {

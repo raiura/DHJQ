@@ -820,7 +820,7 @@ router.post('/fix-images', async (req, res) => {
  * 获取游戏的世界书条目
  * GET /api/games/:id/worldbook
  */
-router.get('/:id/worldbook', authMiddleware.verifyToken, async (req, res) => {
+router.get('/:id/worldbook', authMiddleware.optionalAuth, async (req, res) => {
   try {
     const { id } = req.params;
     
@@ -830,8 +830,8 @@ router.get('/:id/worldbook', authMiddleware.verifyToken, async (req, res) => {
       return ResponseUtil.error(res, '游戏不存在', 404);
     }
     
-    // 获取游戏的世界书条目（通过 gameId 关联）
-    const entries = await WorldbookEntry.find({ gameId: id })
+    // 获取游戏的世界书条目（包括没有gameId的全局条目）
+    const entries = await WorldbookEntry.find({ $or: [{ gameId: id }, { gameId: null }, { gameId: { $exists: false } }] })
       .sort({ priority: -1, createdAt: -1 });
     
     ResponseUtil.success(res, {

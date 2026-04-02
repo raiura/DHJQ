@@ -68,11 +68,12 @@ class MemoryStore {
   // 创建文档
   create(collectionName, data) {
     const collection = this.getCollection(collectionName);
-    const id = this.generateId();
+    // 如果data中已经有_id，使用传入的_id，否则生成新的
+    const id = data._id || this.generateId();
     const doc = {
       _id: id,
       ...data,
-      createdAt: new Date(),
+      createdAt: data.createdAt || new Date(),
       updatedAt: new Date()
     };
     collection.set(id, doc);

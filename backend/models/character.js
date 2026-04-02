@@ -309,11 +309,16 @@ if (!useMemoryStore) {
 
     async create(data) {
       const v2Data = this._ensureV2Structure(data);
-      return memoryStore.create(this.collectionName, {
+      // 确保meta字段存在并更新时间戳
+      const finalData = {
         ...v2Data,
-        'meta.createdAt': new Date(),
-        'meta.updatedAt': new Date()
-      });
+        meta: {
+          ...v2Data.meta,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        }
+      };
+      return memoryStore.create(this.collectionName, finalData);
     }
 
     async insertMany(docs) {
@@ -322,10 +327,15 @@ if (!useMemoryStore) {
 
     async findByIdAndUpdate(id, data, options = {}) {
       const v2Data = this._ensureV2Structure(data);
-      return memoryStore.update(this.collectionName, id, {
+      // 确保meta字段存在并更新时间戳
+      const finalData = {
         ...v2Data,
-        'meta.updatedAt': new Date()
-      });
+        meta: {
+          ...v2Data.meta,
+          updatedAt: new Date()
+        }
+      };
+      return memoryStore.update(this.collectionName, id, finalData);
     }
 
     async findByIdAndDelete(id) {
