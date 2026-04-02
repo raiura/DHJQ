@@ -95,7 +95,7 @@ router.put('/', requireAdmin(async (req, res) => {
     Logger.error('更新设置失败:', error);
     ResponseUtil.error(res, '更新设置失败', 500);
   }
-});
+}));
 
 /**
  * @POST /api/settings/test
@@ -132,6 +132,6 @@ router.post('/test', requireAuth(async (req, res) => {
     Logger.error('AI连接测试失败:', error);
     ResponseUtil.error(res, `连接测试失败: ${error.message}`, 500);
   }
-});
+}));
 
 module.exports = router;
